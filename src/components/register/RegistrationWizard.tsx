@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ArrowRight, ArrowLeft, ShieldCheck, Sparkles, UserCheck } from "lucide-react";
+import { ArrowRight, ArrowLeft, UserCheck } from "lucide-react";
 import PersonalInfo from "./steps/PersonalInfo";
 import CreatePassword from "./steps/CreatePassword";
 import ChoosePlan from "./steps/ChoosePlan";
@@ -73,7 +73,6 @@ export default function RegistrationWizard() {
   };
 
   const handleNext = () => {
-    // Basic step validation can happen here
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1);
     } else {
@@ -109,40 +108,40 @@ export default function RegistrationWizard() {
 
   if (submitted) {
     return (
-      <div className="bg-[#141414] border border-[#1F1F1F] rounded-3xl p-10 md:p-14 text-center shadow-2xl">
-        <div className="w-16 h-16 rounded-2xl bg-[#CCFF00]/15 text-[#CCFF00] flex items-center justify-center mx-auto mb-6 border border-[#CCFF00]/30 shadow-[0_0_30px_rgba(204,255,0,0.3)]">
-          <UserCheck className="w-8 h-8" />
+      <div className="bg-white rounded-[26px] p-7 md:p-10 text-center shadow-[0_20px_50px_-15px_rgba(59,130,246,0.08),0_0_1px_1px_rgba(226,232,240,0.8)] border border-slate-100">
+        <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#3B82F6] flex items-center justify-center mx-auto mb-4 border border-blue-200/60 shadow-sm">
+          <UserCheck className="w-7 h-7" />
         </div>
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#CCFF00] block mb-2">
+        <span className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-[#3B82F6] block mb-1">
           Registration Complete
         </span>
-        <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl sm:text-4xl font-extrabold uppercase text-white mb-4">
+        <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl sm:text-3xl font-extrabold text-[#0F172A] mb-2 leading-tight">
           Welcome to The Champions Club, {formData.fullName.split(" ")[0]}!
         </h2>
-        <p className="text-sm text-[#888888] max-w-lg mx-auto leading-relaxed mb-8">
+        <p className="text-xs text-[#64748B] max-w-md mx-auto leading-relaxed mb-5">
           {isMinor
             ? "Your Junior Prodigy application is queued under `pending_consent`. A verification link has been dispatched to your guardian's email for DPDP Act validation."
             : `Your membership application has been logged for ${formData.planId.toUpperCase()} tier. You can now use your email to access trial bookings and live court availability.`}
         </p>
 
-        <div className="p-4 rounded-2xl bg-[#0D0D0D] border border-[#1F1F1F] max-w-md mx-auto text-left text-xs mb-8 space-y-2">
-          <div className="flex justify-between text-[#888888]">
+        <div className="p-4 rounded-xl bg-[#F8FAFC] border border-slate-200/80 max-w-sm mx-auto text-left text-xs mb-5 space-y-2">
+          <div className="flex justify-between text-[#64748B]">
             <span>Account Email:</span>
-            <span className="text-white font-mono">{formData.email}</span>
+            <span className="text-[#0F172A] font-mono font-medium">{formData.email}</span>
           </div>
-          <div className="flex justify-between text-[#888888]">
+          <div className="flex justify-between text-[#64748B]">
             <span>Assigned Plan:</span>
-            <span className="text-[#CCFF00] uppercase font-bold">{formData.planId}</span>
+            <span className="text-[#3B82F6] uppercase font-bold">{formData.planId}</span>
           </div>
-          <div className="flex justify-between text-[#888888]">
+          <div className="flex justify-between text-[#64748B]">
             <span>Status:</span>
-            <span className="text-white">{isMinor ? "Pending Guardian Consent" : "Active Prospect"}</span>
+            <span className="text-[#0F172A] font-medium">{isMinor ? "Pending Guardian Consent" : "Active Prospect"}</span>
           </div>
         </div>
 
         <a
           href="/dashboard"
-          className="inline-flex items-center gap-2 bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:bg-[#a8cc00] transition-all shadow-[0_0_30px_rgba(204,255,0,0.3)]"
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-[#DDE7FF] to-[#E7E2FF] hover:from-[#D2DEFF] hover:to-[#DDD7FF] text-[#1E293B] font-bold text-xs uppercase tracking-wider px-7 py-3 rounded-xl border border-blue-200/60 shadow-sm transition-all"
         >
           <span>Open Athlete Dashboard & Book</span>
           <ArrowRight className="w-4 h-4" />
@@ -152,14 +151,14 @@ export default function RegistrationWizard() {
   }
 
   return (
-    <div className="bg-[#141414] border border-[#1F1F1F] rounded-3xl p-6 sm:p-10 md:p-12 shadow-2xl relative">
+    <div className="bg-white rounded-[26px] p-5 sm:p-7 md:p-8 shadow-[0_20px_50px_-15px_rgba(59,130,246,0.08),0_0_1px_1px_rgba(226,232,240,0.8)] border border-slate-100 flex flex-col justify-between">
       {/* Wizard Step Indicator Bar */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[11px] uppercase tracking-widest text-[#888888] font-bold">
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[10px] uppercase tracking-widest text-[#64748B] font-bold">
             Step {currentStepIndex + 1} of {steps.length}
           </div>
-          <div className="text-xs font-bold text-[#CCFF00] uppercase tracking-wider">
+          <div className="text-xs font-bold text-[#3B82F6] uppercase tracking-wider">
             {steps[currentStepIndex].label}
           </div>
         </div>
@@ -171,19 +170,19 @@ export default function RegistrationWizard() {
             const isCurrent = idx === currentStepIndex;
 
             return (
-              <div key={step.id} className="flex flex-col gap-1.5">
+              <div key={step.id} className="flex flex-col gap-1">
                 <div
                   className={`h-1.5 rounded-full transition-all duration-300 ${
                     isCompleted
-                      ? "bg-[#CCFF00]"
+                      ? "bg-[#3B82F6]"
                       : isCurrent
-                      ? "bg-[#CCFF00]/50"
-                      : "bg-[#222222]"
+                      ? "bg-[#93C5FD]"
+                      : "bg-[#E2E8F0]"
                   }`}
                 />
                 <span
-                  className={`text-[10px] uppercase tracking-wider font-semibold truncate ${
-                    isCurrent ? "text-white" : isCompleted ? "text-[#CCFF00]" : "text-[#555555]"
+                  className={`text-[9.5px] uppercase tracking-wider font-semibold truncate ${
+                    isCurrent ? "text-[#0F172A]" : isCompleted ? "text-[#3B82F6]" : "text-[#94A3B8]"
                   }`}
                 >
                   {step.label}
@@ -194,16 +193,16 @@ export default function RegistrationWizard() {
         </div>
       </div>
 
-      {/* Step Content with Motion Animations */}
-      <div className="min-h-[360px] flex flex-col justify-between">
+      {/* Step Content */}
+      <div className="flex-1 flex flex-col justify-between min-h-0">
         <AnimatePresence mode="wait">
           {currentStepIndex === 0 && (
             <motion.div
               key="step-0"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, x: -12 }}
+              transition={{ duration: 0.2 }}
             >
               <PersonalInfo
                 formData={formData}
@@ -216,10 +215,10 @@ export default function RegistrationWizard() {
           {currentStepIndex === 1 && (
             <motion.div
               key="step-1"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, x: -12 }}
+              transition={{ duration: 0.2 }}
             >
               <CreatePassword
                 formData={formData}
@@ -231,10 +230,10 @@ export default function RegistrationWizard() {
           {currentStepIndex === 2 && (
             <motion.div
               key="step-2"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, x: -12 }}
+              transition={{ duration: 0.2 }}
             >
               <ChoosePlan
                 formData={formData}
@@ -247,10 +246,10 @@ export default function RegistrationWizard() {
           {isMinor && currentStepIndex === 3 && (
             <motion.div
               key="step-3"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, x: -12 }}
+              transition={{ duration: 0.2 }}
             >
               <GuardianConsent
                 formData={formData}
@@ -262,10 +261,10 @@ export default function RegistrationWizard() {
           {((isMinor && currentStepIndex === 4) || (!isMinor && currentStepIndex === 3)) && (
             <motion.div
               key="step-confirm"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, x: -12 }}
+              transition={{ duration: 0.2 }}
             >
               <Confirmation
                 formData={formData}
@@ -278,14 +277,14 @@ export default function RegistrationWizard() {
         </AnimatePresence>
 
         {/* Wizard Control Buttons */}
-        <div className="pt-8 mt-8 border-t border-[#1F1F1F] flex items-center justify-between gap-4">
+        <div className="pt-3.5 mt-3.5 border-t border-slate-100 flex items-center justify-between gap-4">
           {currentStepIndex > 0 ? (
             <button
               type="button"
               onClick={handleBack}
-              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#888888] hover:text-white px-5 py-3 rounded-full hover:bg-[#1F1F1F] transition-all"
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#64748B] hover:text-[#0F172A] px-4 py-2 rounded-xl hover:bg-slate-100 transition-all"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back</span>
             </button>
           ) : (
@@ -295,12 +294,12 @@ export default function RegistrationWizard() {
           <button
             type="button"
             onClick={handleNext}
-            className="inline-flex items-center gap-2 bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase tracking-wider px-8 py-3.5 rounded-full hover:bg-[#a8cc00] transition-all shadow-[0_0_20px_rgba(204,255,0,0.35)] active:scale-95"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#DDE7FF] to-[#E7E2FF] hover:from-[#D2DEFF] hover:to-[#DDD7FF] text-[#1E293B] font-bold text-xs uppercase tracking-wider px-7 py-2.5 rounded-xl border border-blue-200/60 shadow-sm active:scale-95 transition-all"
           >
             <span>
               {currentStepIndex === steps.length - 1 ? "Submit Registration" : "Next Step"}
             </span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

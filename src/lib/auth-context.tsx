@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "./supabase";
+import { supabase, isSupabaseConfigured } from "./supabase";
 
 export type AppRole = "owner" | "manager" | "front_desk" | "bar_staff" | "member";
 export type AccountStatus = "prospect" | "pending_consent" | "active_member" | "suspended";
@@ -123,9 +123,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
-    // Check if matching demo user
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Check if matching demo user
     const matchedKey = Object.keys(DEMO_USERS).find(
-      (k) => DEMO_USERS[k].email.toLowerCase() === email.toLowerCase()
+      (k) => DEMO_USERS[k].email.toLowerCase() === cleanEmail
     );
 
     if (matchedKey) {
@@ -135,22 +137,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     }
 
-    // Try Supabase Auth
+    // 2. If Supabase backend is not configured (offline/mock development)
+    if (!isSupabaseConfigured) {
+      const fallbackUser: ClubUser = {
+        id: crypto.randomUUID(),
+        email: cleanEmail,
+        fullName: cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        role: cleanEmail.includes("owner")
+          ? "owner"
+          : cleanEmail.includes("manager")
+          ? "manager"
+          : cleanEmail.includes("desk")
+          ? "front_desk"
+          : cleanEmail.includes("bar")
+          ? "bar_staff"
+          : "member",
+        status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",
+        planId: cleanEmail.includes("gold") ? "gold" : cleanEmail.includes("junior") ? "junior" : "silver",
+      };
+      setUser(fallbackUser);
+      localStorage.setItem("champions_user", JSON.stringify(fallbackUser));
+      return { success: true };
+    }
+
+    // 3. Try Supabase Auth when configured
     try {
       if (password) {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: cleanEmail,
           password,
         });
+
         if (error) {
-          // If Supabase is unconfigured, create dynamic athlete session
-          if (error.message.includes("placeholder") || error.message.includes("fetch failed")) {
+          const errMsg = error.message?.toLowerCase() || "";
+          if (
+            errMsg.includes("failed to fetch") ||
+            errMsg.includes("fetch failed") ||
+            errMsg.includes("placeholder") ||
+            errMsg.includes("networkerror") ||
+            errMsg.includes("load failed")
+          ) {
             const fallbackUser: ClubUser = {
               id: crypto.randomUUID(),
-              email,
-              fullName: email.split("@")[0].toUpperCase(),
+              email: cleanEmail,
+              fullName: cleanEmail.split("@")[0].toUpperCase(),
               role: "member",
-              status: "active_member",
+              status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",
               planId: "silver",
             };
             setUser(fallbackUser);
@@ -159,11 +191,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           return { success: false, error: error.message };
         }
+
         if (data.user) {
           const u: ClubUser = {
             id: data.user.id,
-            email: data.user.email || email,
-            fullName: data.user.user_metadata?.full_name || email.split("@")[0],
+            email: data.user.email || cleanEmail,
+            fullName: data.user.user_metadata?.full_name || cleanEmail.split("@")[0],
             role: data.user.user_metadata?.role || "member",
             status: data.user.user_metadata?.status || "active_member",
             planId: data.user.user_metadata?.plan_id,
@@ -177,10 +210,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fallback local session for seamless development
       const fallbackUser: ClubUser = {
         id: crypto.randomUUID(),
-        email,
-        fullName: email.split("@")[0],
+        email: cleanEmail,
+        fullName: cleanEmail.split("@")[0],
         role: "member",
-        status: "active_member",
+        status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",
         planId: "silver",
       };
       setUser(fallbackUser);

@@ -1,7 +1,7 @@
 "use client";
 
 import { RegisterFormData } from "../RegistrationWizard";
-import { Check, Star, Zap, Shield, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 
 interface Props {
   formData: RegisterFormData;
@@ -40,19 +40,19 @@ export default function ChoosePlan({ formData, updateFormData, isMinor }: Props)
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div>
-        <h3 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold uppercase tracking-tight text-white mb-1">
+        <h3 className="font-[family-name:var(--font-space-grotesk)] text-lg sm:text-xl font-bold uppercase tracking-tight text-[#0F172A] mb-0.5 leading-tight">
           Select Your Membership Plan
         </h3>
-        <p className="text-xs text-[#888888]">
+        <p className="text-[11px] text-[#64748B]">
           {isMinor
             ? "Since your birthdate indicates you are under 18, Junior Prodigy tier is pre-selected."
             : "Choose the entitlement tier that matches your playing schedule."}
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {planOptions.map((plan) => {
           const isSelected = formData.planId === plan.id;
 
@@ -64,48 +64,44 @@ export default function ChoosePlan({ formData, updateFormData, isMinor }: Props)
                   updateFormData({ planId: plan.id });
                 }
               }}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer relative ${
+              className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${
                 plan.disabled
-                  ? "opacity-40 cursor-not-allowed bg-[#0D0D0D] border-[#1F1F1F]"
+                  ? "opacity-40 cursor-not-allowed bg-slate-50 border-slate-200"
                   : isSelected
-                  ? "bg-[#1A1A1A] border-2 border-[#CCFF00] shadow-[0_0_25px_rgba(204,255,0,0.15)]"
-                  : "bg-[#0D0D0D] border-[#1F1F1F] hover:border-[#333333]"
+                  ? "bg-blue-50/70 border-2 border-[#3B82F6] shadow-sm"
+                  : "bg-[#F8FAFC] border-slate-200/80 hover:border-slate-300 hover:bg-white"
               }`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-2">
                   <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
                       isSelected
-                        ? "border-[#CCFF00] bg-[#CCFF00] text-[#0A0A0A]"
-                        : "border-[#555555] bg-transparent"
+                        ? "border-[#3B82F6] bg-[#3B82F6] text-white"
+                        : "border-slate-300 bg-white"
                     }`}
                   >
-                    {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                   </div>
-
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-[family-name:var(--font-space-grotesk)] text-base font-bold uppercase text-white">
-                        {plan.name}
-                      </span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#1F1F1F] text-[#CCFF00]">
-                        {plan.badge}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#888888] mt-0.5">
-                      {plan.description}
-                    </p>
-                  </div>
+                  <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-100/80 text-[#2563EB]">
+                    {plan.badge}
+                  </span>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-lg font-black text-white font-[family-name:var(--font-space-grotesk)]">
-                    {plan.price}
-                  </div>
-                  <div className="text-[10px] text-[#CCFF00] font-semibold">
-                    {plan.perk}
-                  </div>
+                <div className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold uppercase text-[#0F172A] leading-tight">
+                  {plan.name}
+                </div>
+                <p className="text-[10.5px] text-[#64748B] mt-1 leading-snug line-clamp-2">
+                  {plan.description}
+                </p>
+              </div>
+
+              <div className="pt-2.5 mt-2.5 border-t border-slate-200/60">
+                <div className="text-base font-black text-[#0F172A] font-[family-name:var(--font-space-grotesk)] leading-none">
+                  {plan.price}
+                </div>
+                <div className="text-[10px] text-[#2563EB] font-semibold mt-0.5">
+                  {plan.perk}
                 </div>
               </div>
             </div>
@@ -113,8 +109,8 @@ export default function ChoosePlan({ formData, updateFormData, isMinor }: Props)
         })}
       </div>
 
-      <div className="p-4 rounded-2xl bg-[#0D0D0D] border border-[#1F1F1F] text-xs text-[#888888]">
-        💡 <span className="text-white font-medium">Club Policy:</span> Memberships are renewed monthly or annually. You can upgrade or switch plans anytime from the Member Dashboard.
+      <div className="p-2.5 rounded-xl bg-[#F8FAFC] border border-slate-200/80 text-[11px] text-[#64748B]">
+        💡 <span className="text-[#0F172A] font-medium">Club Policy:</span> Memberships are renewed monthly or annually. You can upgrade or switch plans anytime from the Member Dashboard.
       </div>
     </div>
   );
