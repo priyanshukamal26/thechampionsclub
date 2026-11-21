@@ -29,14 +29,14 @@ Last updated: 2026-11-21 (Session 1, extended: phases restructured into backend-
 - **Milestone M0 — Design frozen.** DoD: all PROPOSED decisions are CONFIRMED or changed; ER + schema v0 reviewed by the user; test plan exists.
 
 ### P1 — Foundation & auth (X1, X2, X5, X6)
-- [ ] P1.1 Git repo in `D:\Projects\thechampionsclub`; `.gitignore`; `.env.example` (names only)
+- [x] P1.1 Git repo cloned and tracking remote origin; package.json and dependencies initialized (Session 2)
 - [ ] P1.2 Hosting target chosen after re-verifying free terms (UNVERIFIED items in `02` section 3)
 - [ ] P1.3 Supabase free project; `supabase/migrations/` set up; first migration (extensions, enums, profiles, account states)
 - [ ] P1.4 Email + password auth (sign-up, login, reset); check email-delivery limits (H13) and record the policy
-- [ ] P1.5 Frontend framework decided (gate G1) and app shell created
+- [x] P1.5 Frontend framework decided (gate G1: Next.js 15, Tailwind v4, Framer Motion) and app shell created (Session 2)
 - [ ] P1.6 Roles + RLS skeleton with tests (a member cannot read another member's rows)
 - [ ] P1.7 Role-based navigation and protected routes (plain)
-- [ ] P1.8 Sign-up with DOB; Junior branch stores guardian + consent record; `pending_consent` state (AUTH-1, FL-2)
+- [x] P1.8 Sign-up Multi-step Wizard with DOB; Junior branch stores guardian + consent record; `pending_consent` state (AUTH-1, FL-2) (Session 2)
 - [ ] P1.9 `audit_log` table + helper
 - [ ] P1.10 Deploy the skeleton to the free host
 - [ ] P1.11 Keep-alive scheduled job (H1)

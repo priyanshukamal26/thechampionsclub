@@ -184,7 +184,10 @@ Statuses: CONFIRMED (user said so) / PROPOSED (AI suggested, awaiting approval).
 | D-029 | Bar/cafeteria accepts counter orders and table orders: each order has a channel and an optional table; waiter tablet view; both channels feed one kitchen display | CONFIRMED (user, Session 1) | |
 | D-030 | Gear delivery: member saves addresses; staff-managed status flow; handover OTP; no maps/routing; delivery fee and minimum order are configurable (values TBD) | CONFIRMED (approach) | |
 | D-031 | Sign-up creates a `prospect` account that can book only trial sessions and create leads; it becomes a member when staff assign a plan | PROPOSED | Mechanics of D-022 |
-| D-032 | Frontend framework and visual design deferred; build backend-first with plain functional screens; the user will describe how each section looks later; gate G1 (frontend direction) must be passed before P1.5 and again before the P8 styling pass | CONFIRMED (user, Session 1) | |
+| D-032 | Frontend framework and visual design deferred; build backend-first with plain functional screens; the user will describe how each section looks later; gate G1 (frontend direction) must be passed before P1.5 and again before the P8 styling pass | CONFIRMED (user, Session 1) | Superseded for Landing & Registration by D-033/D-034 |
+| D-033 | Frontend framework selected: Next.js 15 (App Router), React 19, Tailwind CSS v4, Framer Motion, and Lucide React icons | CONFIRMED (user, Session 2) | Delivers SSR/SEO for public club pages, smooth award-level interactive animations, and responsive performance |
+| D-034 | Visual design language: "High-Energy Athletic" aesthetic with obsidian dark surfaces (`#050505`, `#0A0A0A`, `#141414`), electric lime accents (`#CCFF00`), radial sport glows, bold Space Grotesk typography, and fluid micro-interactions | CONFIRMED (user, Session 2) | Custom-tailored for high-end modern sports clubs |
+| D-035 | Multi-step registration wizard structure with dynamic minor/Junior detection (<18 years DOB) that dynamically injects Step 4 (Guardian Consent per India DPDP Act 2023) | CONFIRMED (user, Session 2) | Enforces compliance without friction for adult athletes |
 
 ## 5. Acceptance criteria for "Part 1 complete"
 
@@ -204,7 +207,7 @@ One responsive web app (D-021). Page IDs are for reference in tasks and tests. "
 
 | ID | Page | Sections | Req |
 |---|---|---|---|
-| PUB-1 | Home | Hero + call-to-action; sports offered; plans teaser; this-week availability teaser; shop teaser; location + contact | E1 |
+| PUB-1 | Home (Implemented) | 1. Sticky Navbar (blur backdrop, links, Join CTA, responsive drawer)<br>2. Hero (animated typography "PLAY. COMPETE. DOMINATE.", dual CTAs, glowing radial orbs, value badges, scroll bounce)<br>3. Sports Showcase (Tennis, Padel, Badminton, Cricket Nets cards with specs & court features)<br>4. Live Stats (18 arenas, 100% conflict-free guarantee, 2x cap, 6AM-11PM)<br>5. Membership Teaser (Silver, Gold featured, Junior, monthly/annual toggle with -20% badge)<br>6. Availability Strip (interactive 30-min slot engine with live status)<br>7. Pro Shop Teaser (unified inventory cards, INR prices, stock alerts)<br>8. Bar & Lounge + Friday Social Night spotlight (kitchen display, open tabs, social sessions)<br>9. Testimonials (member quotes, ratings, sports tags)<br>10. Clubhouse Location & Trial Session Request form (address, hotline, enquiry capture)<br>11. Footer (sports, plans, portal links, legal, DPDP) | E1, E2, E3, E4, E6 |
 | PUB-2 | Plans & Pricing | Tier cards (Gold/Silver/Junior); entitlement table; member vs walk-in rates per sport; Join / Book-trial buttons (login prompt) | E2 |
 | PUB-3 | Facilities & Availability | Sport tabs; week free/busy grid per facility (no personal data); Book prompt (login) | E3 |
 | PUB-4 | Shop Catalogue | Category filters; product cards; stock status | E4 |
@@ -216,7 +219,7 @@ One responsive web app (D-021). Page IDs are for reference in tasks and tests. "
 
 | ID | Page | Sections | Req |
 |---|---|---|---|
-| AUTH-1 | Sign-up | Name, email, password, phone, date of birth; Junior branch (guardian name/contact + consent tick with text version) | X5, X6 |
+| AUTH-1 | Sign-up (Implemented) | Multi-step Wizard with dynamic minor detection:<br>• Step 1: Personal Info (Full Name, Email, Phone +91, DOB with under-18 alert)<br>• Step 2: Account Security (Password with 4-level strength meter, confirm password match check, toggle visibility)<br>• Step 3: Choose Plan (Interactive Gold, Silver, Junior selection cards)<br>• Step 4 (Conditional if <18): Guardian Consent (Guardian name, email, phone, DPDP Act 2023 legal consent checkbox)<br>• Step 5: Review Application (Summary review with Edit jumps, Terms agreement, and submission) | X5, X6 |
 | AUTH-2 | Login | Email + password; reset link | X5 |
 | AUTH-3 | Reset Password | Request + set new password | X5 |
 | AUTH-4 | Pending Consent | Explains the wait; status; resend guardian link | X6 |

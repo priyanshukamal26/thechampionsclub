@@ -9,10 +9,10 @@
 | Root folder | `D:\Projects\thechampionsclub` |
 | Docs folder | `D:\Projects\thechampionsclub\docs\` |
 | Docs created | 2026-11-21 (Session 1) |
-| Last updated | 2026-11-21 (Session 1, extended: design discussion, decisions D-021…D-032, page inventory, backend-first phase plan) |
-| Sessions completed | 1 (planning, feasibility, page/flow design; no code) |
-| Current phase | **P0 – Planning & design (in progress; milestone M0 pending)** |
-| Code written so far | **None** (verify on disk; this file only records what was reported) |
+| Last updated | 2026-11-21 (Session 2: Landing Page & Multi-Step Registration built with Awwwards-level design, Next.js 15, Tailwind v4, Framer Motion; decisions D-033…D-035 confirmed) |
+| Sessions completed | 2 (planning, feasibility, landing page & registration implementation complete and build-verified) |
+| Current phase | **P1 – Foundation & auth (Frontend shell & public pages live; DB & Supabase pending)** |
+| Code written so far | **Next.js 15 App, Tailwind v4, Framer Motion**: Landing page (10 sections), Multi-step registration wizard (5 steps with minor detection & DPDP consent); production build verified (`next build` 0 errors) |
 | Next session starts at | See section 8 "NEXT SESSION TASK" |
 
 ---
@@ -90,18 +90,18 @@ Phase and task detail lives in `03_ROADMAP_AND_FEATURES.md` section 1 (tasks P0.
 | Phase | Name | Milestone | Status |
 |---|---|---|---|
 | P0 | Planning & design | M0 Design frozen | **In progress** — P0.1–P0.6 done; P0.7–P0.12 pending |
-| P1 | Foundation & auth | M1 Skeleton live | Not started |
+| P1 | Foundation & auth | M1 Skeleton live | **In progress** — Next.js 15 app shell, Landing page, Multi-step registration built & verified; Supabase backend integration next |
 | P2 | Membership & accounts | M2 Members work | Not started |
 | P3 | Facilities, payments adapter, booking engine | M3 Booking engine proven | Not started |
 | P4 | Gear shop | M4 One shelf | Not started |
 | P5 | Bar & kitchen | M5 Bar runs | Not started |
-| P6 | Public site & leads | M6 Visitor to member | Not started |
+| P6 | Public site & leads | M6 Visitor to member | **In progress** — Landing & Trial Request UI ready |
 | P7 | Owner finance & HR | M7 Part 1 functionally complete | Not started |
-| P8 | UI design & hardening | M8 Looks finished | Not started (waits for the user's section designs) |
+| P8 | UI design & hardening | M8 Looks finished | **In progress** — High-energy dark athletic design language established |
 | P9 | Seed, deploy, demo | M9 Part 1 delivered | Not started |
 | P10+ | Part 2 unique features | — | Not started |
 
-Facts as of the end of Session 1 (extended): feasibility report delivered; free-tier limits checked (see `02`); decisions D-001…D-032 recorded (see `01`); page inventory (6 portals, 50+ pages) and 11 flows agreed; no code, no repo, no deployments recorded.
+Facts as of the end of Session 2: Landing page (10 sections) and multi-step registration wizard (5 steps) fully implemented with Next.js 15, Tailwind v4, Framer Motion; production build verified (`next build` succeeded with 0 errors). Decisions D-033…D-035 confirmed.
 
 ## 7. Key decisions (summary — full register with statuses in `01_PROJECT_SPEC.md` section 4)
 
@@ -111,7 +111,9 @@ CONFIRMED by the user:
 - **Email + password only** (D-024); public enquiry form without login, rate-limited (D-025).
 - **Juniors have own login; guardian consent recorded** (D-026).
 - Seeded sports: **tennis, padel, badminton, cricket nets** (D-028); bar takes **counter and table orders** (D-029); delivery with **saved address, staff-managed status, OTP, no maps** (D-030).
-- **Frontend framework and look deferred; backend-first** (D-032).
+- **Frontend framework**: Next.js 15 App Router, React 19, Tailwind CSS v4, Framer Motion, Lucide icons (D-033).
+- **High-energy dynamic athletic design**: obsidian dark theme with electric lime (#CCFF00) accents, glow cards, Space Grotesk headings, and micro-interactions (D-034).
+- **Multi-step registration wizard**: with dynamic minor detection (<18) triggering Step 4 Guardian Consent per DPDP Act 2023 (D-035).
 
 PROPOSED (awaiting the user's approval): Supabase backend (D-002), DB-enforced no-overlap bookings (D-003), :00/:30 slots and 60-minute sessions (D-005), daily-cap rule (D-006), social-play model (D-007), price snapshot (D-008), ~5-minute holds (D-009), payment adapters (D-010), AI chain (D-011), synthetic data (D-012), GST configurable (D-013), Junior consent details (D-014, D-027), IST/UTC handling (D-015), avoid Render for stateful needs (D-016), languages (D-017), ML policy (D-018), roles (D-020), prospect accounts (D-031).
 

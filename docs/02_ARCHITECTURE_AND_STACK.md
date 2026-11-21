@@ -15,7 +15,7 @@ Last updated: 2026-11-21 (Session 1, extended). Everything here is PROPOSED unle
 
 | Layer | Choice | Status | Notes |
 |---|---|---|---|
-| Frontend | **DEFERRED (D-032)**. One responsive web app (D-021), installable PWA. Next.js + Tailwind + shadcn/ui was only an initial suggestion | TBD (gate G1) | Public pages need SEO, which favours server-rendered output; decide after the user chooses direction |
+| Frontend | Next.js 15 (App Router), React 19, Tailwind CSS v4, Framer Motion, Lucide icons (D-033, D-034) | CONFIRMED & BUILT | Responsive web app with dynamic high-energy athletic theme, full SSR for SEO on public pages, and fluid client motion |
 | Backend/DB | Supabase: Postgres, Auth, Realtime, Storage, Row Level Security, scheduled jobs, Edge Functions | PROPOSED | Business rules as DB constraints/functions |
 | Auth | Supabase Auth, email + password only (D-024) | CONFIRMED (method) | Email delivery limits for verification/reset on the free plan are UNVERIFIED — check in P1.4 |
 | Frontend hosting | Cloudflare (Pages/Workers) **or** Vercel | **TBD in P1** | Re-verify terms and Next.js compatibility first. Vercel Hobby is non-commercial only (see section 3) |
@@ -161,18 +161,43 @@ UPDATE product_variants
 
 Principle: no external dataset is required for Part 1. The data is synthetic and must be disclosed as synthetic.
 
-## 10. Proposed repository layout (not yet created)
+## 10. Repository layout (as implemented)
 
 ```
 thechampionsclub/
-  docs/                  <- this doc set
-  supabase/
-    migrations/          <- SQL migrations (source of truth for schema)
-    seed/                <- seed + simulator scripts
-    tests/               <- DB invariant tests
-  src/ (or app/)         <- frontend app (framework TBD, D-032)
-  scripts/               <- helper scripts (e.g. simulator, keep-alive)
-  .env.example           <- variable NAMES only
+  docs/                  <- Project documentation set
+  src/
+    app/
+      globals.css        <- Tailwind v4 custom theme tokens & base styles
+      layout.tsx         <- Root layout with Space Grotesk & Inter typography
+      page.tsx           <- Landing Page composing all showcase sections
+      register/
+        page.tsx         <- Multi-step Registration wizard page
+    components/
+      landing/
+        Navbar.tsx       <- Blur backdrop sticky header & mobile drawer
+        Hero.tsx         <- Animated high-energy typography & CTA hero
+        SportsShowcase.tsx <- 4-sport arena specifications & features
+        Stats.tsx        <- Conflict-free guarantee & club impact strip
+        MembershipTeaser.tsx <- Gold, Silver, Junior plan pricing cards
+        AvailabilityStrip.tsx <- Interactive 30-min slot engine preview
+        ShopTeaser.tsx   <- Unified inventory pro gear showcase
+        BarSocial.tsx    <- Cafe kitchen & Friday Night Social spotlight
+        Testimonials.tsx <- Verified member reviews & sports badges
+        LocationContact.tsx <- Clubhouse address, hours & trial enquiry form
+        Footer.tsx       <- Portals, legal, and compliance navigation
+      register/
+        RegistrationWizard.tsx <- State machine & breadcrumb progress tracker
+        steps/
+          PersonalInfo.tsx     <- Name, email, phone, DOB with minor alert
+          CreatePassword.tsx   <- Strength meter & password confirmation
+          ChoosePlan.tsx       <- Plan selection with Junior pre-lock
+          GuardianConsent.tsx  <- DPDP Act 2023 parent/guardian consent
+          Confirmation.tsx     <- Review with step jumps & terms acceptance
+    lib/
+      utils.ts           <- cn() helper using clsx and tailwind-merge
+  next.config.ts         <- Next.js configuration (images, turbopack)
+  package.json           <- Next.js 15, React 19, Tailwind v4, Framer Motion
 ```
 
 Environment variable NAMES to expect (values never in docs): Supabase URL, Supabase anon key, Supabase service-role key (server only), `GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, Telegram bot token + chat id, payment-gateway test keys (if used).
