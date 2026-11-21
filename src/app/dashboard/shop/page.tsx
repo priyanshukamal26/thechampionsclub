@@ -80,6 +80,7 @@ export default function ShopPage() {
 
   const plan = MEMBERSHIP_PLANS[user?.planId || "silver"] ?? MEMBERSHIP_PLANS.silver;
   const discountPct = plan.shopDiscountPct;
+  const isShopOwner = user?.role === "shop_manager" || user?.role === "owner";
 
   const lowStock = useMemo(() => products.filter((p) => p.stock <= p.lowStockAt), [products]);
 
@@ -324,13 +325,13 @@ export default function ShopPage() {
                               <StatusPill tone="danger" className="mt-1">
                                 Out
                               </StatusPill>
-                            ) : low ? (
+                            ) : isShopOwner && low ? (
                               <StatusPill tone="warn" className="mt-1">
                                 Low stock
                               </StatusPill>
-                            ) : (
+                            ) : isShopOwner ? (
                               <div className="mt-1 text-[9.5px] text-muted">reorder at {product.lowStockAt}</div>
-                            )}
+                            ) : null}
                           </td>
                           <td className="text-right">
                             <div className="u-value text-[13.5px] text-ink">{inr(memberPrice(product.price))}</div>
@@ -403,29 +404,52 @@ export default function ShopPage() {
             </div>
           </Panel>
 
-          <Panel className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="u-eyebrow text-clay">Running low</div>
-              <span className="u-value text-[11px] text-muted">{lowStock.length}</span>
-            </div>
-            {lowStock.length === 0 ? (
-              <p className="text-[11.5px] text-muted">Everything is above its reorder level.</p>
-            ) : (
-              <ul className="divide-y divide-line-soft">
-                {lowStock.slice(0, 6).map((product) => (
-                  <li key={product.id} className="flex items-center justify-between gap-2 py-2">
-                    <span className="min-w-0">
-                      <span className="block truncate text-[11.5px] text-ink">{product.name}</span>
-                      <span className="u-mono text-[9px] uppercase tracking-[0.12em] text-muted">{product.sku}</span>
-                    </span>
-                    <StatusPill tone={product.stock === 0 ? "danger" : "warn"}>
-                      {product.stock === 0 ? "Out" : `${product.stock} left`}
-                    </StatusPill>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
+          {isShopOwner ? (
+            <Panel className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="u-eyebrow text-clay">Running low</div>
+                <span className="u-value text-[11px] text-muted">{lowStock.length}</span>
+              </div>
+              {lowStock.length === 0 ? (
+                <p className="text-[11.5px] text-muted">Everything is above its reorder level.</p>
+              ) : (
+                <ul className="divide-y divide-line-soft">
+                  {lowStock.slice(0, 6).map((product) => (
+                    <li key={product.id} className="flex items-center justify-between gap-2 py-2">
+                      <span className="min-w-0">
+                        <span className="block truncate text-[11.5px] text-ink">{product.name}</span>
+                        <span className="u-mono text-[9px] uppercase tracking-[0.12em] text-muted">{product.sku}</span>
+                      </span>
+                      <StatusPill tone={product.stock === 0 ? "danger" : "warn"}>
+                        {product.stock === 0 ? "Out" : `${product.stock} left`}
+                      </StatusPill>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          ) : (
+            <Panel className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="u-eyebrow text-clay">Pro shop services</div>
+                <span className="chip">Desk pickup</span>
+              </div>
+              <div className="space-y-2.5 text-[11.5px]">
+                <div className="border-b border-line-soft pb-2">
+                  <div className="font-semibold text-ink">Racquet Restringing</div>
+                  <div className="text-[10.5px] text-muted">Drop before 18:00 IST for 24h precision stringing on our electronic machine.</div>
+                </div>
+                <div className="border-b border-line-soft pb-2">
+                  <div className="font-semibold text-ink">Demo Racket Programme</div>
+                  <div className="text-[10.5px] text-muted">Members can test any frame on Court 1 for 30 minutes free of charge.</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-ink">Grips & Lead Tape Tuning</div>
+                  <div className="text-[10.5px] text-muted">Free installation at the counter with any grip purchase.</div>
+                </div>
+              </div>
+            </Panel>
+          )}
 
           <Panel tone="ink" className="space-y-3">
             <div className="u-eyebrow text-clay-soft">Need it today?</div>

@@ -34,7 +34,7 @@ export interface RegisterFormData {
 type Step = { id: string; label: string };
 
 export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gold" | "silver" | "junior" }) {
-  const { setUser } = useAuth();
+  const { setUser, signUp } = useAuth();
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: "",
     email: "",
@@ -132,18 +132,15 @@ export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gol
       guardianVerifiedInPerson: false,
     });
 
-    const newUser: ClubUser = {
-      id: `user-${member.id}`,
-      email: member.email,
-      fullName: member.fullName,
-      role: "member",
-      status: member.status === "pending_consent" ? "pending_consent" : "active_member",
-      planId: member.planId,
-      isMinor: member.isMinor,
+    signUp({
+      fullName: formData.fullName,
+      email: formData.email,
+      password: formData.password,
+      planId: formData.planId,
+      isMinor,
       memberId: member.id,
-    };
-    setUser(newUser);
-    localStorage.setItem("champions_user", JSON.stringify(newUser));
+    });
+
     recordAuditLog({
       action: isMinor ? "register_minor_pending_consent" : "register_member",
       entity: "members",

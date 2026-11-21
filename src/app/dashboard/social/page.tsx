@@ -25,6 +25,7 @@ import {
   leaveSocial,
   paySocialGuest,
   socialDateLabel,
+  type SocialPlayerType,
   type SocialSession,
 } from "@/lib/bookings";
 import { getLocalMembers, MEMBERSHIP_PLANS } from "@/lib/membership";
@@ -72,10 +73,13 @@ export default function FridaySocialPage() {
     }
     const name = asGuest ? guestName.trim() : myName;
     if (!name) return;
+    const playerType: SocialPlayerType = asGuest
+      ? "guest"
+      : (plan?.id as SocialPlayerType) || (user?.planId as SocialPlayerType) || "silver";
     const result = joinSocial(session.id, {
       name,
       memberId: asGuest ? undefined : member?.id ?? user?.id,
-      type: asGuest || plan?.id !== "gold" ? "guest" : "gold",
+      type: playerType,
     });
     if (!result.ok || !result.player) {
       note(result.error ?? "Could not join the session.");
@@ -134,6 +138,18 @@ export default function FridaySocialPage() {
 
   const rotation = buildRotation(session, 3);
   const fill = (session.players.length / session.capacity) * 100;
+
+  const getPlayerTierLabel = (p: { name: string; memberId?: string; type: SocialPlayerType }) => {
+    const found = p.memberId
+      ? getLocalMembers().find((m) => m.id === p.memberId)
+      : getLocalMembers().find((m) => m.fullName.toLowerCase() === p.name.toLowerCase());
+    const tier = found ? found.planId : p.type;
+    if (tier === "gold") return "Gold member";
+    if (tier === "silver") return "Silver member";
+    if (tier === "junior") return "Junior prodigy";
+    if (tier === "corporate") return "Corporate member";
+    return "Guest";
+  };
 
   return (
     <div className="mx-auto max-w-[1200px] space-y-6 p-5 sm:p-6 lg:p-8">
@@ -297,7 +313,7 @@ export default function FridaySocialPage() {
                           {player.name} {mine && <span className="text-[9.5px] text-muted">(you)</span>}
                         </div>
                         <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted">
-                          {player.type === "gold" ? "Gold member" : "Guest"}
+                          {getPlayerTierLabel(player)}
                         </div>
                       </div>
                     </div>

@@ -400,58 +400,127 @@ export default function BarPage() {
         </div>
 
         <div className="space-y-4 lg:col-span-4">
-          <Panel>
-            <div className="flex items-center justify-between border-b border-line pb-2">
-              <div>
-                <div className="u-eyebrow text-muted">D3 · running tabs</div>
-                <div className="u-display mt-0.5 text-[13px]">Settle before they leave</div>
-              </div>
-              <Wallet className="h-4 w-4 text-muted" />
-            </div>
-            {tabs.length === 0 ? (
-              <EmptyState title="No open tabs" description="Tabs appear when a member orders on account." className="mt-3" />
-            ) : (
-              <ul className="mt-1 divide-y divide-line-soft">
-                {tabs.map((tab) => (
-                  <li key={tab.id} className="flex items-center justify-between gap-2 py-2.5">
-                    <div className="min-w-0">
-                      <div className="truncate text-[12px] font-medium">{tab.memberName}</div>
-                      <div className="u-mono text-[9.5px] text-muted">
-                        {tab.tableId ? tables.find((t) => t.id === tab.tableId)?.label ?? tab.tableId : "Counter"} · opened{" "}
-                        {formatTime(tab.openedAt)}
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="u-value text-[12px]">{inr(tab.total)}</span>
-                      <button className="btn btn-ink btn-sm" onClick={() => setSettleTarget(tab)}>
-                        Settle
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="mt-3 border-t border-line-soft pt-2 text-[10px] leading-relaxed text-muted">
-              Member discounts are already applied inside each tab total. Settling records the payment mode
-              and closes the table.
-            </p>
-          </Panel>
+          {isStaff ? (
+            <>
+              <Panel>
+                <div className="flex items-center justify-between border-b border-line pb-2">
+                  <div>
+                    <div className="u-eyebrow text-muted">D3 · running tabs</div>
+                    <div className="u-display mt-0.5 text-[13px]">Settle before they leave</div>
+                  </div>
+                  <Wallet className="h-4 w-4 text-muted" />
+                </div>
+                {tabs.length === 0 ? (
+                  <EmptyState title="No open tabs" description="Tabs appear when a member orders on account." className="mt-3" />
+                ) : (
+                  <ul className="mt-1 divide-y divide-line-soft">
+                    {tabs.map((tab) => (
+                      <li key={tab.id} className="flex items-center justify-between gap-2 py-2.5">
+                        <div className="min-w-0">
+                          <div className="truncate text-[12px] font-medium">{tab.memberName}</div>
+                          <div className="u-mono text-[9.5px] text-muted">
+                            {tab.tableId ? tables.find((t) => t.id === tab.tableId)?.label ?? tab.tableId : "Counter"} · opened{" "}
+                            {formatTime(tab.openedAt)}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span className="u-value text-[12px]">{inr(tab.total)}</span>
+                          <button className="btn btn-ink btn-sm" onClick={() => setSettleTarget(tab)}>
+                            Settle
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="mt-3 border-t border-line-soft pt-2 text-[10px] leading-relaxed text-muted">
+                  Member discounts are already applied inside each tab total. Settling records the payment mode
+                  and closes the table.
+                </p>
+              </Panel>
 
-          <Panel tone="deep">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="u-eyebrow text-muted">Kitchen</div>
-                <div className="u-display mt-1 text-[13px]">{kitchen.length} tickets live</div>
-              </div>
-              <ChefHat className="h-5 w-5 text-muted" />
-            </div>
-            <p className="mt-1 text-[10.5px] text-muted">
-              Oldest: {kitchen[0] ? `${formatTime(kitchen[0].placedAt)} · ${kitchen[0].memberName}` : "pass is clear"}
-            </p>
-            <Link href="/dashboard/kitchen" className="btn btn-ink btn-sm btn-block mt-3">
-              Open kitchen display
-            </Link>
-          </Panel>
+              <Panel tone="deep">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="u-eyebrow text-muted">Kitchen</div>
+                    <div className="u-display mt-1 text-[13px]">{kitchen.length} tickets live</div>
+                  </div>
+                  <ChefHat className="h-5 w-5 text-muted" />
+                </div>
+                <p className="mt-1 text-[10.5px] text-muted">
+                  Oldest: {kitchen[0] ? `${formatTime(kitchen[0].placedAt)} · ${kitchen[0].memberName}` : "pass is clear"}
+                </p>
+                <Link href="/dashboard/kitchen" className="btn btn-ink btn-sm btn-block mt-3">
+                  Open kitchen display
+                </Link>
+              </Panel>
+            </>
+          ) : (
+            <>
+              <Panel>
+                <div className="flex items-center justify-between border-b border-line pb-2">
+                  <div>
+                    <div className="u-eyebrow text-muted">My Lounge Tab</div>
+                    <div className="u-display mt-0.5 text-[13px]">Personal account</div>
+                  </div>
+                  <Wallet className="h-4 w-4 text-muted" />
+                </div>
+                {myTab ? (
+                  <div className="mt-3 space-y-3">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[12px] text-muted">Current unsettled total</span>
+                      <span className="u-value text-xl font-bold text-ink">{inr(myTab.total)}</span>
+                    </div>
+                    <div className="text-[11px] text-muted">
+                      {myTab.tableId ? `Seated at ${tables.find((t) => t.id === myTab.tableId)?.label ?? myTab.tableId}` : "Counter tab"} · {myTab.orderCodes.length} order{myTab.orderCodes.length === 1 ? "" : "s"}
+                    </div>
+                    <button
+                      className="btn btn-ink btn-sm btn-block mt-2"
+                      onClick={() => setSettleTarget(myTab)}
+                    >
+                      Settle My Tab ({inr(myTab.total)})
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-3">
+                    <p className="text-[11.5px] text-muted leading-relaxed">
+                      You have no open tab. When you order at any table or at the bar counter, items are added to your personal clubhouse ledger.
+                    </p>
+                  </div>
+                )}
+                <p className="mt-3 border-t border-line-soft pt-2 text-[10px] leading-relaxed text-muted">
+                  {member ? `${MEMBERSHIP_PLANS[member.planId]?.barDiscountPct}% privilege discount` : "Member discount"} is applied automatically.
+                </p>
+              </Panel>
+
+              <Panel tone="deep">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="u-eyebrow text-muted">Club Dining & Lounge</div>
+                    <div className="u-display mt-1 text-[13px]">Service Timings</div>
+                  </div>
+                  <Coffee className="h-5 w-5 text-muted" />
+                </div>
+                <div className="mt-3 space-y-2 text-[11px] text-muted">
+                  <div className="flex justify-between border-b border-line-soft pb-1.5">
+                    <span>Breakfast & Shakes</span>
+                    <span className="font-mono text-ink">07:00 – 11:30 IST</span>
+                  </div>
+                  <div className="flex justify-between border-b border-line-soft pb-1.5">
+                    <span>All-Day Athlete Meals</span>
+                    <span className="font-mono text-ink">12:00 – 22:30 IST</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Evening Social & Bar</span>
+                    <span className="font-mono text-ink">17:00 – 23:00 IST</span>
+                  </div>
+                </div>
+                <p className="mt-3 text-[10.5px] leading-relaxed text-muted">
+                  Fresh post-match meals prepared under Chef Vikram. Orders can be delivered to courts or served at tables.
+                </p>
+              </Panel>
+            </>
+          )}
         </div>
       </div>
 

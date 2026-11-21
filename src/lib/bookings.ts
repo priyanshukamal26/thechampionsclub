@@ -453,7 +453,7 @@ export function checkInBooking(bookingId: string): boolean {
 
 /* ─────────────────────────── Friday Social ─────────────────────────── */
 
-export type SocialPlayerType = "gold" | "guest";
+export type SocialPlayerType = "gold" | "silver" | "junior" | "corporate" | "guest";
 
 export interface SocialPlayer {
   id: string;

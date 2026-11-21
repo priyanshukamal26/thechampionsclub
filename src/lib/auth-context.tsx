@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase, isSupabaseConfigured } from "./supabase";
+import { getLocalMembers } from "./membership";
 
 export type AppRole =
   | "owner"
@@ -78,9 +79,36 @@ interface AuthContextType {
   user: ClubUser | null;
   loading: boolean;
   signIn: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (data: {
+    fullName: string;
+    email: string;
+    password: string;
+    planId: "gold" | "silver" | "junior";
+    isMinor?: boolean;
+    memberId?: string;
+  }) => Promise<{ success: boolean; error?: string; user?: ClubUser }>;
   signOut: () => Promise<void>;
   switchDemoUser: (key: keyof typeof DEMO_USERS) => void;
   setUser: React.Dispatch<React.SetStateAction<ClubUser | null>>;
+}
+
+export function getRegisteredUsers(): Record<string, { email: string; password?: string; user: ClubUser }> {
+  try {
+    const raw = localStorage.getItem("champions_registered_users");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveRegisteredUser(account: { email: string; password?: string; user: ClubUser }) {
+  try {
+    const existing = getRegisteredUsers();
+    existing[account.email.toLowerCase()] = account;
+    localStorage.setItem("champions_registered_users", JSON.stringify(existing));
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -131,6 +159,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const signUp = async (data: {
+    fullName: string;
+    email: string;
+    password: string;
+    planId: "gold" | "silver" | "junior";
+    isMinor?: boolean;
+    memberId?: string;
+  }): Promise<{ success: boolean; error?: string; user?: ClubUser }> => {
+    const cleanEmail = data.email.trim().toLowerCase();
+    const newUser: ClubUser = {
+      id: data.memberId ? `user-${data.memberId}` : crypto.randomUUID(),
+      email: cleanEmail,
+      fullName: data.fullName.trim(),
+      role: "member",
+      status: data.isMinor ? "pending_consent" : "active_member",
+      planId: data.planId,
+      isMinor: data.isMinor,
+      memberId: data.memberId,
+    };
+
+    // 1. Save in registered users cache
+    saveRegisteredUser({
+      email: cleanEmail,
+      password: data.password,
+      user: newUser,
+    });
+
+    // 2. If Supabase is configured, create Supabase Auth user
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.auth.signUp({
+          email: cleanEmail,
+          password: data.password,
+          options: {
+            data: {
+              full_name: data.fullName,
+              role: "member",
+              plan_id: data.planId,
+              is_minor: Boolean(data.isMinor),
+              member_id: data.memberId,
+            },
+          },
+        });
+      } catch (e) {
+        console.warn("Supabase signUp error:", e);
+      }
+    }
+
+    setUser(newUser);
+    localStorage.setItem("champions_user", JSON.stringify(newUser));
+    return { success: true, user: newUser };
+  };
+
   const signIn = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
 
@@ -146,7 +227,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     }
 
-    // 2. If Supabase backend is not configured (offline/mock development)
+    // 2. Check locally registered users (created via registration wizard)
+    const registered = getRegisteredUsers();
+    if (registered[cleanEmail]) {
+      const record = registered[cleanEmail];
+      if (!password || !record.password || record.password === password) {
+        setUser(record.user);
+        localStorage.setItem("champions_user", JSON.stringify(record.user));
+        return { success: true };
+      }
+    }
+
+    // 3. Check if matching seed or local member in the club registry
+    try {
+      const localMember = getLocalMembers().find(
+        (m) => m.email.toLowerCase() === cleanEmail
+      );
+      if (localMember) {
+        const memberUser: ClubUser = {
+          id: `user-${localMember.id}`,
+          email: localMember.email,
+          fullName: localMember.fullName,
+          role: "member",
+          status: localMember.status === "pending_consent" ? "pending_consent" : "active_member",
+          planId: localMember.planId,
+          isMinor: localMember.isMinor,
+          memberId: localMember.id,
+        };
+        setUser(memberUser);
+        localStorage.setItem("champions_user", JSON.stringify(memberUser));
+        return { success: true };
+      }
+    } catch {
+      // Ignore if getLocalMembers throws
+    }
+
+    // 4. Try Supabase Auth when configured
+    if (isSupabaseConfigured && password) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+
+        if (!error && data?.user) {
+          const u: ClubUser = {
+            id: data.user.id,
+            email: data.user.email || cleanEmail,
+            fullName: data.user.user_metadata?.full_name || cleanEmail.split("@")[0],
+            role: data.user.user_metadata?.role || "member",
+            status: data.user.user_metadata?.status || "active_member",
+            planId: data.user.user_metadata?.plan_id,
+          };
+          setUser(u);
+          localStorage.setItem("champions_user", JSON.stringify(u));
+          return { success: true };
+        }
+      } catch (err) {
+        console.warn("Supabase auth error:", err);
+      }
+    }
+
+    // 5. Fallback for offline mode when Supabase is not configured
     if (!isSupabaseConfigured) {
       const fallbackUser: ClubUser = {
         id: crypto.randomUUID(),
@@ -165,67 +307,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           : "member",
         status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",
         planId: cleanEmail.includes("gold") ? "gold" : cleanEmail.includes("junior") ? "junior" : "silver",
-      };
-      setUser(fallbackUser);
-      localStorage.setItem("champions_user", JSON.stringify(fallbackUser));
-      return { success: true };
-    }
-
-    // 3. Try Supabase Auth when configured
-    try {
-      if (password) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-
-        if (error) {
-          const errMsg = error.message?.toLowerCase() || "";
-          if (
-            errMsg.includes("failed to fetch") ||
-            errMsg.includes("fetch failed") ||
-            errMsg.includes("placeholder") ||
-            errMsg.includes("networkerror") ||
-            errMsg.includes("load failed")
-          ) {
-            const fallbackUser: ClubUser = {
-              id: crypto.randomUUID(),
-              email: cleanEmail,
-              fullName: cleanEmail.split("@")[0].toUpperCase(),
-              role: "member",
-              status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",
-              planId: "silver",
-            };
-            setUser(fallbackUser);
-            localStorage.setItem("champions_user", JSON.stringify(fallbackUser));
-            return { success: true };
-          }
-          return { success: false, error: error.message };
-        }
-
-        if (data.user) {
-          const u: ClubUser = {
-            id: data.user.id,
-            email: data.user.email || cleanEmail,
-            fullName: data.user.user_metadata?.full_name || cleanEmail.split("@")[0],
-            role: data.user.user_metadata?.role || "member",
-            status: data.user.user_metadata?.status || "active_member",
-            planId: data.user.user_metadata?.plan_id,
-          };
-          setUser(u);
-          localStorage.setItem("champions_user", JSON.stringify(u));
-          return { success: true };
-        }
-      }
-    } catch {
-      // Fallback local session for seamless development
-      const fallbackUser: ClubUser = {
-        id: crypto.randomUUID(),
-        email: cleanEmail,
-        fullName: cleanEmail.split("@")[0],
-        role: "member",
-        status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",
-        planId: "silver",
       };
       setUser(fallbackUser);
       localStorage.setItem("champions_user", JSON.stringify(fallbackUser));
@@ -257,6 +338,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         loading,
         signIn,
+        signUp,
         signOut,
         switchDemoUser,
         setUser,
