@@ -2,237 +2,145 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Check, Sparkles, Star, Zap, Shield, ArrowRight } from "lucide-react";
+import { ArrowUpRight, Check } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { MEMBERSHIP_PLANS } from "@/lib/membership";
+import { inr } from "@/lib/store";
+import { SectionIntro } from "@/components/ui/kit";
+import { cn } from "@/lib/utils";
 
-interface PlanTier {
-  id: string;
-  name: string;
-  priceMonthly: number;
-  badge?: string;
-  isPopular?: boolean;
-  courtRate: string;
-  shopDiscount: string;
-  barDiscount: string;
-  features: string[];
-  ctaText: string;
-  accent: string;
-}
-
-const plans: PlanTier[] = [
-  {
-    id: "silver",
-    name: "Silver Tier",
-    priceMonthly: 2499,
-    courtRate: "30% off standard hourly rate",
-    shopDiscount: "5% off gear & apparel",
-    barDiscount: "5% off cafe tabs",
-    features: [
-      "Access to all 4 sports courts",
-      "7-day advance booking window",
-      "Max 2 bookings per day (IST)",
-      "Standard cancellation policy",
-      "Digital member QR pass",
-    ],
-    ctaText: "Select Silver",
-    accent: "#888888",
-  },
-  {
-    id: "gold",
-    name: "Gold Champion",
-    priceMonthly: 4999,
-    badge: "Most Popular",
-    isPopular: true,
-    courtRate: "100% Free Court Access (₹0)",
-    shopDiscount: "15% off gear & apparel",
-    barDiscount: "15% automatic cafe discount",
-    features: [
-      "Zero court fees across all 18 arenas",
-      "14-day priority advance booking",
-      "Complimentary Friday Social Nights",
-      "Free racket stringing (2/month)",
-      "Guest passes (4 passes / month)",
-      "Priority cafeteria table reservation",
-    ],
-    ctaText: "Claim Gold Tier",
-    accent: "#CCFF00",
-  },
-  {
-    id: "junior",
-    name: "Junior Prodigy",
-    priceMonthly: 1699,
-    badge: "Under 18 Years",
-    courtRate: "50% off standard hourly rate",
-    shopDiscount: "10% off training gear",
-    barDiscount: "10% off healthy drinks & meals",
-    features: [
-      "Coached academy priority slots",
-      "Guardian DPDP-compliant linked account",
-      "Junior tournament league entry",
-      "Weekend morning net access",
-      "Equipment trial loaner program",
-    ],
-    ctaText: "Register Junior",
-    accent: "#00B4FF",
-  },
-];
+const PLAN_ORDER = ["silver", "gold", "junior"] as const;
+const PLAN_COPY: Record<string, { tag: string; line: string; cta: string }> = {
+  silver: { tag: "Standard", line: "The everyday player's card.", cta: "Choose Silver" },
+  gold: { tag: "Premium", line: "Zero court fees, all season.", cta: "Choose Gold" },
+  junior: { tag: "Under 18", line: "For the next generation.", cta: "Register a junior" },
+};
 
 export default function MembershipTeaser() {
   const { user } = useAuth();
-  const [annualBilling, setAnnualBilling] = useState(false);
+  const [annual, setAnnual] = useState(false);
 
   return (
-    <section id="membership" className="py-28 bg-[#0A0A0A] relative overflow-hidden">
-      {/* Background Accent */}
-      <div className="absolute top-1/3 -right-40 w-[600px] h-[600px] bg-[#CCFF00]/10 rounded-full blur-[200px] pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-[#CCFF00] font-bold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Tailored For Your Sporting Lifestyle</span>
-          </div>
-          <h2 className="font-[family-name:var(--font-space-grotesk)] text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight uppercase text-white">
-            Membership <span className="text-[#CCFF00]">Tiers</span>
-          </h2>
-          <p className="mt-4 text-sm md:text-base text-[#888888]">
-            Transparent pricing with zero hidden surcharges. Full self-service booking, exclusive club perks, and instant recognition.
-          </p>
-
-          {/* Billing Interval Toggle */}
-          <div className="mt-8 inline-flex items-center gap-3 bg-[#141414] border border-[#1F1F1F] p-1.5 rounded-full">
+    <section id="membership" className="border-b border-line bg-paper-deep py-16 md:py-24">
+      <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <SectionIntro
+            index="03"
+            kicker="Membership"
+            title={<>Choose your <span className="u-serif italic text-clay">standing.</span></>}
+            description="Three tiers, one club. Every plan sets your court rate, your shop and bar discount, and your place on the Friday social roster."
+          />
+          <div className="inline-flex items-center gap-1 self-start rounded-full border border-ink p-1">
             <button
-              onClick={() => setAnnualBilling(false)}
-              className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-                !annualBilling
-                  ? "bg-[#CCFF00] text-[#0A0A0A] shadow-md"
-                  : "text-[#888888] hover:text-white"
-              }`}
+              onClick={() => setAnnual(false)}
+              className={cn(
+                "rounded-full px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition",
+                !annual ? "bg-ink text-chalk" : "text-muted hover:text-ink"
+              )}
             >
-              Billed Monthly
+              Monthly
             </button>
             <button
-              onClick={() => setAnnualBilling(true)}
-              className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                annualBilling
-                  ? "bg-[#CCFF00] text-[#0A0A0A] shadow-md"
-                  : "text-[#888888] hover:text-white"
-              }`}
+              onClick={() => setAnnual(true)}
+              className={cn(
+                "flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition",
+                annual ? "bg-ink text-chalk" : "text-muted hover:text-ink"
+              )}
             >
-              <span>Annual Billing</span>
-              <span className="text-[10px] bg-[#FF4D00] text-white px-2 py-0.5 rounded-full font-black uppercase">
-                Save 20%
-              </span>
+              Annual <span className="rounded-full bg-clay px-1.5 py-0.5 text-[8px] text-chalk">save 20%</span>
             </button>
           </div>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {plans.map((plan, index) => {
-            const finalPrice = annualBilling
-              ? Math.round(plan.priceMonthly * 0.8)
-              : plan.priceMonthly;
-
-            return (
-              <motion.div
-                key={plan.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.15 }}
-                className={`relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-300 ${
-                  plan.isPopular
-                    ? "bg-[#141414] border-2 border-[#CCFF00] shadow-[0_0_40px_rgba(204,255,0,0.15)] scale-[1.02] z-20"
-                    : "bg-[#141414]/70 border border-[#1F1F1F] hover:border-[#333333]"
-                }`}
-              >
-                {/* Popular Ribbon */}
-                {plan.badge && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                    <span className="bg-[#CCFF00] text-[#0A0A0A] text-[11px] font-extrabold uppercase tracking-widest px-4 py-1 rounded-full shadow-lg flex items-center gap-1.5">
-                      <Star className="w-3 h-3 fill-current" />
-                      {plan.badge}
-                    </span>
-                  </div>
-                )}
-
-                <div>
-                  {/* Card Title & Cost */}
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold uppercase tracking-tight text-white">
-                      {plan.name}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-baseline gap-2 mb-6">
-                    <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white font-[family-name:var(--font-space-grotesk)]">
-                      ₹{finalPrice.toLocaleString("en-IN")}
-                    </span>
-                    <span className="text-xs uppercase tracking-wider text-[#888888] font-semibold">
-                      / month + GST
-                    </span>
-                  </div>
-
-                  {/* Core Entitlement Highlights */}
-                  <div className="space-y-3 py-4 mb-6 border-y border-[#1F1F1F]">
-                    <div className="flex items-center gap-2.5 text-xs text-white">
-                      <Zap className="w-4 h-4 text-[#CCFF00]" />
-                      <span className="font-semibold text-[#CCCCCC]">Court Rate:</span>
-                      <span className="text-[#CCFF00] font-bold">{plan.courtRate}</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-xs text-white">
-                      <Shield className="w-4 h-4 text-[#00B4FF]" />
-                      <span className="font-semibold text-[#CCCCCC]">Pro Shop:</span>
-                      <span className="text-white font-medium">{plan.shopDiscount}</span>
-                    </div>
-                    <div className="flex items-center gap-2.5 text-xs text-white">
-                      <Sparkles className="w-4 h-4 text-[#FF4D00]" />
-                      <span className="font-semibold text-[#CCCCCC]">Bar & Lounge:</span>
-                      <span className="text-white font-medium">{plan.barDiscount}</span>
-                    </div>
-                  </div>
-
-                  {/* Features List */}
-                  <div className="space-y-3 mb-8">
-                    <div className="text-[11px] uppercase tracking-wider text-[#888888] font-bold">
-                      What&apos;s Included:
-                    </div>
-                    {plan.features.map((feat) => (
-                      <div key={feat} className="flex items-start gap-2.5 text-xs text-[#AAAAAA]">
-                        <Check className="w-4 h-4 text-[#CCFF00] flex-shrink-0 mt-0.5" />
-                        <span>{feat}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* CTA Link */}
-                <Link
-                  href={user ? "/dashboard/pass" : `/register?plan=${plan.id}`}
-                  className={`w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
-                    plan.isPopular
-                      ? "bg-[#CCFF00] text-[#0A0A0A] hover:bg-[#a8cc00] shadow-[0_0_20px_rgba(204,255,0,0.3)] hover:shadow-[0_0_30px_rgba(204,255,0,0.5)]"
-                      : "bg-[#1F1F1F] text-white hover:bg-[#2A2A2A] hover:text-[#CCFF00]"
-                  }`}
+        <div className="mt-12 overflow-hidden rounded-2xl border border-ink bg-chalk">
+          <div className="grid grid-cols-1 divide-y divide-line md:grid-cols-3 md:divide-x md:divide-y-0">
+            {PLAN_ORDER.map((id) => {
+              const plan = MEMBERSHIP_PLANS[id];
+              const copy = PLAN_COPY[id];
+              const price = annual ? Math.round(plan.priceAnnual / 12) : plan.priceMonthly;
+              const isGold = id === "gold";
+              return (
+                <div
+                  key={id}
+                  className={cn(
+                    "relative flex flex-col justify-between p-6 sm:p-8",
+                    isGold ? "bg-ink text-chalk" : "bg-chalk text-ink"
+                  )}
                 >
-                  <span>{user ? "View Tier In Pass" : plan.ctaText}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </motion.div>
-            );
-          })}
+                  {isGold && (
+                    <span className="absolute right-5 top-5 rounded-full border border-clay-soft/40 px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.16em] text-clay-soft">
+                      Most chosen
+                    </span>
+                  )}
+                  <div>
+                    <div className={cn("u-eyebrow", isGold ? "text-clay-soft" : "text-clay")}>{copy.tag}</div>
+                    <h3 className={cn("u-display mt-3 text-3xl", isGold ? "text-chalk" : "text-ink")}>{plan.name}</h3>
+                    <p className={cn("mt-1 text-[12px]", isGold ? "text-chalk/50" : "text-muted")}>{copy.line}</p>
+
+                    <div className="mt-7 flex items-end gap-1.5">
+                      <span className={cn("u-value text-[clamp(2rem,3.6vw,2.9rem)] leading-none", isGold ? "text-chalk" : "text-ink")}>
+                        {inr(price)}
+                      </span>
+                      <span className={cn("mb-1 font-mono text-[9px] uppercase tracking-[0.14em]", isGold ? "text-chalk/40" : "text-muted")}>
+                        / month
+                      </span>
+                    </div>
+                    <div className={cn("mt-1 font-mono text-[8.5px] uppercase tracking-[0.14em]", isGold ? "text-chalk/35" : "text-muted/80")}>
+                      {annual ? "Billed annually · " + inr(plan.priceAnnual) : "Billed monthly · + GST"}
+                    </div>
+
+                    <div className={cn("mt-6 space-y-2.5 border-t pt-5", isGold ? "border-line-inverse" : "border-line")}>
+                      <Row label="Court rate" value={plan.courtDiscountText} dark={isGold} accent />
+                      <Row label="Pro shop" value={plan.shopDiscountPct + "% privilege discount"} dark={isGold} />
+                      <Row label="Bar & café" value={plan.barDiscountPct + "% off every tab"} dark={isGold} />
+                      <Row label="Friday social" value={plan.freeFridaySocial ? "Included" : "₹400 guest pass"} dark={isGold} />
+                      <Row label="Daily cap" value={plan.dailyCap + " sessions / day"} dark={isGold} />
+                    </div>
+
+                    <ul className="mt-5 space-y-2">
+                      {plan.features.slice(0, 3).map((feature) => (
+                        <li key={feature} className={cn("flex items-start gap-2 text-[11.5px] leading-snug", isGold ? "text-chalk/65" : "text-muted")}>
+                          <Check className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", isGold ? "text-clay-soft" : "text-court")} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <Link
+                    href={user ? "/dashboard/pass" : "/register?plan=" + id}
+                    className={cn(
+                      "btn btn-block mt-8",
+                      isGold ? "btn-clay" : id === "junior" ? "btn-outline" : "btn-ink"
+                    )}
+                  >
+                    {user ? "View in dashboard" : copy.cta} <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Walk-in notice */}
-        <div className="mt-12 text-center p-6 rounded-2xl bg-[#141414]/40 border border-[#1F1F1F] max-w-2xl mx-auto">
-          <p className="text-xs text-[#888888]">
-            <span className="text-white font-bold">Not ready for a plan?</span> Walk-in and guest court rates are available at standard peak and off-peak pricing. Booking opens 24 hours prior subject to member reservations.
+        <div className="mt-6 flex flex-col justify-between gap-3 border-t border-line pt-5 text-[11px] text-muted sm:flex-row sm:items-center">
+          <p>
+            <span className="font-semibold text-ink">Not ready for a plan?</span> Walk-in courts are available at a
+            15% premium, subject to member bookings.
           </p>
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em]">GST-compliant invoicing · DPDP consent for juniors</span>
         </div>
       </div>
     </section>
+  );
+}
+
+function Row({ label, value, dark, accent }: { label: string; value: string; dark?: boolean; accent?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className={cn("font-mono text-[9px] uppercase tracking-[0.12em]", dark ? "text-chalk/40" : "text-muted")}>{label}</span>
+      <span className={cn("text-right text-[11.5px] font-medium", accent ? (dark ? "text-clay-soft" : "text-clay") : dark ? "text-chalk/80" : "text-ink/80")}>
+        {value}
+      </span>
+    </div>
   );
 }

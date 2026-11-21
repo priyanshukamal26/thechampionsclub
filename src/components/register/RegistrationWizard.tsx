@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, UserCheck } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check, UserCheck } from "lucide-react";
 import PersonalInfo from "./steps/PersonalInfo";
 import CreatePassword from "./steps/CreatePassword";
 import ChoosePlan from "./steps/ChoosePlan";
@@ -10,6 +11,9 @@ import GuardianConsent from "./steps/GuardianConsent";
 import Confirmation from "./steps/Confirmation";
 import { useAuth, ClubUser } from "@/lib/auth-context";
 import { recordAuditLog } from "@/lib/audit";
+import { MEMBERSHIP_PLANS } from "@/lib/membership";
+import { inr } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 export interface RegisterFormData {
   fullName: string;
@@ -26,7 +30,9 @@ export interface RegisterFormData {
   termsAccepted: boolean;
 }
 
-export default function RegistrationWizard() {
+type Step = { id: string; label: string };
+
+export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gold" | "silver" | "junior" }) {
   const { setUser } = useAuth();
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: "",
@@ -35,7 +41,7 @@ export default function RegistrationWizard() {
     dob: "",
     password: "",
     confirmPassword: "",
-    planId: "gold",
+    planId: initialPlan ?? "gold",
     guardianName: "",
     guardianEmail: "",
     guardianPhone: "",
@@ -48,12 +54,11 @@ export default function RegistrationWizard() {
 
   // Helper to determine if user is a minor (<18)
   const isMinor = Boolean(
-    formData.dob &&
-      new Date().getFullYear() - new Date(formData.dob).getFullYear() < 18
+    formData.dob && new Date().getFullYear() - new Date(formData.dob).getFullYear() < 18
   );
 
   // Steps definition based on minor status
-  const steps = isMinor
+  const steps: Step[] = isMinor
     ? [
         { id: "personal", label: "Details" },
         { id: "password", label: "Security" },
@@ -106,95 +111,138 @@ export default function RegistrationWizard() {
     setCurrentStepIndex(index);
   };
 
+  /* ── Submitted: application logged ─────────────────────────────────────── */
   if (submitted) {
+    const plan = MEMBERSHIP_PLANS[formData.planId];
+    const firstName = formData.fullName.trim().split(" ")[0] || "athlete";
     return (
-      <div className="bg-white rounded-[26px] p-7 md:p-10 text-center shadow-[0_20px_50px_-15px_rgba(59,130,246,0.08),0_0_1px_1px_rgba(226,232,240,0.8)] border border-slate-100">
-        <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#3B82F6] flex items-center justify-center mx-auto mb-4 border border-blue-200/60 shadow-sm">
-          <UserCheck className="w-7 h-7" />
-        </div>
-        <span className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-[#3B82F6] block mb-1">
-          Registration Complete
-        </span>
-        <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl sm:text-3xl font-extrabold text-[#0F172A] mb-2 leading-tight">
-          Welcome to The Champions Club, {formData.fullName.split(" ")[0]}!
-        </h2>
-        <p className="text-xs text-[#64748B] max-w-md mx-auto leading-relaxed mb-5">
-          {isMinor
-            ? "Your Junior Prodigy application is queued under `pending_consent`. A verification link has been dispatched to your guardian's email for DPDP Act validation."
-            : `Your membership application has been logged for ${formData.planId.toUpperCase()} tier. You can now use your email to access trial bookings and live court availability.`}
-        </p>
-
-        <div className="p-4 rounded-xl bg-[#F8FAFC] border border-slate-200/80 max-w-sm mx-auto text-left text-xs mb-5 space-y-2">
-          <div className="flex justify-between text-[#64748B]">
-            <span>Account Email:</span>
-            <span className="text-[#0F172A] font-mono font-medium">{formData.email}</span>
-          </div>
-          <div className="flex justify-between text-[#64748B]">
-            <span>Assigned Plan:</span>
-            <span className="text-[#3B82F6] uppercase font-bold">{formData.planId}</span>
-          </div>
-          <div className="flex justify-between text-[#64748B]">
-            <span>Status:</span>
-            <span className="text-[#0F172A] font-medium">{isMinor ? "Pending Guardian Consent" : "Active Prospect"}</span>
+      <div className="card overflow-hidden">
+        <div className="panel-ink relative overflow-hidden px-5 py-6 sm:px-7">
+          <div aria-hidden className="u-court-grid-inv pointer-events-none absolute inset-0 opacity-40" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="u-eyebrow text-clay-soft">
+                {isMinor ? "Application logged · pending guardian consent" : "Application logged · active prospect"}
+              </div>
+              <h2 className="u-display mt-2 text-[clamp(1.6rem,3vw,2.2rem)] text-chalk">
+                Welcome to the club,{" "}
+                <span className="u-serif italic normal-case tracking-normal text-clay-soft">
+                  {firstName}
+                </span>
+              </h2>
+            </div>
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-line-inverse text-court-soft sm:h-14 sm:w-14">
+              <UserCheck className="h-6 w-6" aria-hidden />
+            </span>
           </div>
         </div>
 
-        <a
-          href="/dashboard"
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-[#DDE7FF] to-[#E7E2FF] hover:from-[#D2DEFF] hover:to-[#DDD7FF] text-[#1E293B] font-bold text-xs uppercase tracking-wider px-7 py-3 rounded-xl border border-blue-200/60 shadow-sm transition-all"
-        >
-          <span>Open Athlete Dashboard & Book</span>
-          <ArrowRight className="w-4 h-4" />
-        </a>
+        <div className="p-5 sm:p-6">
+          <p className="max-w-xl text-[12.5px] leading-relaxed text-muted">
+            {isMinor
+              ? "Your Junior Prodigy application is queued as pending consent. A verification link has been dispatched to your guardian's email for DPDP Act validation — court bookings and transactions unlock once a guardian verifies."
+              : `Your membership application has been logged for the ${plan?.name ?? formData.planId} tier. Use your email to access trial bookings and live court availability.`}
+          </p>
+
+          <dl className="mt-4 divide-y divide-line rounded-xl border border-line bg-paper-soft px-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted">Account email</dt>
+              <dd className="u-mono break-all text-[11.5px] text-ink">{formData.email || "—"}</dd>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted">Assigned plan</dt>
+              <dd className="text-right">
+                <span className="text-[11.5px] font-semibold text-ink">{plan?.name ?? formData.planId}</span>
+                <span className="ml-2 u-value text-[11.5px] text-muted">
+                  {plan ? `${inr(plan.priceMonthly)}/mo` : "—"}
+                </span>
+              </dd>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted">Status</dt>
+              <dd className="text-[11.5px] font-medium text-ink">
+                {isMinor ? "Pending guardian consent" : "Active prospect"}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Link href="/dashboard" className="btn btn-clay">
+              Open athlete dashboard
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+            {isMinor && (
+              <Link href="/pending-consent" className="btn btn-outline">
+                Guardian consent status
+              </Link>
+            )}
+          </div>
+
+          <p className="mt-4 font-mono text-[8.5px] uppercase leading-relaxed tracking-[0.16em] text-muted/80">
+            Session saved to champions_user · application reference {formData.email || "pending"}
+          </p>
+        </div>
       </div>
     );
   }
 
+  /* ── Wizard ────────────────────────────────────────────────────────────── */
   return (
-    <div className="bg-white rounded-[26px] p-5 sm:p-7 md:p-8 shadow-[0_20px_50px_-15px_rgba(59,130,246,0.08),0_0_1px_1px_rgba(226,232,240,0.8)] border border-slate-100 flex flex-col justify-between">
-      {/* Wizard Step Indicator Bar */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[10px] uppercase tracking-widest text-[#64748B] font-bold">
-            Step {currentStepIndex + 1} of {steps.length}
-          </div>
-          <div className="text-xs font-bold text-[#3B82F6] uppercase tracking-wider">
+    <div className="card flex flex-col p-5 sm:p-6">
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="u-eyebrow text-clay">
+            Application · step {currentStepIndex + 1} of {steps.length}
+          </span>
+          <span className="inline-flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-ink">
+            <Check className="h-3 w-3 text-court" aria-hidden />
             {steps[currentStepIndex].label}
-          </div>
+          </span>
         </div>
 
-        {/* Breadcrumb line */}
-        <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+        <ol
+          className="mt-3 grid gap-2 sm:gap-3"
+          style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+          aria-label="Application steps"
+        >
           {steps.map((step, idx) => {
             const isCompleted = idx < currentStepIndex;
             const isCurrent = idx === currentStepIndex;
-
             return (
-              <div key={step.id} className="flex flex-col gap-1">
+              <li key={step.id} className="min-w-0">
                 <div
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    isCompleted
-                      ? "bg-[#3B82F6]"
-                      : isCurrent
-                      ? "bg-[#93C5FD]"
-                      : "bg-[#E2E8F0]"
-                  }`}
+                  className={cn(
+                    "h-[3px] rounded-full transition-all duration-300",
+                    isCurrent ? "bg-clay" : isCompleted ? "bg-ink" : "bg-line"
+                  )}
                 />
-                <span
-                  className={`text-[9.5px] uppercase tracking-wider font-semibold truncate ${
-                    isCurrent ? "text-[#0F172A]" : isCompleted ? "text-[#3B82F6]" : "text-[#94A3B8]"
-                  }`}
-                >
-                  {step.label}
-                </span>
-              </div>
+                <div className="mt-1.5 flex items-baseline gap-1.5">
+                  <span
+                    className={cn(
+                      "u-mono text-[8.5px] tracking-[0.08em]",
+                      isCurrent ? "text-clay" : isCompleted ? "text-ink" : "text-muted/70"
+                    )}
+                  >
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <span
+                    className={cn(
+                      "truncate font-mono text-[8.5px] uppercase tracking-[0.1em]",
+                      isCurrent ? "text-ink" : isCompleted ? "text-ink/70" : "text-muted/70"
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
       </div>
 
-      {/* Step Content */}
-      <div className="flex-1 flex flex-col justify-between min-h-0">
+      <div className="u-rule my-4" />
+
+      <div className="flex-1">
         <AnimatePresence mode="wait">
           {currentStepIndex === 0 && (
             <motion.div
@@ -204,11 +252,7 @@ export default function RegistrationWizard() {
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.2 }}
             >
-              <PersonalInfo
-                formData={formData}
-                updateFormData={updateFormData}
-                isMinor={isMinor}
-              />
+              <PersonalInfo formData={formData} updateFormData={updateFormData} isMinor={isMinor} />
             </motion.div>
           )}
 
@@ -220,10 +264,7 @@ export default function RegistrationWizard() {
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.2 }}
             >
-              <CreatePassword
-                formData={formData}
-                updateFormData={updateFormData}
-              />
+              <CreatePassword formData={formData} updateFormData={updateFormData} />
             </motion.div>
           )}
 
@@ -235,11 +276,7 @@ export default function RegistrationWizard() {
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.2 }}
             >
-              <ChoosePlan
-                formData={formData}
-                updateFormData={updateFormData}
-                isMinor={isMinor}
-              />
+              <ChoosePlan formData={formData} updateFormData={updateFormData} isMinor={isMinor} />
             </motion.div>
           )}
 
@@ -251,10 +288,7 @@ export default function RegistrationWizard() {
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.2 }}
             >
-              <GuardianConsent
-                formData={formData}
-                updateFormData={updateFormData}
-              />
+              <GuardianConsent formData={formData} updateFormData={updateFormData} />
             </motion.div>
           )}
 
@@ -275,33 +309,24 @@ export default function RegistrationWizard() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
 
-        {/* Wizard Control Buttons */}
-        <div className="pt-3.5 mt-3.5 border-t border-slate-100 flex items-center justify-between gap-4">
-          {currentStepIndex > 0 ? (
-            <button
-              type="button"
-              onClick={handleBack}
-              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#64748B] hover:text-[#0F172A] px-4 py-2 rounded-xl hover:bg-slate-100 transition-all"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back</span>
-            </button>
-          ) : (
-            <div />
-          )}
-
-          <button
-            type="button"
-            onClick={handleNext}
-            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#DDE7FF] to-[#E7E2FF] hover:from-[#D2DEFF] hover:to-[#DDD7FF] text-[#1E293B] font-bold text-xs uppercase tracking-wider px-7 py-2.5 rounded-xl border border-blue-200/60 shadow-sm active:scale-95 transition-all"
-          >
-            <span>
-              {currentStepIndex === steps.length - 1 ? "Submit Registration" : "Next Step"}
-            </span>
-            <ArrowRight className="w-3.5 h-3.5" />
+      <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">
+        {currentStepIndex > 0 ? (
+          <button type="button" onClick={handleBack} className="btn btn-outline btn-sm">
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+            Back
           </button>
-        </div>
+        ) : (
+          <span className="font-mono text-[8.5px] uppercase leading-relaxed tracking-[0.16em] text-muted">
+            Encrypted · DPDP Act 2023
+          </span>
+        )}
+
+        <button type="button" onClick={handleNext} className="btn btn-clay">
+          {currentStepIndex === steps.length - 1 ? "Submit application" : "Continue"}
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </button>
       </div>
     </div>
   );

@@ -1,200 +1,179 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Check } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { SectionIntro } from "@/components/ui/kit";
+import { cn } from "@/lib/utils";
 
-interface SportCardProps {
+interface Sport {
   id: string;
-  title: string;
-  category: string;
-  tagline: string;
+  index: string;
+  name: string;
+  short: string;
+  code: string;
+  count: string;
+  surface: string;
+  blurb: string;
   specs: string[];
-  badge: string;
-  icon: string;
-  statusText: string;
-  highlightNumber: string;
-  highlightLabel: string;
+  price: string;
 }
 
-const sportsData: SportCardProps[] = [
+const SPORTS: Sport[] = [
   {
     id: "tennis",
-    title: "Championship Tennis",
-    category: "Racquet Sports",
-    tagline: "Ultra-cushioned ITF standard synthetic courts with 800-lux broadcast grade LED lighting.",
-    specs: ["4 Floodlit Courts", "30 & 60 Min Sessions", "Ball Machine Rental", "Racket Restringing"],
-    badge: "Tournament Grade",
-    icon: "🎾",
-    statusText: "Live Booking",
-    highlightNumber: "4",
-    highlightLabel: "ITF Pro Courts",
+    index: "01",
+    name: "Tennis",
+    short: "Tennis",
+    code: "T-01 — T-06",
+    count: "6 courts",
+    surface: "ITF hard, red clay & natural grass",
+    blurb:
+      "Centre courts lit to broadcast standard, two European clay courts for the long rallies, and a grass court that only opens in the cool months.",
+    specs: ["800-lux LED floodlighting", "Ball machine & stringing desk", "Coach-led ladder every Tuesday", "From ₹800 / hour"],
+    price: "₹800",
   },
   {
     id: "padel",
-    title: "Panoramic Padel",
-    category: "Modern Racquet",
-    tagline: "World Padel Tour specification glass enclosures with seamless panoramic views and super-grip turf.",
-    specs: ["4 Glass Panoramic Courts", "Italian Supercourt Turf", "Duo & Quad Play", "Equipment Rental"],
-    badge: "Fastest Growing",
-    icon: "🏓",
-    statusText: "High Demand",
-    highlightNumber: "12mm",
-    highlightLabel: "Tempered Glass",
+    index: "02",
+    name: "Padel",
+    short: "Padel",
+    code: "P-01 — P-04",
+    count: "4 courts",
+    surface: "12mm panoramic glass enclosures",
+    blurb:
+      "The fastest-growing racket sport in the country, played behind panoramic glass on World Padel Tour-grade turf. Book a court, borrow a racket, stay for the social.",
+    specs: ["Panoramic glass walls", "WPT supercourt turf", "Racket rental at the desk", "Doubles-first booking"],
+    price: "₹1,200",
   },
   {
     id: "badminton",
-    title: "Pro Badminton",
-    category: "Indoor Courts",
-    tagline: "Air-conditioned indoor arena with Olympic-grade BWF approved shock-absorbing wooden-vinyl flooring.",
-    specs: ["6 Indoor Courts", "Zero Draft HVAC", "Non-glare Lighting", "Yonex Shuttle Hub"],
-    badge: "BWF Certified",
-    icon: "🏸",
-    statusText: "Climate Controlled",
-    highlightNumber: "BWF",
-    highlightLabel: "Grade 1 Spec",
+    index: "03",
+    name: "Badminton",
+    short: "Badminton",
+    code: "B-01 — B-06",
+    count: "6 halls",
+    surface: "BWF Grade 1 indoor, zero-draft",
+    blurb:
+      "Six air-conditioned halls with shock-absorbing wooden-vinyl floors and non-glare lighting, tuned so the shuttle flies exactly where it should.",
+    specs: ["BWF-approved flooring", "Zero-draft HVAC", "Yonex shuttle hub", "Weekend junior academy"],
+    price: "₹700",
   },
   {
     id: "cricket",
-    title: "Cricket Nets Arena",
-    category: "Precision Training",
-    tagline: "Full-length batting pitches equipped with speed-programmable bowling machines and digital speed tracking.",
-    specs: ["4 Enclosed Net Lanes", "Dual Bowling Machines", "Full Run-Up Tracks", "Video Analysis Ready"],
-    badge: "Automated Feed",
-    icon: "🏏",
-    statusText: "Speed Tracking",
-    highlightNumber: "150+",
-    highlightLabel: "kph Machines",
+    index: "04",
+    name: "Cricket nets",
+    short: "Cricket",
+    code: "C-01 — C-02",
+    count: "2 nets",
+    surface: "Astroturf with programmable machines",
+    blurb:
+      "Full run-up lanes, programmable pace and spin machines, and video-ready bays for the batting session that actually changes your game.",
+    specs: ["150 kph pace machine", "Spin & swing settings", "Video analysis ready", "Coaching on request"],
+    price: "₹600",
   },
 ];
 
 export default function SportsShowcase() {
   const { user } = useAuth();
+  const [active, setActive] = useState(0);
+  const sport = SPORTS[active];
+  const href = user ? "/dashboard/courts" : "/login";
 
   return (
-    <section id="sports" className="py-24 bg-[#EEECE8] relative text-[#1E1C1A]">
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        
-        {/* Editorial Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-8">
-          <div>
-            {/* Chip Badge with Pulse */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E9E6E1] border border-[rgba(30,28,26,0.08)] mb-4">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EE6A1F] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#EE6A1F]" />
-              </span>
-              <span className="text-[11px] uppercase tracking-[0.2em] text-[#77736E] font-semibold">
-                World-Class Sporting Arenas
-              </span>
-            </div>
+    <section id="sports" className="border-b border-line bg-paper py-16 md:py-24">
+      <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <SectionIntro
+            index="01"
+            kicker="Four codes, one clubhouse"
+            title={<>Built for the <span className="u-serif italic text-clay">way you play.</span></>}
+            description="Tennis, padel, badminton and cricket nets — each surface calibrated for its sport, each court bookable in fifteen seconds."
+          />
+          <div className="hidden shrink-0 border-l border-line pl-5 font-mono text-[9px] uppercase tracking-[0.18em] text-muted md:block">
+            <div className="text-ink">18 playable surfaces</div>
+            <div className="mt-1">06:00 — 23:00 · floodlit</div>
+          </div>
+        </div>
 
-            <h2 className="font-[family-name:var(--font-space-grotesk)] text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight uppercase text-[#1E1C1A] leading-[1.05]">
-              Built For <span className="text-[#EE6A1F]">High Performance</span>
-            </h2>
+        <div className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-10">
+          <div className="lg:col-span-5">
+            <div className="border-t border-line">
+              {SPORTS.map((item, i) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActive(i)}
+                  className={cn(
+                    "group flex w-full items-center justify-between gap-4 border-b border-line py-5 text-left transition-colors",
+                    i === active ? "text-ink" : "text-ink/45 hover:text-ink"
+                  )}
+                >
+                  <span className="flex items-baseline gap-4">
+                    <span className={cn("font-mono text-[10px]", i === active ? "text-clay" : "text-muted/60")}>{item.index}</span>
+                    <span className="u-display text-[clamp(1.7rem,3vw,2.4rem)]">{item.name}</span>
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <span className="hidden font-mono text-[9px] uppercase tracking-[0.16em] text-muted sm:block">{item.count}</span>
+                    <span
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-full border transition",
+                        i === active ? "border-clay bg-clay text-chalk" : "border-line text-muted group-hover:border-ink"
+                      )}
+                    >
+                      <ArrowUpRight className="h-3 w-3" />
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-5 flex items-center gap-3">
+              <span className="h-px flex-1 bg-line" />
+              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted">Walk-in premium +15%</span>
+            </div>
           </div>
 
-          <p className="max-w-md text-sm md:text-[15px] text-[#77736E] leading-relaxed">
-            Every surface, luminaire, and boundary is calibrated to global federation standards for recreational lovers and competitive tournament athletes alike.
-          </p>
-        </div>
-
-        {/* Bento Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {sportsData.map((sport, index) => {
-            return (
-              <motion.div
-                key={sport.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
-                className="group relative bg-[#F5F3EF] border border-[rgba(30,28,26,0.07)] rounded-[22px] p-6 flex flex-col justify-between transition-all duration-300 shadow-[0_2px_10px_rgba(30,28,26,0.03)] hover:shadow-[0_12px_32px_rgba(30,28,26,0.08)] hover:-translate-y-1"
-              >
-                {/* Top Header Row with Chips */}
+          <div className="lg:col-span-7">
+            <motion.div
+              key={sport.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-ink bg-chalk p-6 shadow-[6px_6px_0_0_var(--color-ink)] sm:p-8"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <div className="flex items-center justify-between mb-5">
-                    {/* Category Chip */}
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E9E6E1] border border-[rgba(30,28,26,0.06)] text-[11px] font-medium text-[#77736E]">
-                      <span className="text-sm">{sport.icon}</span>
-                      <span>{sport.category}</span>
-                    </div>
-
-                    {/* Editorial Badge */}
-                    <span className="text-[10.5px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#EEECE8] border border-[rgba(30,28,26,0.08)] text-[#1E1C1A]">
-                      {sport.badge}
-                    </span>
-                  </div>
-
-                  {/* Sport Title */}
-                  <h3 className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold uppercase tracking-tight text-[#1E1C1A] mb-2.5 group-hover:text-[#EE6A1F] transition-colors">
-                    {sport.title}
-                  </h3>
-
-                  {/* Tagline */}
-                  <p className="text-xs text-[#77736E] leading-relaxed mb-6 line-clamp-3">
-                    {sport.tagline}
-                  </p>
-
-                  {/* Micro Metric Banner (quiet editorial motion) */}
-                  <div className="mb-6 p-3 rounded-xl bg-[#EBE8E3] border border-[rgba(30,28,26,0.06)] flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-[#A7A39D] font-semibold">
-                        {sport.highlightLabel}
-                      </div>
-                      <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-[#1E1C1A] leading-none mt-0.5">
-                        {sport.highlightNumber}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-[#77736E]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#3BC45E]" />
-                      <span>{sport.statusText}</span>
-                    </div>
-                  </div>
-
-                  {/* Specs List */}
-                  <ul className="space-y-2.5 pt-4 border-t border-[rgba(30,28,26,0.07)]">
-                    {sport.specs.map((spec) => (
-                      <li key={spec} className="flex items-center gap-2 text-xs text-[#1E1C1A]">
-                        <div className="w-3.5 h-3.5 rounded-full bg-[#E9E6E1] flex items-center justify-center shrink-0">
-                          <Check className="w-2.5 h-2.5 text-[#EE6A1F]" />
-                        </div>
-                        <span className="font-medium text-[#1E1C1A]/90">{spec}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="u-eyebrow text-clay">{sport.code}</div>
+                  <h3 className="u-display mt-2 text-[clamp(2rem,4vw,3rem)] text-ink">{sport.name}</h3>
+                  <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted">{sport.surface}</div>
                 </div>
-
-                {/* Card Footer CTA */}
-                <div className="pt-5 mt-6 border-t border-[rgba(30,28,26,0.07)] flex items-center justify-between">
-                  {user ? (
-                    <Link
-                      href="/dashboard/courts"
-                      className="inline-flex items-center justify-between w-full text-xs font-semibold uppercase tracking-wider text-[#1E1C1A] group-hover:text-[#EE6A1F] transition-colors"
-                    >
-                      <span>Book A Slot</span>
-                      <div className="w-7 h-7 rounded-full bg-[#E9E6E1] group-hover:bg-[#EE6A1F] group-hover:text-white flex items-center justify-center transition-all">
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </div>
-                    </Link>
-                  ) : (
-                    <a
-                      href="#availability"
-                      className="inline-flex items-center justify-between w-full text-xs font-semibold uppercase tracking-wider text-[#1E1C1A] group-hover:text-[#EE6A1F] transition-colors"
-                    >
-                      <span>Book A Slot</span>
-                      <div className="w-7 h-7 rounded-full bg-[#E9E6E1] group-hover:bg-[#EE6A1F] group-hover:text-white flex items-center justify-center transition-all">
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </div>
-                    </a>
-                  )}
+                <div className="text-right">
+                  <div className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-muted">Member rate from</div>
+                  <div className="u-value mt-1 text-2xl text-ink">{sport.price}<span className="font-mono text-[9px] text-muted"> /hr</span></div>
                 </div>
-              </motion.div>
-            );
-          })}
+              </div>
+
+              <p className="mt-6 max-w-xl text-[13px] leading-relaxed text-muted">{sport.blurb}</p>
+
+              <div className="mt-7 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                {sport.specs.map((spec) => (
+                  <div key={spec} className="flex items-center gap-2.5 border-t border-line-soft pt-2.5">
+                    <Check className="h-3.5 w-3.5 shrink-0 text-court" />
+                    <span className="text-[11.5px] text-ink/80">{spec}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
+                <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted">{sport.count} · 60-minute sessions · :00 & :30 starts</span>
+                <Link href={href} className="btn btn-ink btn-sm">
+                  {user ? "Book this court" : "Sign in to book"} <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </motion.div>
+          </div>
         </div>
-
       </div>
     </section>
   );

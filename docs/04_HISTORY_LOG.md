@@ -360,3 +360,89 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - *Why consolidate member services into a unified dashboard rather than discrete standalone pages?* Athletic club members frequently transition between interconnected workflows (e.g. reserving a court, ordering grip tape from the pro shop, and placing a post-match smoothie order to their table). A unified dashboard architecture with a persistent navigation shell provides persistent session context, preserves active tab balances, and minimizes cognitive load while strictly segregating service responsibilities.
 
 **Next session task:** Session 6 — Phase P3/P4: Live Supabase Backend Wiring & Automated Concurrency Testing.
+
+
+---
+
+## Session 6 — 2026-11-21
+
+**Goal of the session:** Audit workspace state following an interrupted AI session, verify production build integrity, document the "Clubhouse Ledger" design system transition and local-first simulation engines, start development servers, and update persistent docs.
+
+**Phase(s):** P2 / P3 / P4 / P5 / P6 / P8 — System Redesign, Local-First Workflow Engines, PWA & Audit.
+
+**What was actually done:**
+- Performed comprehensive codebase audit of all uncommitted files, git log, diffs, and package architecture.
+- Validated the "Clubhouse Ledger" visual design system pivot (`docs/06_DESIGN_SYSTEM.md`) replacing old obsidian-lime with warm paper (`#f2ecdf`), ink (`#17150f`), clay (`#c4502b`), court green (`#1e4433`), and scoreboard mono numerals.
+- Audited the newly authored UI Kit (`@/components/ui/kit.tsx` with 307 lines, `@/components/ui/overlay.tsx` with 176 lines) and custom Tailwind classes in `globals.css`.
+- Audited the 10-section rebuild of the public landing page (`Navbar`, `Hero`, `SportsShowcase`, `AvailabilityStrip`, `ShopTeaser`, `BarSocial`, `Stats`, `MembershipTeaser`, `Testimonials`, `LocationContact`, `Footer`).
+- Audited local-first reactive workflow engines in `src/lib/`:
+  - `bookings.ts` (636 lines): 18 facilities, exclusion logic, 2/day daily cap, plan-based pricing, 12h cancellation policy, Friday Social capacity.
+  - `orders.ts` (610 lines): Pro shop equipment catalog, cart checkout with 18% GST and tier discounts, bar menu, 12 table occupancy states, bar tab ledger with auto member discount, and kitchen ticket state transitions (`dispatched` → `preparing` → `ready` → `served`).
+  - `finance.ts` (740 lines): Journal entries, revenue breakdown by source (Memberships, Courts, Shop, Bar) and mode (UPI, Card, Cash, Plan), GST liability reconciliation, Daily Closing / Z-Report, payroll, and invoices.
+  - `leads.ts` (324 lines): Trial booking reservation capture and CRM lead pipeline.
+  - `store.ts` (167 lines): Reactive localStorage data layer with INR formatting.
+- Audited PWA infrastructure: `manifest.webmanifest`, `sw.js`, icons, `PWAProvider.tsx`, `offline/page.tsx`, `robots.ts`, `sitemap.ts`.
+- Identified midway stoppage points:
+  - Registration Wizard: Step 1 (`PersonalInfo.tsx`) and Step 2 (`CreatePassword.tsx`) refactored; Steps 3, 4, 5 (`ChoosePlan.tsx`, `GuardianConsent.tsx`, `Confirmation.tsx`) remained in legacy blue styling.
+  - Operations Routes: 4 routes (`/dashboard/kitchen`, `/dashboard/owner`, `/dashboard/pos`, `/dashboard/social`) were left as 14-line placeholder stubs.
+  - Unwired Components: `AvailabilityGrid.tsx` and `LookupTab.tsx` / `RegisterTab.tsx` authored but not yet wired to `/dashboard/courts` and `/dashboard/desk`.
+- Resolved Turbopack duplicate build cache corruption by cleaning `.next`.
+- Executed production build (`npm run build`): compiled and prerendered 24 static and dynamic routes with 0 errors.
+- Launched Next.js Turbopack development server in background daemon mode on `http://localhost:3000`.
+- Documented findings in persistent brain artifact `build_audit_and_status_report.md`.
+- Updated all project documentation (`00_MASTER.md`, `01_PROJECT_SPEC.md`, `02_ARCHITECTURE_AND_STACK.md`, `03_ROADMAP_AND_FEATURES.md`, `04_HISTORY_LOG.md`).
+
+**Files created/changed:**
+- Created: `docs/06_DESIGN_SYSTEM.md`
+- Created: `src/components/ui/kit.tsx`, `src/components/ui/overlay.tsx`
+- Created: `src/components/courts/AvailabilityGrid.tsx`
+- Created: `src/components/commerce/OrderTimeline.tsx`, `SettleTabModal.tsx`, `common.tsx`
+- Created: `src/components/desk/LookupTab.tsx`, `RegisterTab.tsx`, `shared.tsx`
+- Created: `src/components/owner/bits.tsx`, `console-data.ts`, `period.ts`
+- Created: `src/components/auth/AuthShell.tsx`, `DemoRoleSwitcher.tsx`
+- Created: `src/components/dashboard/member.ts`
+- Created: `src/components/pwa/PWAProvider.tsx`, `public/manifest.webmanifest`, `public/sw.js`, `public/icon.svg`, and PWA icons
+- Created: `src/app/offline/page.tsx`, `src/app/robots.ts`, `src/app/sitemap.ts`
+- Created: `src/app/dashboard/kitchen/page.tsx`, `owner/page.tsx`, `pos/page.tsx`, `social/page.tsx`
+- Created: `src/lib/bookings.ts`, `orders.ts`, `finance.ts`, `leads.ts`, `store.ts`
+- Modified: `src/app/globals.css`, `layout.tsx`, `page.tsx`, `login/page.tsx`, `register/page.tsx`, `dashboard/layout.tsx`, `dashboard/shop/page.tsx`
+- Modified: `src/components/landing/*` (10 components)
+- Modified: `src/components/register/RegistrationWizard.tsx`, `PersonalInfo.tsx`, `CreatePassword.tsx`
+- Modified: `docs/00_MASTER.md`, `01_PROJECT_SPEC.md`, `02_ARCHITECTURE_AND_STACK.md`, `03_ROADMAP_AND_FEATURES.md`, `04_HISTORY_LOG.md`
+
+**Commands run / outputs:**
+- `npx tsc --noEmit`: 0 errors.
+- `npm run build`: Compiled successfully in 1849ms; TypeScript finished in 1908ms; generated 24 static and dynamic routes in 220ms; 0 errors.
+- `npm run dev`: Background daemon active on `http://localhost:3000` (HTTP 200 on `/`).
+
+**Tests run and results:**
+- Next.js Production Build (`next build`): PASS (24/24 routes prerendered).
+- TypeScript Typecheck (`tsc --noEmit`): PASS.
+- Dev Server HTTP response: PASS (`GET / 200 in 272ms`).
+
+**Commits:** Pending user commit.
+
+**Deployments/URLs:** Local development server running at `http://localhost:3000`.
+
+**Decisions made or changed:**
+- D-038 CONFIRMED: "Clubhouse Ledger" Design System (`docs/06_DESIGN_SYSTEM.md`) established, retiring obsidian-lime in favor of paper, ink, clay, court green, and scoreboard monospace.
+- D-039 CONFIRMED: Local-First Invariant-Enforcing Runtime (`store.ts`, `bookings.ts`, `orders.ts`, `finance.ts`, `leads.ts`) persisting to `localStorage` while enforcing database constraints locally.
+
+**Verified facts (source + date):**
+- None this session.
+
+**Problems hit, causes, fixes:**
+- Problem: Turbopack failed to open persistence database due to an orphaned `LOG 2` duplicate file in `.next/dev/cache/turbopack`. Fix: Cleaned `.next` and restarted dev server.
+- Problem: Automated browser subagent encountered macOS sandbox permission block when accessing Chrome's remote debugging port (`DevToolsActivePort`). Fix: Verified local server directly through background daemon logs and confirmed HTTP 200 responses.
+
+**Not done / carried over:**
+- Registration Wizard Steps 3, 4, 5 redesign (`ChoosePlan.tsx`, `GuardianConsent.tsx`, `Confirmation.tsx`).
+- Wiring `AvailabilityGrid.tsx` into `/dashboard/courts`.
+- Wiring `LookupTab.tsx` and `RegisterTab.tsx` into `/dashboard/desk`.
+- Implementation of the 4 placeholder operation routes (`/dashboard/kitchen`, `/owner`, `/pos`, `/social`).
+
+**Interview notes added:**
+- *Why transition to the Clubhouse Ledger design system?* Premium sports and athletic clubs represent heritage, physicality, and institutional trust. Dark neon SaaS templates feel generic and tech-heavy. Clubhouse Ledger uses tactile paper tones, clay accents, court-line architectural grids, and tabular scoreboard typography to evoke a physical clubhouse ledger or tournament program while maintaining high contrast and accessibility.
+- *Why build local-first workflow engines with DB-shaped invariants?* Building reactive client-side engines that enforce strict relational invariants (slot exclusion, daily caps, stock reservations, ledger reconciliation) allows testing all business rules and complex workflows end-to-end with instant feedback, zero network latency, and seamless offline capability before committing them to PostgreSQL functions.
+
+**Next session task:** Session 7 — Complete the Clubhouse Ledger Unification & Wire Unconnected Modules (finish Registration Wizard steps 3-5; wire court booking & front desk components; implement the 4 placeholder routes for kitchen, owner console, POS, and social play).

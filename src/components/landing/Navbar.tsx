@@ -1,323 +1,186 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowUpRight, Trophy, User, LogOut, Shield } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight, LogOut, Menu, User, X } from "lucide-react";
+import { useAuth, type AppRole } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
+
+const LINKS = [
+  { label: "Sports", href: "#sports", index: "01" },
+  { label: "Membership", href: "#membership", index: "02" },
+  { label: "Availability", href: "#availability", index: "03" },
+  { label: "Pro Shop", href: "#shop", index: "04" },
+  { label: "Friday Social", href: "#bar", index: "05" },
+  { label: "Visit", href: "#contact", index: "06" },
+];
+
+const ROLE_LABEL: Record<AppRole, string> = {
+  owner: "Owner",
+  manager: "Manager",
+  front_desk: "Front desk",
+  bar_staff: "Bar staff",
+  shop_manager: "Shop manager",
+  cafe_manager: "Café manager",
+  member: "Member",
+};
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    setMounted(true);
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinks = [
-    { label: "Sports", href: "#sports" },
-    { label: "Availability", href: "#availability" },
-    { label: "Memberships", href: "#membership" },
-    { label: "Pro Shop", href: "#shop" },
-    { label: "Lounge & Bar", href: "#bar" },
-    { label: "Location", href: "#contact" },
-  ];
-
-  const getRoleBadge = (role: string, status: string, planId?: string) => {
-    if (status === "pending_consent") {
-      return { text: "Pending Consent", color: "bg-amber-500/15 text-amber-400 border-amber-500/30" };
-    }
-    if (role === "owner") {
-      return { text: "Owner", color: "bg-[#CCFF00]/15 text-[#CCFF00] border-[#CCFF00]/40" };
-    }
-    if (role === "manager") {
-      return { text: "Manager", color: "bg-purple-500/15 text-purple-400 border-purple-500/30" };
-    }
-    if (role === "front_desk") {
-      return { text: "Front Desk", color: "bg-blue-500/15 text-blue-400 border-blue-500/30" };
-    }
-    if (role === "bar_staff") {
-      return { text: "Bar Staff", color: "bg-orange-500/15 text-orange-400 border-orange-500/30" };
-    }
-    if (planId) {
-      return { text: `${planId.toUpperCase()} Member`, color: "bg-[#CCFF00]/15 text-[#CCFF00] border-[#CCFF00]/30" };
-    }
-    return { text: "Member", color: "bg-[#222222] text-[#AAAAAA] border-[#333333]" };
-  };
-
-  const badge = user ? getRoleBadge(user.role, user.status, user.planId) : null;
-
-  /* ── When NOT scrolled (over the light pastel hero) use dark ink colours ── */
-  const isLight = !scrolled;
+  const current = mounted ? user : null;
 
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={cn(
+          "fixed inset-x-0 top-0 z-50 transition-all duration-300",
           scrolled
-            ? "bg-[#0A0A0A]/90 backdrop-blur-xl border-b border-[#1F1F1F] py-3.5 shadow-[0_4px_30px_rgba(0,0,0,0.8)]"
-            : "bg-[rgba(13,13,12,0.04)] backdrop-blur-sm py-6"
-        }`}
+            ? "border-b border-line bg-chalk/92 py-2.5 backdrop-blur-md"
+            : "border-b border-transparent bg-transparent py-4"
+        )}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xl group-hover:scale-105 transition-transform ${
-                isLight
-                  ? "bg-[#0D0D0C] text-[#FBF6EF]"
-                  : "bg-[#CCFF00] text-[#0A0A0A] shadow-[0_0_20px_rgba(204,255,0,0.4)]"
-              }`}
-            >
-              <Trophy className="w-5 h-5 fill-current" />
-            </div>
-            <div className="flex flex-col">
-              <span
-                className={`font-extrabold tracking-tight text-base md:text-lg uppercase leading-none font-[family-name:var(--font-space-grotesk)] ${
-                  isLight ? "text-[#0D0D0C]" : "text-white"
-                }`}
-              >
-                The Champions{" "}
-                <span className={isLight ? "text-[#0D0D0C]" : "text-[#CCFF00]"}>
-                  Club
-                </span>
-              </span>
-              <span
-                className={`text-[10px] tracking-[0.25em] uppercase font-semibold mt-0.5 ${
-                  isLight ? "text-[rgba(13,13,12,0.45)]" : "text-[#888888]"
-                }`}
-              >
-                Athletic Excellence
-              </span>
-            </div>
+        <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-4 px-5 sm:px-8">
+          <Link href="/" className="group flex items-center gap-3">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-full border border-ink bg-ink font-mono text-[11px] font-bold tracking-widest text-chalk transition group-hover:bg-clay group-hover:border-clay">
+              TC
+            </span>
+            <span className="flex flex-col leading-none">
+              <span className="u-display text-[15px] tracking-[-0.01em] text-ink">The Champions</span>
+              <span className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.34em] text-muted">Club · New Delhi</span>
+            </span>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <nav
-            className={`hidden lg:flex items-center gap-1 px-5 py-2 rounded-full backdrop-blur-md border ${
-              isLight
-                ? "bg-white/40 border-[rgba(13,13,12,0.08)]"
-                : "bg-[#141414]/70 border-[#1F1F1F]"
-            }`}
-          >
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {LINKS.map((link) => (
+              <a
+                key={link.href}
                 href={link.href}
-                className={`text-xs font-semibold tracking-wider uppercase px-3.5 py-1.5 rounded-full transition-colors ${
-                  isLight
-                    ? "text-[rgba(13,13,12,0.56)] hover:text-[#0D0D0C]"
-                    : "text-[#888888] hover:text-[#CCFF00]"
-                }`}
+                className="group flex items-center gap-1.5 rounded-full px-3 py-2 text-[10.5px] font-mono uppercase tracking-[0.14em] text-ink/60 transition hover:bg-ink/5 hover:text-ink"
               >
+                <span className="text-[8px] text-clay/70">{link.index}</span>
                 {link.label}
-              </Link>
+              </a>
             ))}
           </nav>
 
-          {/* Action CTAs & Auth Profile */}
-          <div className="hidden sm:flex items-center gap-3">
-            {user ? (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/dashboard"
-                  className={`text-xs font-bold uppercase tracking-wider px-4 py-1.5 rounded-full transition-all ${
-                    isLight
-                      ? "text-[#FBF6EF] bg-[#0D0D0C] hover:bg-[#333]"
-                      : "text-[#0A0A0A] bg-[#CCFF00] hover:bg-[#a8cc00] shadow-[0_0_15px_rgba(204,255,0,0.3)]"
-                  }`}
-                >
-                  Dashboard
+          <div className="hidden items-center gap-3 sm:flex">
+            {current ? (
+              <>
+                <Link href="/dashboard" className="btn btn-ink btn-sm">
+                  Dashboard <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
-                <div
-                  className={`flex items-center gap-2.5 pl-3 pr-2 py-1.5 rounded-full border ${
-                    isLight
-                      ? "bg-white/50 border-[rgba(13,13,12,0.1)]"
-                      : "bg-[#141414] border-[#222222]"
-                  }`}
-                >
-                  <Link
-                    href={
-                      user.status === "pending_consent"
-                        ? "/pending-consent"
-                        : "/dashboard"
-                    }
-                    className="flex items-center gap-2 group"
-                  >
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        isLight
-                          ? "bg-[rgba(13,13,12,0.1)] text-[#0D0D0C]"
-                          : "bg-[#CCFF00]/20 text-[#CCFF00]"
-                      }`}
-                    >
-                      <User className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="flex flex-col text-left">
-                      <span
-                        className={`text-xs font-bold leading-none truncate max-w-[120px] transition-colors ${
-                          isLight
-                            ? "text-[#0D0D0C] group-hover:text-[#555]"
-                            : "text-white group-hover:text-[#CCFF00]"
-                        }`}
-                      >
-                        {user.fullName.split(" ")[0]}
-                      </span>
-                      {badge && (
-                        <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded border mt-0.5 inline-block ${badge.color}`}>
-                          {badge.text}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-
+                <div className="flex items-center gap-2 rounded-full border border-line bg-chalk py-1 pl-1 pr-1.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-court font-mono text-[9px] font-semibold text-chalk">
+                    {current.fullName.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                  </span>
+                  <span className="hidden flex-col leading-tight md:flex">
+                    <span className="text-[11px] font-semibold text-ink">{current.fullName.split(" ")[0]}</span>
+                    <span className="font-mono text-[8px] uppercase tracking-[0.16em] text-muted">{ROLE_LABEL[current.role]}</span>
+                  </span>
                   <button
                     onClick={() => signOut()}
-                    className={`p-1.5 rounded-full transition-colors ${
-                      isLight
-                        ? "text-[rgba(13,13,12,0.4)] hover:text-[#0D0D0C] hover:bg-[rgba(13,13,12,0.06)]"
-                        : "hover:bg-[#222222] text-[#777777] hover:text-white"
-                    }`}
-                    title="Sign Out"
-                    aria-label="Sign Out"
+                    aria-label="Sign out"
+                    className="rounded-full p-1.5 text-muted transition hover:bg-ink/5 hover:text-clay"
                   >
-                    <LogOut className="w-3.5 h-3.5" />
+                    <LogOut className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              </div>
+              </>
             ) : (
               <>
-                <Link
-                  href="/login"
-                  className={`text-xs font-bold uppercase tracking-wider px-4 py-2 transition-colors ${
-                    isLight
-                      ? "text-[rgba(13,13,12,0.56)] hover:text-[#0D0D0C]"
-                      : "text-[#AAAAAA] hover:text-[#CCFF00]"
-                  }`}
-                >
-                  Sign In
+                <Link href="/login" className="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink/70 transition hover:text-clay">
+                  Sign in
                 </Link>
-                <Link
-                  href="/register"
-                  className={`group relative inline-flex items-center gap-2 font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-full transition-all duration-200 active:scale-95 ${
-                    isLight
-                      ? "bg-[#0D0D0C] text-[#FBF6EF] hover:bg-[#333]"
-                      : "bg-[#CCFF00] text-[#0A0A0A] hover:bg-[#a8cc00] shadow-[0_0_25px_rgba(204,255,0,0.35)] hover:shadow-[0_0_35px_rgba(204,255,0,0.5)]"
-                  }`}
-                >
-                  <span>Join The Club</span>
-                  <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <Link href="/register" className="btn btn-clay btn-sm">
+                  Join the club <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               </>
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className={`lg:hidden p-2 rounded-xl border transition-colors ${
-              isLight
-                ? "bg-white/50 border-[rgba(13,13,12,0.1)] text-[#0D0D0C] hover:text-[#555]"
-                : "bg-[#141414] border-[#1F1F1F] text-white hover:text-[#CCFF00]"
-            }`}
-            aria-label="Toggle Menu"
+            onClick={() => setOpen(true)}
+            aria-label="Open menu"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-ink text-ink transition hover:bg-ink hover:text-chalk lg:hidden"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            <Menu className="h-4 w-4" />
           </button>
         </div>
       </header>
 
-      {/* Mobile Drawer */}
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {open && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 top-[73px] z-40 bg-[#0A0A0A]/95 backdrop-blur-2xl border-b border-[#1F1F1F] p-6 lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] bg-paper lg:hidden"
           >
-            <nav className="flex flex-col gap-3">
-              {user && (
-                <div className="p-3 mb-2 rounded-2xl bg-[#141414] border border-[#222222] flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center font-bold text-sm">
-                      <User className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-white">{user.fullName}</div>
-                      <div className="text-[10px] text-[#888888]">{user.email}</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      signOut();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="p-2 text-[#888888] hover:text-white"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-sm font-bold tracking-wider uppercase text-[#FAFAFA] hover:text-[#CCFF00] p-3 rounded-xl hover:bg-[#141414] transition-all"
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-line px-5 py-4">
+                <span className="u-display text-lg text-ink">The Champions Club</span>
+                <button
+                  onClick={() => setOpen(false)}
+                  aria-label="Close menu"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-ink text-ink"
                 >
-                  {link.label}
-                </Link>
-              ))}
-
-              <div className="pt-4 border-t border-[#1F1F1F] flex flex-col gap-3">
-                {user ? (
-                  user.status === "pending_consent" ? (
-                    <Link
-                      href="/pending-consent"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full text-center bg-amber-500 text-black font-bold text-sm uppercase tracking-wider py-3.5 rounded-full"
-                    >
-                      Guardian Verification Pending
-                    </Link>
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto px-5 py-6">
+                {LINKS.map((link, i) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-baseline justify-between border-b border-line py-4"
+                  >
+                    <span className="u-display text-2xl text-ink">{link.label}</span>
+                    <span className="font-mono text-[10px] text-muted">{link.index}</span>
+                  </a>
+                ))}
+                <div className="mt-8 space-y-3">
+                  {current ? (
+                    <>
+                      <Link href="/dashboard" onClick={() => setOpen(false)} className="btn btn-clay btn-block">
+                        Open dashboard
+                      </Link>
+                      <button
+                        onClick={() => { signOut(); setOpen(false); }}
+                        className="btn btn-outline btn-block"
+                      >
+                        Sign out
+                      </button>
+                    </>
                   ) : (
                     <>
-                      <Link
-                        href="/dashboard"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="w-full text-center bg-[#CCFF00] text-[#0A0A0A] font-bold text-sm uppercase tracking-wider py-3.5 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.3)]"
-                      >
-                        Open Dashboard
+                      <Link href="/register" onClick={() => setOpen(false)} className="btn btn-clay btn-block">
+                        Join the club
+                      </Link>
+                      <Link href="/login" onClick={() => setOpen(false)} className="btn btn-outline btn-block">
+                        Sign in
                       </Link>
                     </>
-                  )
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full text-center bg-[#141414] border border-[#222222] text-white font-bold text-sm uppercase tracking-wider py-3 rounded-full hover:border-[#CCFF00]"
-                    >
-                      Sign In
-                    </Link>
-                    <Link
-                      href="/register"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full text-center bg-[#CCFF00] text-[#0A0A0A] font-bold text-sm uppercase tracking-wider py-3.5 rounded-full shadow-[0_0_20px_rgba(204,255,0,0.35)]"
-                    >
-                      Join The Club
-                    </Link>
-                  </>
-                )}
+                  )}
+                </div>
+              </nav>
+              <div className="border-t border-line px-5 py-4 font-mono text-[9px] uppercase tracking-[0.2em] text-muted">
+                <span className="flex items-center gap-2"><User className="h-3 w-3" /> 06:00 – 23:00 IST · 18 courts · 4 sports</span>
               </div>
-            </nav>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -9,10 +9,10 @@
 | Root folder | `D:\Projects\thechampionsclub` |
 | Docs folder | `D:\Projects\thechampionsclub\docs\` |
 | Docs created | 2026-11-21 (Session 1) |
-| Last updated | 2026-11-21 (Session 5: Unified Dashboard `/dashboard` implemented with sidebar/mobile-drawer navigation and dedicated service sections: `/dashboard/courts` for 18-facility court bookings, `/dashboard/shop` for gear catalogue & cart checkout, `/dashboard/bar` for kitchen orders & table floor map, `/dashboard/pass` for digital QR credentials, `/dashboard/desk` for staff counter scanner, `/dashboard/settings` for profile & DPDP preferences; fixed post-login redirect flow so authenticated users are routed to dashboard rather than re-login; verified with 0 errors across 17 static routes in `next build`) |
-| Sessions completed | 5 |
-| Current phase | **P2/P3 – Unified Dashboard, Multi-Service Sections & Auth Flow Integrity (Milestone M2+ reached; 17 routes live)** |
-| Code written so far | **Next.js 16 App, Tailwind v4, Framer Motion**: Landing page (10 sections with role-aware CTAs), Registration wizard (5 steps with DPDP consent), Sign In (`/login` with 6-role demo switcher), Password Reset (`/reset-password`), Junior Pending Consent (`/pending-consent`), Unified Dashboard (`/dashboard`), Court Booking (`/dashboard/courts`), Pro Shop (`/dashboard/shop`), Bar & Lounge (`/dashboard/bar`), Member Pass (`/dashboard/pass`), Front Desk Console (`/dashboard/desk`), Account Settings (`/dashboard/settings`); production build verified (`next build` 0 errors across all 17 routes) |
+| Last updated | 2026-11-21 (Session 6: Pivot to "Clubhouse Ledger" design system `docs/06_DESIGN_SYSTEM.md`, UI Kit in `@/components/ui/kit` and `overlay.tsx`, local-first simulation engines `bookings.ts`, `orders.ts`, `finance.ts`, `leads.ts`, `store.ts`, PWA offline assets and manifest, landing page rebuild across all 10 sections, 8-role demo switcher, Pro Shop overhaul; Next.js 16.4.6 Turbopack build verified with 24/24 static/dynamic routes passing with 0 errors, dev server active on port 3000; identified midway stoppage across Registration Wizard steps 3-5 and 4 stubbed operation routes) |
+| Sessions completed | 6 |
+| Current phase | **P2/P3/P8 – Clubhouse Ledger Design System, Local-First Workflow Engines & Unified Dashboard (24 routes live, dev server active)** |
+| Code written so far | **Next.js 16 App, Tailwind v4, Framer Motion, PWA**: UI Kit (`kit.tsx`, `overlay.tsx`, `globals.css` with paper/ink/clay tokens); Landing page (10 sections rebuilt with Clubhouse Ledger theme); Local-first engines (`bookings.ts` 18 courts with exclusion logic and 2/day cap, `orders.ts` catalog/cart/bar tabs/kitchen tickets/POS, `finance.ts` ledger/GST/Z-report, `leads.ts` trial booking/CRM, `store.ts` reactive storage); PWA offline foundation (`sw.js`, manifest, icons, `PWAProvider`, `offline/page.tsx`); Auth portal (`/login` with brand shell and 8-role switcher, `/register` with wizard steps 1-2 refactored); Unified Dashboard (`/dashboard/layout.tsx`, `/dashboard/shop` 857-line rebuild, `/dashboard/courts`, `/dashboard/bar`, `/dashboard/pass`, `/dashboard/desk`, `/dashboard/settings`, and 4 stubs `/dashboard/kitchen`, `/owner`, `/pos`, `/social`); 24 routes prerendered in `next build` |
 | Next session starts at | See section 8 "NEXT SESSION TASK" |
 
 ---
@@ -90,18 +90,18 @@ Phase and task detail lives in `03_ROADMAP_AND_FEATURES.md` section 1 (tasks P0.
 | Phase | Name | Milestone | Status |
 |---|---|---|---|
 | P0 | Planning & design | M0 Design frozen | **COMPLETE** — Invariants defined, ER diagram documented, core schema v0 and test suite drafted |
-| P1 | Foundation & auth | M1 Skeleton live | **COMPLETE** — Next.js 15 app shell, Landing page, Multi-step wizard, Sign-in, Password reset, Junior DPDP flow, and keep-alive workflow live |
-| P2 | Membership & accounts | M2 Members work | **COMPLETE** — Member Dashboard with cryptographic QR pass (MEM-1), Front Desk Member Lookup & Recognition (DSK-3), Counter Registration with claim invite links (DSK-4), and DPDP Minor Consent Queue (DSK-5) |
-| P3 | Facilities, payments adapter, booking engine | M3 Booking engine proven | **Next up** — 30-min slot calendar, 18 arenas, DB exclusion constraint booking engine, daily 2-cap trigger, Friday social joins, payment adapter |
-| P4 | Gear shop | M4 One shelf | Not started |
-| P5 | Bar & kitchen | M5 Bar runs | Not started |
-| P6 | Public site & leads | M6 Visitor to member | **In progress** — Landing & Trial Request UI ready |
-| P7 | Owner finance & HR | M7 Part 1 functionally complete | Not started |
-| P8 | UI design & hardening | M8 Looks finished | **In progress** — High-energy dark athletic design language established |
+| P1 | Foundation & auth | M1 Skeleton live | **COMPLETE** — Next.js 16 app shell, Landing page, Auth portal with brand shell and 8-role switcher, password reset, junior consent, keep-alive workflow |
+| P2 | Membership & accounts | M2 Members work | **COMPLETE** — Digital QR pass (MEM-1), Front Desk scanner (DSK-3), walk-in registration with claims (DSK-4), DPDP minor consent queue (DSK-5) |
+| P3 | Facilities, payments adapter, booking engine | M3 Booking engine proven | **In progress** — Local-first 18-facility engine (`bookings.ts`) with overlap prevention, 2/day daily cap, plan pricing; `AvailabilityGrid.tsx` ready, wiring into `/dashboard/courts` pending |
+| P4 | Gear shop | M4 One shelf | **In progress** — Full Pro Shop (`/dashboard/shop`) rebuilt with 857 lines, catalog, cart, GST calculations, order tracking timeline; POS engine in `orders.ts` |
+| P5 | Bar & kitchen | M5 Bar runs | **In progress** — Menu and tab engine in `orders.ts`, settle tab modal; `/dashboard/bar` needs update and `/dashboard/kitchen` stub needs implementation |
+| P6 | Public site & leads | M6 Visitor to member | **COMPLETE** — 10-section Clubhouse Ledger landing page live; trial session capture & CRM leads pipeline in `leads.ts` |
+| P7 | Owner finance & HR | M7 Part 1 functionally complete | **In progress** — Full ledger, GST reporting, Z-reports, payroll in `finance.ts`; owner UI components in `components/owner/`; `/dashboard/owner` stub needs implementation |
+| P8 | UI design & hardening | M8 Looks finished | **In progress** — "Clubhouse Ledger" design system (`06_DESIGN_SYSTEM.md`) established with UI Kit (`kit.tsx`, `overlay.tsx`); landing, login, shop refactored |
 | P9 | Seed, deploy, demo | M9 Part 1 delivered | Not started |
 | P10+ | Part 2 unique features | — | Not started |
 
-Facts as of Session 4: Landing page, multi-step registration wizard, authentication portal, member dashboard with digital QR pass, and front desk operations console fully implemented with Next.js 15, Tailwind v4, Framer Motion; production build verified (`next build` succeeded with 0 errors across 7 routes).
+Facts as of Session 6: 24 routes prerendered in `next build` with 0 errors; development server active on `http://localhost:3000`; local-first reactive workflow engines implemented for bookings, orders, finance, and leads; PWA service worker and manifest configured.
 
 ## 7. Key decisions (summary — full register with statuses in `01_PROJECT_SPEC.md` section 4)
 
@@ -111,20 +111,27 @@ CONFIRMED by the user:
 - **Email + password only** (D-024); public enquiry form without login, rate-limited (D-025).
 - **Juniors have own login; guardian consent recorded** (D-026).
 - Seeded sports: **tennis, padel, badminton, cricket nets** (D-028); bar takes **counter and table orders** (D-029); delivery with **saved address, staff-managed status, OTP, no maps** (D-030).
-- **Frontend framework**: Next.js 15 App Router, React 19, Tailwind CSS v4, Framer Motion, Lucide icons (D-033).
-- **High-energy dynamic athletic design**: obsidian dark theme with electric lime (#CCFF00) accents, glow cards, Space Grotesk headings, and micro-interactions (D-034).
+- **Frontend framework**: Next.js 16 App Router, React 19, Tailwind CSS v4, Turbopack, Framer Motion, Lucide icons (D-033).
+- **Visual design system**: "Clubhouse Ledger" aesthetic (`docs/06_DESIGN_SYSTEM.md`) with warm paper (`#f2ecdf`), ink (`#17150f`), clay (`#c4502b`), court green (`#1e4433`), and scoreboard mono typography, retiring the old obsidian-lime theme (D-034, D-038).
 - **Multi-step registration wizard**: with dynamic minor detection (<18) triggering Step 4 Guardian Consent per DPDP Act 2023 (D-035).
+- **Exact numeric financial precision**: fixed-point `numeric(12, 2)` across tables and ledger (D-036).
+- **Unified dashboard architecture**: `/dashboard/*` persistent layout with role-gated navigation for club and operations (D-037).
+- **Local-first reactive invariant runtime**: `store.ts`, `bookings.ts`, `orders.ts`, `finance.ts`, `leads.ts` enforcing DB constraints locally (D-039).
 
 PROPOSED (awaiting the user's approval): Supabase backend (D-002), DB-enforced no-overlap bookings (D-003), :00/:30 slots and 60-minute sessions (D-005), daily-cap rule (D-006), social-play model (D-007), price snapshot (D-008), ~5-minute holds (D-009), payment adapters (D-010), AI chain (D-011), synthetic data (D-012), GST configurable (D-013), Junior consent details (D-014, D-027), IST/UTC handling (D-015), avoid Render for stateful needs (D-016), languages (D-017), ML policy (D-018), roles (D-020), prospect accounts (D-031).
 
 ## 8. NEXT SESSION TASK (update every session)
 
-**Session 6 — Phase P3/P4: Live Supabase Backend Wiring & Automated Concurrency Testing.**
-1. Connect live Supabase project instance (or local Supabase CLI) replacing placeholder credentials.
-2. Wire PostgreSQL exclusion constraints (`EXCLUDE USING gist`) and atomic stock reservation triggers to the live runtime.
-3. Wire payment simulator (UPI dynamic QR generation + mock webhook confirmation).
-4. Run live concurrency validation test suite for double-booking prevention.
-5. Update docs and append Session 6 entry in `04_HISTORY_LOG.md`.
+**Session 7 — Complete the Clubhouse Ledger Unification & Wire Unconnected Modules:**
+1. **Finish Registration Wizard**: Refactor `ChoosePlan.tsx`, `GuardianConsent.tsx`, and `Confirmation.tsx` to match the Clubhouse Ledger style (`kit.tsx`, `StatusPill`, `btn-clay`, `input`).
+2. **Wire Court Booking & Front Desk**: Wire `AvailabilityGrid.tsx` and `src/lib/bookings.ts` into `/dashboard/courts`, and wire `LookupTab.tsx` and `RegisterTab.tsx` into `/dashboard/desk`.
+3. **Implement 4 Operations Placeholder Routes**:
+   - `/dashboard/kitchen`: KDS live ticket board using `src/lib/orders.ts`.
+   - `/dashboard/owner`: Executive ledger and Z-reports using `src/lib/finance.ts` and `src/components/owner/bits.tsx`.
+   - `/dashboard/pos`: Counter POS cashier interface using `src/lib/orders.ts`.
+   - `/dashboard/social`: Friday Social session join modal and roster using `src/lib/bookings.ts`.
+4. **Align Remaining Surfaces**: Refresh `/dashboard` Overview and `/dashboard/bar` to Clubhouse Ledger; wrap `/pending-consent` and `/reset-password` in `AuthShell`.
+5. Update docs and append Session 7 entry in `04_HISTORY_LOG.md`.
 
 ## 9. Open questions for the user (TBD)
 

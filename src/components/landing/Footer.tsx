@@ -1,92 +1,109 @@
 import Link from "next/link";
-import { Trophy, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { Ticker } from "@/components/ui/kit";
+
+const COLUMNS = [
+  {
+    title: "Play",
+    links: [
+      { label: "Tennis courts", href: "#sports" },
+      { label: "Padel courts", href: "#sports" },
+      { label: "Badminton halls", href: "#sports" },
+      { label: "Cricket nets", href: "#sports" },
+      { label: "Friday social", href: "#bar" },
+    ],
+  },
+  {
+    title: "Club",
+    links: [
+      { label: "Membership", href: "#membership" },
+      { label: "Live availability", href: "#availability" },
+      { label: "Pro shop", href: "#shop" },
+      { label: "Bar & kitchen", href: "#bar" },
+      { label: "Visit us", href: "#contact" },
+    ],
+  },
+  {
+    title: "Members",
+    links: [
+      { label: "Sign in", href: "/login" },
+      { label: "Join the club", href: "/register" },
+      { label: "Digital pass", href: "/dashboard/pass" },
+      { label: "Book a court", href: "/dashboard/courts" },
+      { label: "Account", href: "/dashboard/settings" },
+    ],
+  },
+];
 
 export default function Footer() {
   return (
-    <footer className="bg-[#050505] border-t border-[#1F1F1F] text-[#888888] pt-20 pb-12">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-16">
-          {/* Brand Col */}
-          <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2.5 mb-5 group">
-              <div className="w-9 h-9 rounded-xl bg-[#CCFF00] flex items-center justify-center text-[#0A0A0A] font-black text-lg shadow-[0_0_20px_rgba(204,255,0,0.3)]">
-                <Trophy className="w-4 h-4 fill-current" />
+    <footer className="bg-ink text-chalk">
+      <Ticker
+        items={["Play", "Compete", "Dominate", "Belong", "Tennis", "Padel", "Badminton", "Cricket"]}
+        tone="clay"
+      />
+      <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
+        <div className="border-b border-line-inverse py-12 md:py-16">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+            <div className="lg:col-span-5">
+              <Link href="/" className="inline-flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-chalk/30 font-mono text-[11px] font-bold tracking-widest text-chalk">
+                  TC
+                </span>
+                <span className="u-display text-lg leading-none text-chalk">The Champions Club</span>
+              </Link>
+              <p className="mt-5 max-w-sm text-[12.5px] leading-relaxed text-chalk/50">
+                A members&apos; sports club in New Delhi — eighteen courts, one pro shop, a proper kitchen, and a
+                booking system that never double-books a surface.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {["Tennis", "Padel", "Badminton", "Cricket nets"].map((sport) => (
+                  <span key={sport} className="rounded-full border border-line-inverse px-3 py-1 font-mono text-[8px] uppercase tracking-[0.14em] text-chalk/50">
+                    {sport}
+                  </span>
+                ))}
               </div>
-              <span className="font-extrabold tracking-tight text-white text-lg uppercase font-[family-name:var(--font-space-grotesk)]">
-                The Champions <span className="text-[#CCFF00]">Club</span>
-              </span>
-            </Link>
-            <p className="text-xs text-[#888888] leading-relaxed max-w-sm mb-6">
-              The unified digital platform and premier physical sporting destination for Tennis, Padel, Badminton, and Cricket Nets. Built for athletes who demand excellence.
-            </p>
-            <div className="text-[11px] text-[#555555]">
-              IST Timezone · GST Compliant · DPDP Act Data Privacy
             </div>
-          </div>
 
-          {/* Sports */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-4">
-              Our Sports
-            </h4>
-            <ul className="space-y-2.5 text-xs">
-              <li><a href="#sports" className="hover:text-[#CCFF00] transition-colors">Championship Tennis</a></li>
-              <li><a href="#sports" className="hover:text-[#CCFF00] transition-colors">Panoramic Padel</a></li>
-              <li><a href="#sports" className="hover:text-[#CCFF00] transition-colors">Indoor Badminton</a></li>
-              <li><a href="#sports" className="hover:text-[#CCFF00] transition-colors">Cricket Bowling Nets</a></li>
-              <li><a href="#bar" className="hover:text-[#CCFF00] transition-colors">Friday Social Nights</a></li>
-            </ul>
-          </div>
+            {COLUMNS.map((col) => (
+              <div key={col.title} className="lg:col-span-2">
+                <h4 className="u-eyebrow text-clay-soft">{col.title}</h4>
+                <ul className="mt-4 space-y-2.5">
+                  {col.links.map((link) => (
+                    <li key={link.label}>
+                      <Link href={link.href} className="text-[12px] text-chalk/60 transition hover:text-chalk">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
 
-          {/* Memberships & Shop */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-4">
-              Club Services
-            </h4>
-            <ul className="space-y-2.5 text-xs">
-              <li><Link href="/register?plan=gold" className="hover:text-[#CCFF00] transition-colors">Gold Champion Plan</Link></li>
-              <li><Link href="/register?plan=silver" className="hover:text-[#CCFF00] transition-colors">Silver Standard Plan</Link></li>
-              <li><Link href="/register?plan=junior" className="hover:text-[#CCFF00] transition-colors">Junior Prodigy Plan</Link></li>
-              <li><a href="#shop" className="hover:text-[#CCFF00] transition-colors">Pro Gear Store</a></li>
-              <li><a href="#bar" className="hover:text-[#CCFF00] transition-colors">Clubhouse Bar & Kitchen</a></li>
-            </ul>
-          </div>
-
-          {/* Access */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-4">
-              Portals
-            </h4>
-            <ul className="space-y-2.5 text-xs">
-              <li>
-                <Link href="/register" className="inline-flex items-center gap-1 hover:text-[#CCFF00] transition-colors">
-                  <span>Register Online</span>
-                  <ArrowUpRight className="w-3 h-3" />
-                </Link>
-              </li>
-              <li>
-                <a href="#availability" className="hover:text-[#CCFF00] transition-colors">
-                  Check Slot Engine
-                </a>
-              </li>
-              <li>
-                <a href="#contact" className="hover:text-[#CCFF00] transition-colors">
-                  Front Desk Contact
-                </a>
-              </li>
-            </ul>
+            <div className="lg:col-span-1">
+              <h4 className="u-eyebrow text-clay-soft">Visit</h4>
+              <div className="mt-4 text-[11.5px] leading-relaxed text-chalk/50">
+                Siri Fort Road<br />New Delhi 110049<br />06:00 — 23:00
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Bottom Sub-footer */}
-        <div className="pt-8 border-t border-[#1F1F1F] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#555555]">
-          <div>
-            © {new Date().getFullYear()} The Champions Club Management System. All rights reserved.
+        <div className="flex flex-col gap-6 py-8 md:flex-row md:items-end md:justify-between">
+          <div className="u-display text-[clamp(2.4rem,7vw,6.4rem)] leading-[0.82] text-chalk/95">
+            Play. Compete.<br /><span className="u-serif italic text-clay-soft">Belong.</span>
           </div>
-          <div className="flex items-center gap-6">
-            <span>Terms of Play</span>
-            <span>Cancellation Policy</span>
-            <span>DPDP Privacy Charter</span>
+          <div className="flex flex-col gap-2 text-[10.5px] text-chalk/40 md:text-right">
+            <span className="font-mono uppercase tracking-[0.14em]">GSTIN 07AATCC1234F1Z8 · SAC 998413 / HSN 9506</span>
+            <span>© 2026 The Champions Club Management System. Synthetic demo data.</span>
+            <div className="flex flex-wrap gap-x-5 gap-y-1 md:justify-end">
+              <span>Terms of play</span>
+              <span>Cancellation policy</span>
+              <span>DPDP privacy charter</span>
+              <Link href="/login" className="inline-flex items-center gap-1 text-chalk/60 hover:text-chalk">
+                Staff sign in <ArrowUpRight className="h-2.5 w-2.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>

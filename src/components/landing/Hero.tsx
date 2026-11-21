@@ -1,439 +1,223 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Calendar } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, CalendarDays, MapPin, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { availabilityFor, nextSocialSession, socialDateLabel, TIME_SLOTS } from "@/lib/bookings";
+import { formatDateLong, inr } from "@/lib/store";
+import { Stamp, Ticker } from "@/components/ui/kit";
 
-/* ─── word data ─── */
-const WORDS = [
-  {
-    word: "Play.",
-    icon: "https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/83de7c35-dd91-4e56-bfb8-0ffafc83d0e0.webp",
-    tint: "#D4A017",
-    panelFrom: "#F4EBC6",
-    panelTo: "#F2ECDF",
-    glow: "246,222,104",
-  },
-  {
-    word: "Compete.",
-    icon: "https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/4d952211-0474-48cc-af48-58f68b3b7525.webp",
-    tint: "#E06020",
-    panelFrom: "#F9CBA9",
-    panelTo: "#F8DCC7",
-    glow: "249,150,84",
-  },
-  {
-    word: "Dominate.",
-    icon: "https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/e2e91fca-5b3f-4e0e-a437-8a581592e407.webp",
-    tint: "#2A9B58",
-    panelFrom: "#DFE9D4",
-    panelTo: "#E9EBE0",
-    glow: "150,206,150",
-  },
-  {
-    word: "Train.",
-    icon: "https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/6b32bb47-4ad6-4938-a637-c997b373c68b.webp",
-    tint: "#A040A0",
-    panelFrom: "#ECD6E2",
-    panelTo: "#F0E4E6",
-    glow: "222,150,200",
-  },
+const WORDS = ["Play.", "Compete.", "Dominate.", "Belong."];
+
+const TICKER = [
+  "18 floodlit courts",
+  "Tennis · Padel · Badminton · Cricket nets",
+  "Open 06:00 – 23:00 IST",
+  "Zero double-bookings, guaranteed",
+  "Friday Night Social",
+  "Member pricing applied automatically",
+  "Pro shop · Bar · Kitchen",
+  "New Delhi",
 ];
 
-const SLOT_MS = 2000;
-const ENTER_MS = 500;
-const LEAVE_MS = 400;
-
-function easeOut(t: number) { return 1 - Math.pow(1 - t, 3); }
-function easeIn(t: number) { return t * t * t; }
-
-/* SVG grain */
-const GRAIN_B64 = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
+function miniAvailability(): { slot: string; free: number }[] {
+  try {
+    const today = new Date();
+    const iso = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+    const grid = availabilityFor(iso);
+    const facilities = Object.keys(grid);
+    const nowMin = today.getHours() * 60 + today.getMinutes();
+    const preferred = TIME_SLOTS.filter((slot) => {
+      const [h, m] = slot.split(":").map(Number);
+      return h * 60 + m >= Math.max(nowMin + 30, 17 * 60) && h * 60 + m <= 21 * 60;
+    }).slice(0, 3);
+    return preferred.map((slot) => ({
+      slot,
+      free: facilities.filter((facility) => grid[facility]?.[slot] === "free").length,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 export default function Hero() {
   const { user } = useAuth();
-  const [idx, setIdx] = useState(0);
-  const [phase, setPhase] = useState<"enter" | "hold" | "leave">("hold");
-  const [prog, setProg] = useState(1);
-  const [panelBlend, setPanelBlend] = useState(0); // 0=prev 1=current
-  const [bobY, setBobY] = useState(0);
-  const rafRef = useRef<number>(0);
-  const startRef = useRef<number | null>(null);
-  const slotStartRef = useRef<number>(0);
-  const idxRef = useRef(0);
-  const phaseRef = useRef<"enter" | "hold" | "leave">("hold");
-  const progRef = useRef(1);
-  const panelIdxRef = useRef(0);
-  const panelBlendRef = useRef(0);
+  const [mounted, setMounted] = useState(false);
+  const [wordIndex, setWordIndex] = useState(0);
+  const [slots, setSlots] = useState<{ slot: string; free: number }[]>([]);
+  const [socialDate, setSocialDate] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check reduced motion
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const start = performance.now();
-    startRef.current = start;
-    slotStartRef.current = start;
-
-    function loop(now: number) {
-      const elapsed = now - slotStartRef.current;
-      const totalSlot = SLOT_MS;
-
-      let newPhase: "enter" | "hold" | "leave";
-      let newProg: number;
-
-      if (elapsed < ENTER_MS) {
-        newPhase = "enter";
-        newProg = elapsed / ENTER_MS;
-      } else if (elapsed > totalSlot - LEAVE_MS) {
-        newPhase = "leave";
-        newProg = (elapsed - (totalSlot - LEAVE_MS)) / LEAVE_MS;
-      } else {
-        newPhase = "hold";
-        newProg = 1;
-      }
-
-      if (elapsed >= totalSlot) {
-        // advance
-        const nextIdx = (idxRef.current + 1) % WORDS.length;
-        idxRef.current = nextIdx;
-        panelIdxRef.current = nextIdx;
-        panelBlendRef.current = 1;
-        slotStartRef.current = now;
-        newPhase = "enter";
-        newProg = 0;
-      }
-
-      // panel crossfade: when entering, blend from 0→1 over first ENTER_MS
-      if (newPhase === "enter") {
-        panelBlendRef.current = newProg;
-      } else {
-        panelBlendRef.current = 1;
-      }
-
-      // bob
-      const t = (now - start) / 1000;
-      const by = Math.sin(t * 1.1) * 5;
-
-      phaseRef.current = newPhase;
-      progRef.current = newProg;
-
-      setIdx(idxRef.current);
-      setPhase(newPhase);
-      setProg(newProg);
-      setPanelBlend(panelBlendRef.current);
-      setBobY(by);
-
-      rafRef.current = requestAnimationFrame(loop);
-    }
-
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
+    setMounted(true);
+    setSlots(miniAvailability());
+    const social = nextSocialSession();
+    if (social) setSocialDate(social.date);
+    const timer = window.setInterval(() => setWordIndex((i) => (i + 1) % WORDS.length), 2600);
+    return () => window.clearInterval(timer);
   }, []);
 
-  const cur = WORDS[idx];
-  const prev = WORDS[(idx - 1 + WORDS.length) % WORDS.length];
-
-  // text animation values
-  let opacity = 1, ty = 0, blur = 0, scale = 1;
-  let iconOpacity = 1, iconScale = 1, iconRot = 0;
-
-  if (phase === "enter") {
-    const e = easeOut(prog);
-    opacity = e;
-    ty = (1 - e) * 24;
-    blur = (1 - e) * 10;
-    scale = 0.95 + e * 0.05;
-    const ip = Math.max(0, (prog - 0.08) / 0.92);
-    const ie = easeOut(ip);
-    iconOpacity = ie;
-    iconScale = 0.65 + ie * 0.35;
-    iconRot = -16 * (1 - ie);
-  } else if (phase === "leave") {
-    const e = easeIn(prog);
-    opacity = 1 - e;
-    ty = -e * 18;
-    blur = e * 8;
-    iconOpacity = 1 - e;
-  }
-
-  // stats strip notch path
-  const notchPath = "M0 62 H1062 C1092 62 1098 54 1116 34 C1138 9 1146 1 1178 1 H1440 V62 Z";
-
-  const stats = [
-    { value: "18", label: "World-Class Courts" },
-    { value: "100%", label: "Conflict-Free Guarantee" },
-    { value: "6AM–11PM", label: "Daily Availability" },
-  ];
+  const current = mounted ? user : null;
+  const todayLabel = useMemo(() => formatDateLong(new Date().toISOString().slice(0, 10)), []);
+  const firstFree = slots[0];
 
   return (
-    <section
-      className="relative w-full overflow-hidden"
-      style={{ height: "100svh", minHeight: 620 }}
-    >
-        {/* ════ MAIN GRADIENT PANEL: 84% height ════ */}
-        <div className="relative overflow-hidden" style={{ height: "84%" }}>
+    <section className="relative overflow-hidden border-b border-line bg-paper pt-24 sm:pt-28 lg:pt-32">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.5] u-court-grid" aria-hidden />
+      <div className="relative mx-auto max-w-[1320px] px-5 pb-10 sm:px-8">
+        <div className="flex items-center justify-between border-b border-line pb-3">
+          <span className="u-eyebrow text-clay">Est. 2019 · New Delhi</span>
+          <span className="u-eyebrow hidden text-muted sm:block">Members&apos; sports club · {todayLabel}</span>
+          <span className="u-eyebrow text-muted">06:00 — 23:00</span>
+        </div>
 
-          {/* Previous panel layer (fades out as new one comes in) */}
-          <div
-            className="absolute inset-0"
-            style={{
-              opacity: 1 - panelBlend,
-              background: `
-              radial-gradient(ellipse 60% 55% at 88% 80%, rgba(${prev.glow},0.6) 0%, transparent 65%),
-              radial-gradient(ellipse 50% 50% at 20% 110%, rgba(${prev.glow},0.3) 0%, transparent 60%),
-              linear-gradient(160deg, ${prev.panelFrom}, ${prev.panelTo})
-            `,
-              transition: "opacity 0.6s ease",
-            }}
-          />
-
-          {/* Current panel layer */}
-          <div
-            className="absolute inset-0"
-            style={{
-              opacity: panelBlend,
-              background: `
-              radial-gradient(ellipse 60% 55% at 88% 80%, rgba(${cur.glow},0.6) 0%, transparent 65%),
-              radial-gradient(ellipse 50% 50% at 20% 110%, rgba(${cur.glow},0.3) 0%, transparent 60%),
-              linear-gradient(160deg, ${cur.panelFrom}, ${cur.panelTo})
-            `,
-              transition: "opacity 0.6s ease",
-            }}
-          />
-
-          {/* Grain overlay */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: GRAIN_B64,
-              backgroundSize: "180px 180px",
-              opacity: 0.15,
-              mixBlendMode: "multiply",
-              zIndex: 2,
-            }}
-          />
-
-          {/* Content */}
-          <div
-            className="relative flex flex-col h-full"
-            style={{ zIndex: 10 }}
-          >
-            {/* Navbar spacer & Top Breathing Room */}
-            <div style={{ height: "clamp(96px, 14vh, 160px)", flexShrink: 0 }} />
-
-            {/* ════ HEADLINE ════ */}
-            <div
-              className="flex-1 flex flex-col justify-start px-5 sm:px-10 md:px-16 lg:px-24 pt-2 md:pt-4"
-            >
-              <h1
-                className="font-[family-name:var(--font-space-grotesk)] font-extrabold uppercase leading-[0.86] tracking-[-0.03em] select-none"
-                style={{
-                  fontSize: "clamp(44px, 9.5vw, 130px)",
-                  color: "#0D0D0C",
-                }}
-              >
-                {/* Line 1: animated word */}
-                <span
-                  className="flex items-center gap-[0.06em]"
-                  style={{
-                    opacity,
-                    transform: `translateY(${ty}px) scale(${scale})`,
-                    filter: `blur(${blur}px)`,
-                    willChange: "transform, opacity, filter",
-                  }}
-                >
-                  {/* 3D Icon */}
-                  <span
-                    className="relative inline-flex shrink-0"
-                    style={{
-                      width: "0.9em",
-                      height: "0.9em",
-                      isolation: "isolate",
-                      transform: `translateY(${bobY}px) rotate(${iconRot}deg) scale(${iconScale})`,
-                      opacity: iconOpacity,
-                      willChange: "transform, opacity",
-                      flexShrink: 0,
-                    }}
+        <div className="grid grid-cols-1 gap-10 pt-8 lg:grid-cols-12 lg:gap-8 lg:pt-12">
+          {/* Left: editorial headline */}
+          <div className="lg:col-span-7">
+            <h1 className="u-display text-[clamp(3.1rem,8.2vw,7.2rem)] leading-[0.86] text-ink">
+              <span className="block overflow-hidden">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span
+                    key={WORDS[wordIndex]}
+                    initial={{ y: "0.6em", opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: "-0.5em", opacity: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="flex items-baseline gap-[0.08em]"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={cur.icon}
-                      alt=""
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "contain",
-                        filter: "grayscale(1) brightness(1.15) contrast(1.1)",
-                      }}
-                      draggable={false}
-                    />
-                    {/* Hue tint layer */}
-                    <span
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        background: cur.tint,
-                        mixBlendMode: "color",
-                        mask: `url(${cur.icon}) center/contain no-repeat`,
-                        WebkitMask: `url(${cur.icon}) center/contain no-repeat`,
-                      }}
-                    />
-                  </span>
-                  <span>{cur.word}</span>
-                </span>
+                    <span className="inline-block h-[0.12em] w-[0.6em] translate-y-[-0.55em] bg-clay" />
+                    {WORDS[wordIndex]}
+                  </motion.span>
+                </AnimatePresence>
+              </span>
+              <span className="mt-1 block text-ink">
+                in your <span className="u-serif italic text-clay">own</span>
+              </span>
+              <span className="block">league.</span>
+            </h1>
 
-                {/* Line 2: static */}
-                <span
-                  className="block mt-[0.02em]"
-                  style={{ color: "#0D0D0C" }}
-                >
-                  in your court.
-                </span>
-              </h1>
+            <p className="mt-6 max-w-xl text-[14px] leading-relaxed text-muted">
+              Eighteen floodlit courts for tennis, padel, badminton and cricket nets — plus a pro shop, a
+              post-match bar and a booking system that never double-books a court. This is the clubhouse
+              that finally runs itself.
+            </p>
 
-              {/* CTA row */}
-              <div
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-6 md:mt-8"
-              >
-                {/* Primary CTA */}
-                {user ? (
-                  <>
-                    <Link
-                      href="/dashboard"
-                      className="inline-flex items-center gap-2 font-bold text-sm uppercase tracking-wider px-7 py-3.5 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
-                      style={{ background: "#0D0D0C", color: "#FBF6EF" }}
-                    >
-                      Go to Dashboard <ArrowRight className="w-4 h-4" />
-                    </Link>
-                    <Link
-                      href="/dashboard/courts"
-                      className="inline-flex items-center gap-2 font-bold text-sm uppercase tracking-wider px-7 py-3.5 rounded-full transition-all duration-200 hover:bg-[#0D0D0C] hover:text-[#FBF6EF]"
-                      style={{ border: "1.4px solid rgba(13,13,12,0.28)", color: "#0D0D0C" }}
-                    >
-                      <Calendar className="w-4 h-4" /> Book Courts Now
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/register"
-                      className="inline-flex items-center gap-2 font-bold text-sm uppercase tracking-wider px-7 py-3.5 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
-                      style={{ background: "#0D0D0C", color: "#FBF6EF" }}
-                    >
-                      Get Your Membership <ArrowRight className="w-4 h-4" />
-                    </Link>
-                    <a
-                      href="#availability"
-                      className="inline-flex items-center gap-2 font-bold text-sm uppercase tracking-wider px-7 py-3.5 rounded-full transition-all duration-200 hover:bg-[#0D0D0C] hover:text-[#FBF6EF]"
-                      style={{ border: "1.4px solid rgba(13,13,12,0.28)", color: "#0D0D0C" }}
-                    >
-                      <Calendar className="w-4 h-4" /> View Live Slots
-                    </a>
-                  </>
-                )}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              {current ? (
+                <>
+                  <Link href="/dashboard" className="btn btn-clay">
+                    Open the clubhouse <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link href="/dashboard/courts" className="btn btn-outline">
+                    <CalendarDays className="h-4 w-4" /> Book a court
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/register" className="btn btn-clay">
+                    Get your membership <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <a href="#availability" className="btn btn-outline">
+                    <CalendarDays className="h-4 w-4" /> See live slots
+                  </a>
+                </>
+              )}
+            </div>
 
-                {/* Caption */}
-                <p
-                  className="hidden lg:block text-sm leading-relaxed max-w-xs"
-                  style={{ color: "rgba(13,13,12,0.52)" }}
-                >
-                  New Delhi&apos;s high-performance sports sanctuary.{" "}
-                  <span style={{ color: "#0D0D0C", fontWeight: 500 }}>Tennis</span>,{" "}
-                  <span style={{ color: "#0D0D0C", fontWeight: 500 }}>Padel</span>,{" "}
-                  <span style={{ color: "#0D0D0C", fontWeight: 500 }}>Badminton</span> &amp;{" "}
-                  <span style={{ color: "#0D0D0C", fontWeight: 500 }}>Cricket Nets</span>.
-                </p>
+            <div className="mt-10 grid max-w-xl grid-cols-2 gap-x-6 gap-y-4 border-t border-line pt-5 sm:grid-cols-4">
+              {[
+                { value: "18", label: "Courts & nets" },
+                { value: "4", label: "Sports" },
+                { value: "2/day", label: "Fair-play cap" },
+                { value: "12h", label: "Free cancellation" },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <div className="u-value text-2xl text-ink">{stat.value}</div>
+                  <div className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-muted">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: court plate + live drawer */}
+          <div className="relative lg:col-span-5">
+            <div className="relative overflow-hidden rounded-2xl border border-ink bg-court p-5 text-chalk shadow-[7px_7px_0_0_var(--color-ink)] sm:p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <div className="u-eyebrow text-clay-soft">Centre Court 1</div>
+                  <div className="u-display mt-1 text-xl">Tonight&apos;s draw</div>
+                </div>
+                <Stamp className="h-16 w-16 text-chalk/60" />
               </div>
+
+              <svg viewBox="0 0 360 190" fill="none" className="w-full" aria-hidden>
+                <rect x="8" y="8" width="344" height="174" stroke="rgba(251,247,238,0.55)" strokeWidth="1.4" />
+                <rect x="24" y="24" width="312" height="142" stroke="rgba(251,247,238,0.32)" strokeWidth="1" />
+                <line x1="180" y1="8" x2="180" y2="182" stroke="rgba(251,247,238,0.4)" strokeWidth="1" strokeDasharray="4 6" />
+                <line x1="110" y1="8" x2="110" y2="182" stroke="rgba(251,247,238,0.28)" strokeWidth="1" />
+                <line x1="250" y1="8" x2="250" y2="182" stroke="rgba(251,247,238,0.28)" strokeWidth="1" />
+                <line x1="24" y1="95" x2="336" y2="95" stroke="rgba(251,247,238,0.28)" strokeWidth="1" />
+                <circle cx="0" cy="0" r="5" fill="#e9b79f">
+                  <animateMotion dur="6.5s" repeatCount="indefinite" path="M180 30 C 250 60, 260 140, 180 160 C 100 140, 110 60, 180 30" />
+                </circle>
+                <circle cx="180" cy="95" r="3" fill="rgba(251,247,238,0.5)" />
+              </svg>
+
+              <div className="mt-4 flex items-center justify-between border-t border-chalk/20 pt-4">
+                <div>
+                  <div className="font-mono text-[8px] uppercase tracking-[0.18em] text-chalk/50">Member rate</div>
+                  <div className="u-value mt-1 text-lg text-chalk">{inr(0)} <span className="font-mono text-[9px] uppercase tracking-widest text-clay-soft">Gold</span></div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-[8px] uppercase tracking-[0.18em] text-chalk/50">Walk-in</div>
+                  <div className="u-value mt-1 text-lg text-chalk">{inr(1380)}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 -mt-3 ml-6 mr-2 rounded-xl border border-ink bg-chalk p-4 shadow-[5px_5px_0_0_var(--color-ink)]">
+              <div className="flex items-center justify-between">
+                <span className="u-eyebrow text-clay">Live tonight</span>
+                <span className="flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-court">
+                  <span className="h-1.5 w-1.5 rounded-full bg-court pulse-dot" /> Open
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {(slots.length ? slots : [{ slot: "18:00", free: 0 }, { slot: "19:00", free: 0 }, { slot: "20:00", free: 0 }]).map((s) => (
+                  <div key={s.slot} className="rounded-lg border border-line bg-paper-soft px-2.5 py-2">
+                    <div className="u-mono text-[10px] text-muted">{s.slot}</div>
+                    <div className="u-value text-base text-ink">{s.free || "—"}<span className="ml-1 font-mono text-[8px] uppercase text-muted">free</span></div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5">
+                <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-muted">
+                  {socialDate ? "Friday social · " + socialDateLabel(socialDate) : "Friday social open"}
+                </span>
+                <Link href={current ? "/dashboard/courts" : "/login"} className="font-mono text-[9px] uppercase tracking-[0.14em] text-clay u-link">
+                  Reserve
+                </Link>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-3 text-[11px] text-muted">
+              <MapPin className="h-3.5 w-3.5 text-clay" />
+              <span>Siri Fort Road, New Delhi · Secure parking · Showers</span>
             </div>
           </div>
         </div>
 
-        {/* ════ CREAM STATS STRIP: bottom 16% height ════ */}
-        <div
-          className="relative"
-          style={{ height: "16%", minHeight: 105, background: "#FBF6EF" }}
-        >
-          {/* S-curve notch */}
-          <div
-            className="absolute left-0 right-0 w-full overflow-hidden pointer-events-none"
-            style={{ top: 0, transform: "translateY(-100%)", height: 42 }}
-          >
-            <svg
-              viewBox="0 0 1440 62"
-              preserveAspectRatio="none"
-              className="w-full h-full"
-            >
-              <path d={notchPath} fill="#FBF6EF" />
-            </svg>
-          </div>
+        <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line pt-5 font-mono text-[9px] uppercase tracking-[0.16em] text-muted">
+          <span className="flex items-center gap-1.5 text-ink"><Sparkles className="h-3 w-3 text-clay" /> Book in 15 seconds</span>
+          <span>Member pricing automatic</span>
+          <span>One shelf inventory</span>
+          <span>UPI · Card · Cash</span>
+          <span className="ml-auto hidden sm:inline">{firstFree ? firstFree.free + " courts free at " + firstFree.slot : "Live availability"}</span>
+        </div>
+      </div>
 
-          {/* Scroll hint on the raised edge */}
-          <div
-            className="absolute hidden md:flex items-center gap-1.5"
-            style={{
-              right: "9%",
-              top: 0,
-              transform: "translateY(-30px)",
-              color: "rgba(13,13,12,0.4)",
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: "0.03em",
-            }}
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M5 1v8M2 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Scroll to discover
-          </div>
-
-          {/* Strip content */}
-          <div
-            className="h-full flex items-center px-5 sm:px-10 md:px-16 lg:px-24"
-          >
-              <div className="w-full flex flex-wrap md:flex-nowrap items-center justify-between gap-3 md:gap-6">
-                {/* Tagline */}
-                <p
-                  className="font-[family-name:var(--font-space-grotesk)] text-base md:text-xl font-medium leading-tight tracking-tight shrink-0"
-                  style={{ color: "#0D0D0C" }}
-                >
-                  Nothing great is<br />made alone
-                </p>
-
-                {/* Stats */}
-                  <div className="flex gap-6 md:gap-10 flex-wrap">
-                    {stats.map((s) => (
-                      <div key={s.label} className="flex flex-col">
-                        <span
-                          className="font-[family-name:var(--font-space-grotesk)] font-medium leading-none tracking-tight"
-                          style={{ fontSize: "clamp(20px, 2.5vw, 36px)", color: "#0D0D0C" }}
-                        >
-                          {s.value}
-                        </span>
-                        <span
-                          className="text-[11px] mt-0.5 font-medium"
-                          style={{ color: "rgba(13,13,12,0.5)" }}
-                        >
-                          {s.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Sprout */}
-                  <div className="hidden md:block shrink-0" style={{ color: "rgba(13,13,12,0.2)" }}>
-                      <svg width="30" height="40" viewBox="0 0 36 48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="46" x2="18" y2="22" />
-                        <path d="M18 32 C10 28 5 20 7 12 C13 14 18 20 18 28" />
-                        <path d="M18 27 C26 23 31 15 29 7 C23 9 18 15 18 23" />
-                        <line x1="10" y1="46" x2="26" y2="46" />
-                      </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-          );
+      <Ticker items={TICKER} tone="ink" />
+    </section>
+  );
 }

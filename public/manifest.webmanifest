@@ -1,0 +1,63 @@
+{
+  "name": "The Champions Club",
+  "short_name": "Champions Club",
+  "description": "Book courts, join Friday social, shop pro gear and settle your tab — the digital clubhouse for The Champions Club, New Delhi.",
+  "id": "/",
+  "start_url": "/dashboard/pass?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#f2ecdf",
+  "theme_color": "#17150f",
+  "categories": [
+    "sports",
+    "lifestyle",
+    "health"
+  ],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My member pass",
+      "short_name": "Pass",
+      "url": "/dashboard/pass",
+      "description": "Show your QR pass at the front desk"
+    },
+    {
+      "name": "Book a court",
+      "short_name": "Courts",
+      "url": "/dashboard/courts",
+      "description": "Live court availability"
+    },
+    {
+      "name": "Bar & kitchen",
+      "short_name": "Bar",
+      "url": "/dashboard/bar",
+      "description": "Order and settle your tab"
+    }
+  ]
+}

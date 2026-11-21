@@ -15,8 +15,9 @@ Last updated: 2026-11-21 (Session 1, extended). Everything here is PROPOSED unle
 
 | Layer | Choice | Status | Notes |
 |---|---|---|---|
-| Frontend | Next.js 15 (App Router), React 19, Tailwind CSS v4, Framer Motion, Lucide icons (D-033, D-034) | CONFIRMED & BUILT | Responsive web app with dynamic high-energy athletic theme, full SSR for SEO on public pages, and fluid client motion |
-| Backend/DB | Supabase: Postgres, Auth, Realtime, Storage, Row Level Security, scheduled jobs, Edge Functions | PROPOSED | Business rules as DB constraints/functions |
+| Frontend | Next.js 16 (App Router with Turbopack), React 19, Tailwind CSS v4, Framer Motion, Lucide icons, PWA (D-033, D-038) | CONFIRMED & BUILT | "Clubhouse Ledger" design system (`06_DESIGN_SYSTEM.md`), shared UI Kit (`kit.tsx`, `overlay.tsx`), full SSR/SEO for public pages, installable PWA with offline fallback |
+| State & Simulation | Local-First Reactive Store (`store.ts`, `bookings.ts`, `orders.ts`, `finance.ts`, `leads.ts`) (D-039) | CONFIRMED & BUILT | Fully typed client-side simulation enforcing DB schema invariants (18 facilities, exclusion logic, 2/day daily cap, tab discounts, GST reconciliation) with localStorage persistence |
+| Backend/DB | Supabase: Postgres, Auth, Realtime, Storage, Row Level Security, scheduled jobs, Edge Functions | PROPOSED | Business rules as DB constraints/functions; mirrors local-first runtime |
 | Auth | Supabase Auth, email + password only (D-024) | CONFIRMED (method) | Email delivery limits for verification/reset on the free plan are UNVERIFIED — check in P1.4 |
 | Frontend hosting | Cloudflare (Pages/Workers) **or** Vercel | **TBD in P1** | Re-verify terms and Next.js compatibility first. Vercel Hobby is non-commercial only (see section 3) |
 | Cron/keep-alive | GitHub Actions scheduled workflow | UNVERIFIED limits | Intended to ping the DB to avoid free-tier pause |

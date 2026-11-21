@@ -3,7 +3,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase, isSupabaseConfigured } from "./supabase";
 
-export type AppRole = "owner" | "manager" | "front_desk" | "bar_staff" | "member";
+export type AppRole =
+  | "owner"
+  | "manager"
+  | "front_desk"
+  | "bar_staff"
+  | "shop_manager"
+  | "cafe_manager"
+  | "member";
 export type AccountStatus = "prospect" | "pending_consent" | "active_member" | "suspended";
 
 export interface ClubUser {
@@ -43,6 +50,20 @@ export const DEMO_USERS: Record<string, ClubUser> = {
     email: "bar@championsclub.in",
     fullName: "Chef Vikram",
     role: "bar_staff",
+    status: "active_member",
+  },
+  shop_manager: {
+    id: "00000000-0000-0000-0000-000000000007",
+    email: "shop@championsclub.in",
+    fullName: "Neha Kapoor",
+    role: "shop_manager",
+    status: "active_member",
+  },
+  cafe_manager: {
+    id: "00000000-0000-0000-0000-000000000008",
+    email: "cafe@championsclub.in",
+    fullName: "Meera Nair",
+    role: "cafe_manager",
     status: "active_member",
   },
   gold_member: {
@@ -151,6 +172,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ? "front_desk"
           : cleanEmail.includes("bar")
           ? "bar_staff"
+          : cleanEmail.includes("shop")
+          ? "shop_manager"
+          : cleanEmail.includes("cafe") || cleanEmail.includes("kitchen")
+          ? "cafe_manager"
           : "member",
         status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",
         planId: cleanEmail.includes("gold") ? "gold" : cleanEmail.includes("junior") ? "junior" : "silver",

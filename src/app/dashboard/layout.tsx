@@ -5,162 +5,267 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Trophy,
   LayoutDashboard,
-  Calendar,
+  CalendarDays,
   ShoppingBag,
   Coffee,
   CreditCard,
   Settings,
   LogOut,
-  User,
   Menu,
   X,
-  ChevronRight,
-  Monitor,
+  ArrowUpRight,
+  ScanLine,
+  Wallet,
+  ChefHat,
+  Store,
+  Users2,
+  ChevronDown,
 } from "lucide-react";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, DEMO_USERS, type AppRole } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
+import { Avatar } from "@/components/ui/kit";
 
-const MEMBER_NAV = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard, href: "/dashboard" },
-  { id: "courts", label: "Book Courts", icon: Calendar, href: "/dashboard/courts" },
-  { id: "shop", label: "Pro Shop", icon: ShoppingBag, href: "/dashboard/shop" },
-  { id: "bar", label: "Bar & Lounge", icon: Coffee, href: "/dashboard/bar" },
-  { id: "pass", label: "My Pass", icon: CreditCard, href: "/dashboard/pass" },
-  { id: "settings", label: "Settings", icon: Settings, href: "/dashboard/settings" },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  roles?: AppRole[];
+  short?: string;
+};
+
+const CLUB_NAV: NavItem[] = [
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, short: "Overview" },
+  { href: "/dashboard/courts", label: "Book Courts", icon: CalendarDays, short: "Courts" },
+  { href: "/dashboard/social", label: "Friday Social", icon: Users2, short: "Social" },
+  { href: "/dashboard/shop", label: "Pro Shop", icon: ShoppingBag, short: "Shop" },
+  { href: "/dashboard/bar", label: "Bar & Lounge", icon: Coffee, short: "Bar" },
+  { href: "/dashboard/pass", label: "My Pass", icon: CreditCard, short: "Pass" },
 ];
 
-const STAFF_NAV = [
-  { id: "desk", label: "Front Desk", icon: Monitor, href: "/dashboard/desk" },
+const OPERATIONS_NAV: NavItem[] = [
+  { href: "/dashboard/owner", label: "Owner Console", icon: Wallet, roles: ["owner", "manager"], short: "Finance" },
+  { href: "/dashboard/desk", label: "Front Desk", icon: ScanLine, roles: ["owner", "manager", "front_desk"], short: "Desk" },
+  { href: "/dashboard/pos", label: "Shop POS", icon: Store, roles: ["owner", "manager", "shop_manager"], short: "POS" },
+  { href: "/dashboard/kitchen", label: "Kitchen Display", icon: ChefHat, roles: ["owner", "manager", "bar_staff", "cafe_manager"], short: "Kitchen" },
 ];
+
+const ROLE_LABEL: Record<AppRole, string> = {
+  owner: "Owner",
+  manager: "Club Manager",
+  front_desk: "Front Desk",
+  bar_staff: "Bar / Kitchen Staff",
+  shop_manager: "Shop Manager",
+  cafe_manager: "Café Manager",
+  member: "Member",
+};
+
+const PAGE_TITLES: { match: (p: string) => boolean; title: string; section: string }[] = [
+  { match: (p) => p === "/dashboard", title: "Overview", section: "The Club" },
+  { match: (p) => p.startsWith("/dashboard/courts"), title: "Court Reservations", section: "The Club" },
+  { match: (p) => p.startsWith("/dashboard/social"), title: "Friday Social", section: "The Club" },
+  { match: (p) => p.startsWith("/dashboard/shop"), title: "Pro Shop", section: "The Club" },
+  { match: (p) => p.startsWith("/dashboard/bar"), title: "Bar & Lounge", section: "The Club" },
+  { match: (p) => p.startsWith("/dashboard/pass"), title: "Digital Member Pass", section: "The Club" },
+  { match: (p) => p.startsWith("/dashboard/owner"), title: "Owner Console", section: "Operations" },
+  { match: (p) => p.startsWith("/dashboard/desk"), title: "Front Desk", section: "Operations" },
+  { match: (p) => p.startsWith("/dashboard/pos"), title: "Shop Point of Sale", section: "Operations" },
+  { match: (p) => p.startsWith("/dashboard/kitchen"), title: "Kitchen Display", section: "Operations" },
+  { match: (p) => p.startsWith("/dashboard/settings"), title: "Account & Privacy", section: "Account" },
+];
+
+function todayIST() {
+  return new Intl.DateTimeFormat("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date());
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, switchDemoUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
+    if (!loading && !user) router.push("/login");
   }, [user, loading, router]);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+    setRoleMenuOpen(false);
+  }, [pathname]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="animate-pulse text-[#CCFF00] text-sm font-bold uppercase tracking-widest">
-          Loading Dashboard...
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <div className="u-eyebrow animate-pulse text-clay">Opening the clubhouse…</div>
       </div>
     );
   }
-
   if (!user) return null;
 
   const isStaff = user.role !== "member";
-  const navItems = isStaff ? [...MEMBER_NAV, ...STAFF_NAV] : MEMBER_NAV;
+  const can = (item: NavItem) => !item.roles || item.roles.includes(user.role);
+  const ops = OPERATIONS_NAV.filter(can);
+  const page = PAGE_TITLES.find((p) => p.match(pathname)) ?? { title: "Clubhouse", section: "The Club" };
 
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
   };
 
-  const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard";
-    return pathname.startsWith(href);
+  const isActive = (href: string) => (href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href));
+
+  const NavLink = ({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) => {
+    const Icon = item.icon;
+    const active = isActive(item.href);
+    return (
+      <Link
+        href={item.href}
+        onClick={onNavigate}
+        className={cn(
+          "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+          active ? "bg-white/[0.06] text-chalk" : "text-chalk/50 hover:bg-white/[0.03] hover:text-chalk"
+        )}
+      >
+        {active && <span className="absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-full bg-clay" />}
+        <Icon className={cn("h-[15px] w-[15px] shrink-0", active ? "text-clay-soft" : "text-chalk/40 group-hover:text-chalk/70")} />
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.14em]">{item.label}</span>
+        {active && <ArrowUpRight className="ml-auto h-3 w-3 text-clay-soft" />}
+      </Link>
+    );
   };
 
-  return (
-    <div className="min-h-screen bg-[#050505] text-[#FAFAFA] flex">
-      {/* ====== DESKTOP SIDEBAR ====== */}
-      <aside className="hidden lg:flex flex-col w-64 border-r border-[#1A1A1A] bg-[#0A0A0A] fixed inset-y-0 left-0 z-30">
-        <div className="p-5 border-b border-[#1A1A1A]">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-[#CCFF00] flex items-center justify-center text-[#0A0A0A] font-black text-lg shadow-[0_0_20px_rgba(204,255,0,0.4)] group-hover:scale-105 transition-transform">
-              <Trophy className="w-4 h-4 fill-current" />
+  const sidebarBody = (mobile = false) => (
+    <div className="flex h-full flex-col">
+      <div className="border-b border-line-inverse px-5 py-5">
+        <Link href="/" className="group flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-chalk/25 bg-clay font-mono text-[11px] font-bold text-chalk">
+            TC
+          </div>
+          <div>
+            <div className="u-display text-[15px] leading-none text-chalk">Champions Club</div>
+            <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.24em] text-chalk/40">
+              {isStaff ? "Operations Hub" : "Member Hub"}
             </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold tracking-tight text-white text-sm uppercase leading-none font-[family-name:var(--font-space-grotesk)]">
-                Champions <span className="text-[#CCFF00]">Club</span>
-              </span>
-              <span className="text-[9px] tracking-[0.2em] text-[#666666] uppercase font-semibold mt-0.5">
-                Dashboard
-              </span>
+          </div>
+        </Link>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-3 py-5">
+        <div className="u-eyebrow mb-2 px-3 text-chalk/30">The Club</div>
+        <div className="space-y-0.5">
+          {CLUB_NAV.map((item) => (
+            <NavLink key={item.href} item={item} onNavigate={() => setSidebarOpen(false)} />
+          ))}
+        </div>
+
+        {ops.length > 0 && (
+          <>
+            <div className="u-eyebrow mt-6 mb-2 px-3 text-chalk/30">Operations</div>
+            <div className="space-y-0.5">
+              {ops.map((item) => (
+                <NavLink key={item.href} item={item} onNavigate={() => setSidebarOpen(false)} />
+              ))}
             </div>
+          </>
+        )}
+
+        <div className="u-eyebrow mt-6 mb-2 px-3 text-chalk/30">Account</div>
+        <div className="space-y-0.5">
+          <NavLink item={{ href: "/dashboard/settings", label: "Settings", icon: Settings }} onNavigate={() => setSidebarOpen(false)} />
+          <Link
+            href="/"
+            onClick={() => setSidebarOpen(false)}
+            className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-chalk/50 transition-colors hover:bg-white/[0.03] hover:text-chalk"
+          >
+            <ArrowUpRight className="h-[15px] w-[15px] text-chalk/40 group-hover:text-chalk/70" />
+            <span className="font-mono text-[10.5px] uppercase tracking-[0.14em]">Public Clubhouse</span>
           </Link>
         </div>
 
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all group ${
-                  active
-                    ? "bg-[#CCFF00]/15 text-[#CCFF00] border border-[#CCFF00]/30"
-                    : "text-[#888888] hover:text-white hover:bg-[#141414] border border-transparent"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${active ? "text-[#CCFF00]" : "text-[#666666] group-hover:text-white"}`} />
-                <span>{item.label}</span>
-                {active && <ChevronRight className="w-3 h-3 ml-auto" />}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-[#1A1A1A]">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center font-bold text-sm">
-              <User className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-white truncate">{user.fullName}</div>
-              <div className="text-[10px] text-[#666666] truncate">{user.email}</div>
+        {mobile && (
+          <div className="mt-6 rounded-xl border border-line-inverse bg-white/[0.03] p-3">
+            <div className="u-eyebrow mb-2 text-chalk/35">Demo role switcher</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(DEMO_USERS) as (keyof typeof DEMO_USERS)[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => { switchDemoUser(key); router.push(key === "junior_minor" ? "/pending-consent" : "/dashboard"); }}
+                  className={cn(
+                    "rounded-md border px-2 py-1.5 text-left font-mono text-[9px] uppercase tracking-wider transition",
+                    user.id === DEMO_USERS[key].id
+                      ? "border-clay bg-clay/20 text-chalk"
+                      : "border-line-inverse text-chalk/50 hover:text-chalk"
+                  )}
+                >
+                  {ROLE_LABEL[DEMO_USERS[key].role]}
+                </button>
+              ))}
             </div>
           </div>
+        )}
+      </nav>
+
+      <div className="border-t border-line-inverse p-4">
+        <div className="flex items-center gap-3">
+          <Avatar name={user.fullName} tone="clay" size={36} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[12px] font-semibold text-chalk">{user.fullName}</div>
+            <div className="mt-0.5 font-mono text-[8.5px] uppercase tracking-[0.18em] text-chalk/40">{ROLE_LABEL[user.role]}</div>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#888888] hover:text-red-400 py-2 rounded-lg hover:bg-red-500/10 transition-all"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line-inverse py-2 font-mono text-[9px] uppercase tracking-[0.16em] text-chalk/60 transition hover:border-clay hover:text-chalk"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <LogOut className="h-3 w-3" /> Sign out
           </button>
-        </div>
-      </aside>
-
-      {/* ====== MOBILE TOP BAR ====== */}
-      <header className="lg:hidden fixed top-0 inset-x-0 z-40 bg-[#0A0A0A]/95 backdrop-blur-xl border-b border-[#1A1A1A] py-3 px-4">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-[#CCFF00] flex items-center justify-center text-[#0A0A0A] font-black">
-              <Trophy className="w-3.5 h-3.5 fill-current" />
+          {!mobile && (
+            <div className="relative">
+              <button
+                onClick={() => setRoleMenuOpen((v) => !v)}
+                className="flex items-center gap-1 rounded-lg border border-line-inverse px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.16em] text-chalk/60 transition hover:border-clay hover:text-chalk"
+                aria-label="Switch demo role"
+              >
+                Role <ChevronDown className="h-3 w-3" />
+              </button>
+              {roleMenuOpen && (
+                <div className="absolute bottom-11 right-0 z-50 w-48 rounded-xl border border-ink-line bg-ink-soft p-2 shadow-2xl">
+                  {(Object.keys(DEMO_USERS) as (keyof typeof DEMO_USERS)[]).map((key) => (
+                    <button
+                      key={key}
+                      onClick={() => { switchDemoUser(key); setRoleMenuOpen(false); router.push(key === "junior_minor" ? "/pending-consent" : "/dashboard"); }}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left font-mono text-[9.5px] uppercase tracking-wider transition",
+                        user.id === DEMO_USERS[key].id ? "bg-clay/20 text-clay-soft" : "text-chalk/60 hover:bg-white/5 hover:text-chalk"
+                      )}
+                    >
+                      <span>{ROLE_LABEL[DEMO_USERS[key].role]}</span>
+                      <span className="text-[8px] opacity-50">{DEMO_USERS[key].fullName.split(" ")[0]}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <span className="font-extrabold tracking-tight text-white text-sm uppercase font-[family-name:var(--font-space-grotesk)]">
-              TCC <span className="text-[#CCFF00]">Hub</span>
-            </span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <div className="text-[10px] font-bold text-[#888888] uppercase hidden sm:block">
-              {user.fullName.split(" ")[0]}
-            </div>
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg bg-[#141414] border border-[#222222] text-white"
-              aria-label="Toggle Menu"
-            >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+          )}
         </div>
-      </header>
+      </div>
+    </div>
+  );
 
-      {/* Mobile Drawer */}
+  return (
+    <div className="flex min-h-screen bg-paper text-ink">
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[252px] border-r border-ink bg-ink lg:block">{sidebarBody()}</aside>
+
+      {/* Mobile drawer */}
       <AnimatePresence>
         {sidebarOpen && (
           <>
@@ -168,55 +273,61 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 z-30 lg:hidden"
+              className="fixed inset-0 z-40 bg-ink/60 lg:hidden"
               onClick={() => setSidebarOpen(false)}
             />
-            <motion.div
-              initial={{ x: -280 }}
+            <motion.aside
+              initial={{ x: -300 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 w-72 bg-[#0A0A0A] border-r border-[#1A1A1A] z-40 lg:hidden pt-16 px-3 pb-4 flex flex-col"
+              exit={{ x: -300 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed inset-y-0 left-0 z-50 w-[280px] border-r border-ink bg-ink lg:hidden"
             >
-              <nav className="flex-1 space-y-1 mt-4">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-bold uppercase tracking-wider transition-all ${
-                        active
-                          ? "bg-[#CCFF00]/15 text-[#CCFF00] border border-[#CCFF00]/30"
-                          : "text-[#888888] hover:text-white hover:bg-[#141414] border border-transparent"
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 ${active ? "text-[#CCFF00]" : "text-[#666666]"}`} />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
               <button
-                onClick={handleSignOut}
-                className="mt-4 w-full flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider text-[#888888] hover:text-red-400 py-3 rounded-lg hover:bg-red-500/10 transition-all"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close menu"
+                className="absolute right-3 top-3 rounded-full border border-line-inverse p-1.5 text-chalk/60"
               >
-                <LogOut className="w-4 h-4" />
-                <span>Sign Out</span>
+                <X className="h-3.5 w-3.5" />
               </button>
-            </motion.div>
+              {sidebarBody(true)}
+            </motion.aside>
           </>
         )}
       </AnimatePresence>
 
-      {/* ====== MAIN CONTENT AREA ====== */}
-      <main className="flex-1 lg:ml-64 min-h-screen">
-        <div className="pt-16 lg:pt-0">
-          {children}
-        </div>
-      </main>
+      {/* Main */}
+      <div className="min-w-0 flex-1 lg:ml-[252px]">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-line bg-paper/90 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="rounded-md border border-line p-2 text-ink lg:hidden"
+              aria-label="Open menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <div className="hidden items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-muted sm:flex">
+              <span>{page.section}</span>
+              <span className="text-line">/</span>
+              <span className="text-ink">{page.title}</span>
+            </div>
+            <div className="u-mono text-[11px] uppercase tracking-[0.1em] text-ink sm:hidden">{page.title}</div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className="hidden font-mono text-[9.5px] uppercase tracking-[0.14em] text-muted md:inline">{todayIST()} IST</span>
+            <span className="chip chip-ink hidden sm:inline-flex">{ROLE_LABEL[user.role]}</span>
+            <Link
+              href="/"
+              className="rounded-full border border-line p-2 text-ink transition hover:border-ink"
+              aria-label="Public clubhouse"
+            >
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </header>
+        <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
+      </div>
     </div>
   );
 }
