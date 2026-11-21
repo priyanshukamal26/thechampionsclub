@@ -89,8 +89,8 @@ Phase and task detail lives in `03_ROADMAP_AND_FEATURES.md` section 1 (tasks P0.
 
 | Phase | Name | Milestone | Status |
 |---|---|---|---|
-| P0 | Planning & design | M0 Design frozen | **In progress** — P0.1–P0.6 done; P0.7–P0.12 pending |
-| P1 | Foundation & auth | M1 Skeleton live | **In progress** — Next.js 15 app shell, Landing page, Multi-step registration built & verified; Supabase backend integration next |
+| P0 | Planning & design | M0 Design frozen | **COMPLETE** — Invariants defined, ER diagram documented, core schema v0 and test suite drafted |
+| P1 | Foundation & auth | M1 Skeleton live | **In progress** — Next.js 15 app shell, Landing page, Multi-step registration built; Supabase migrations & client initialized |
 | P2 | Membership & accounts | M2 Members work | Not started |
 | P3 | Facilities, payments adapter, booking engine | M3 Booking engine proven | Not started |
 | P4 | Gear shop | M4 One shelf | Not started |

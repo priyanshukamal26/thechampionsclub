@@ -68,11 +68,42 @@ All rows below were checked via web search on **2026-11-21** unless marked other
 | H15 | Junior consent must be credible (D-026/D-027) | Store DOB, guardian details, consent text version and timestamp; `pending_consent` state until verified by desk or guardian link; legal specifics UNVERIFIED — re-check DPDP Act wording before claiming compliance |
 | H16 | Frontend undecided (D-032) | Backend-first: schema, rules, RLS and tests independent of the UI; plain functional screens; gate G1 before P1.5 and before P8 styling |
 
-## 5. Data model outline (v0 — to be turned into SQL in Session 2+)
+## 5. Data model outline & ER Diagram (Schema v0)
 
-Naming: snake_case tables. All tables get `id`, `created_at`, and where relevant `updated_at`. Money stored as integer paise (or `numeric(12,2)`) — decide in schema v0 and log it as a decision.
+All financial fields are stored as exact fixed-point `numeric(12, 2)` (D-036) to avoid floating-point inaccuracies while preserving transparent accounting.
 
-**Identity & access:** `profiles` (links Supabase auth user to role and `account_state`: prospect / pending_consent / active_member / staff / suspended), `roles`/role enum, `account_invites` (for desk-registered members, X7), `audit_log`.
+### 5.0 Entity-Relationship (ER) Diagram
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ GUARDIAN_CONSENTS : "has"
+    PROFILES ||--o{ MEMBERSHIPS : "holds"
+    PROFILES ||--o{ BOOKINGS : "reserves"
+    PROFILES ||--o{ ORDERS : "places"
+    PROFILES ||--o{ BAR_TABS : "runs"
+    PROFILES ||--o{ TRANSACTIONS : "participates_in"
+
+    PLANS ||--o{ MEMBERSHIPS : "specifies"
+
+    FACILITIES ||--o{ BOOKINGS : "hosts"
+    BOOKINGS ||--o| SOCIAL_SESSIONS : "exclusive_slot"
+    SOCIAL_SESSIONS ||--o{ SESSION_PARTICIPANTS : "joins"
+    PROFILES ||--o{ SESSION_PARTICIPANTS : "registers_for"
+
+    PRODUCTS ||--o{ PRODUCT_VARIANTS : "has_variants"
+    PRODUCT_VARIANTS ||--o{ STOCK_MOVEMENTS : "tracks_delta"
+    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "ordered_as"
+    ORDERS ||--o{ ORDER_ITEMS : "contains"
+
+    BAR_TABLES ||--o{ BAR_TABS : "assigned_to"
+    BAR_TABS ||--o{ BAR_ORDERS : "aggregates"
+    MENU_ITEMS ||--o{ BAR_ORDER_LINES : "item_ordered"
+    BAR_ORDERS ||--o{ BAR_ORDER_LINES : "contains"
+
+    PAYMENTS ||--o{ TRANSACTIONS : "settles"
+```
+
+**Identity & access:** `profiles` (links auth user to app role and `account_status`: prospect / pending_consent / active_member / suspended), `guardian_consents` (DPDP Act minor guardian verification), `audit_log`.
 
 **Membership (A):** `plans` (Gold/Silver/Junior), `plan_benefits` (court rate multiplier, shop discount %, bar discount %, free hours, daily cap), `members` (name, phone, email, DOB, guardian fields, consent record), `memberships` (member, plan, start, end, status), `member_notes`. Add `guardian_consents` (member, guardian name/contact, consent text version, consented_at, verified_by, verified_at, status).
 

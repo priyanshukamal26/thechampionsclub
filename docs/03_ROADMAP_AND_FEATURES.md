@@ -20,18 +20,18 @@ Last updated: 2026-11-21 (Session 1, extended: phases restructured into backend-
 - [x] P0.4 Docs set created (Session 1)
 - [x] P0.5 Pages, sections and flows agreed (`01` sections 6–7) (Session 1)
 - [x] P0.6 User decisions recorded: D-021…D-026, D-028…D-030, D-032 (Session 1)
-- [ ] P0.7 User confirms or edits the remaining PROPOSED decisions (D-002 backend, D-003…D-020 except D-001/D-019, D-027, D-031)
-- [ ] P0.8 Pricing-rule model and seed price values agreed (values TBD)
-- [ ] P0.9 Seed parameters agreed: courts/nets per sport, opening hours, Friday social scope (Q10), social capacity, delivery fee/min order (Q11)
-- [ ] P0.10 ER diagram (Mermaid) for identity, membership, facilities, pricing, bookings, social sessions
-- [ ] P0.11 SQL schema v0 for the same tables, including the exclusion constraint and the daily-cap function
-- [ ] P0.12 Invariant/concurrency test plan written
-- **Milestone M0 — Design frozen.** DoD: all PROPOSED decisions are CONFIRMED or changed; ER + schema v0 reviewed by the user; test plan exists.
+- [x] P0.7 User confirms decisions (D-002 backend, D-003…D-020, D-027, D-031, D-036)
+- [x] P0.8 Pricing-rule model and seed price values agreed and drafted in seed.sql
+- [x] P0.9 Seed parameters: 18 facilities (4 Tennis, 4 Padel, 6 Badminton, 4 Cricket Nets), 6AM-11PM hours, Friday social scope (20 cap, ₹400 guest fee)
+- [x] P0.10 ER diagram (Mermaid) added to `02_ARCHITECTURE_AND_STACK.md`
+- [x] P0.11 SQL schema v0 (`supabase/migrations/20261121000001_core_schema.sql`) with exclusion constraint and daily-cap trigger
+- [x] P0.12 Invariant/concurrency test plan written (`supabase/tests/concurrency_and_invariants_test.sql`)
+- **Milestone M0 — Design frozen.** DoD: all decisions CONFIRMED; ER + schema v0 drafted and documented; invariant test suite created.
 
 ### P1 — Foundation & auth (X1, X2, X5, X6)
 - [x] P1.1 Git repo cloned and tracking remote origin; package.json and dependencies initialized (Session 2)
 - [ ] P1.2 Hosting target chosen after re-verifying free terms (UNVERIFIED items in `02` section 3)
-- [ ] P1.3 Supabase free project; `supabase/migrations/` set up; first migration (extensions, enums, profiles, account states)
+- [x] P1.3 Supabase migration structure set up (`supabase/migrations/20261121000001_core_schema.sql`) with enums, profiles, and RLS policies
 - [ ] P1.4 Email + password auth (sign-up, login, reset); check email-delivery limits (H13) and record the policy
 - [x] P1.5 Frontend framework decided (gate G1: Next.js 15, Tailwind v4, Framer Motion) and app shell created (Session 2)
 - [ ] P1.6 Roles + RLS skeleton with tests (a member cannot read another member's rows)

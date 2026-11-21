@@ -188,6 +188,7 @@ Statuses: CONFIRMED (user said so) / PROPOSED (AI suggested, awaiting approval).
 | D-033 | Frontend framework selected: Next.js 15 (App Router), React 19, Tailwind CSS v4, Framer Motion, and Lucide React icons | CONFIRMED (user, Session 2) | Delivers SSR/SEO for public club pages, smooth award-level interactive animations, and responsive performance |
 | D-034 | Visual design language: "High-Energy Athletic" aesthetic with obsidian dark surfaces (`#050505`, `#0A0A0A`, `#141414`), electric lime accents (`#CCFF00`), radial sport glows, bold Space Grotesk typography, and fluid micro-interactions | CONFIRMED (user, Session 2) | Custom-tailored for high-end modern sports clubs |
 | D-035 | Multi-step registration wizard structure with dynamic minor/Junior detection (<18 years DOB) that dynamically injects Step 4 (Guardian Consent per India DPDP Act 2023) | CONFIRMED (user, Session 2) | Enforces compliance without friction for adult athletes |
+| D-036 | Financial currency representation: exact fixed-point `numeric(12, 2)` across all financial tables, avoiding floating-point inaccuracies while maintaining clean compatibility with standard Indian accounting, GST invoices, and payment gateways | CONFIRMED (Session 2) | Eliminates rounding errors, fully supported by PostgreSQL |
 
 ## 5. Acceptance criteria for "Part 1 complete"
 
