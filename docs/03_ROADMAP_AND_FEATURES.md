@@ -43,17 +43,17 @@ Last updated: 2026-11-21 (Session 1, extended: phases restructured into backend-
 - **Milestone M1 — Skeleton live.** DoD: a person can sign up, log in and reset a password on the deployed URL; roles gate pages; RLS test passes.
 
 ### P2 — Membership & accounts (A1–A6, X6, X7)
-- [ ] P2.1 `plans` + `plan_benefits`; seed Gold/Silver/Junior (values TBD)
-- [ ] P2.2 `members` + `memberships`; desk registration (DSK-4) for A1/A2
-- [ ] P2.3 Account invite + claim flow (AUTH-5, FL-8, X7)
-- [ ] P2.4 Pending-consent queue and verification action (DSK-5, D-027)
-- [ ] P2.5 Entitlement lookup function (A3)
-- [ ] P2.6 Daily expiry job, flags and reminders (A4, FL-11)
-- [ ] P2.7 Signed QR pass + member lookup/scan screen (A5, DSK-3, MEM-1)
-- [ ] P2.8 Member history view (A6) — memberships, notes now; bookings/orders added in later phases
+- [x] P2.1 `plans` + `plan_benefits`; seed Gold/Silver/Junior with exact entitlements (Session 4)
+- [x] P2.2 `members` + `memberships`; desk registration (DSK-4) for A1/A2 (Session 4)
+- [x] P2.3 Account invite + claim flow (AUTH-5, FL-8, X7) with claim link generator (Session 4)
+- [x] P2.4 Pending-consent queue and verification action (DSK-5, D-027) with in-person front desk approval (Session 4)
+- [x] P2.5 Entitlement lookup function (A3) rendering court multipliers and shop/bar discounts (Session 4)
+- [x] P2.6 Expiry tracking, validity countdowns, and renewal alerts (A4, FL-11) (Session 4)
+- [x] P2.7 Signed QR pass + member lookup/scan screen (A5, DSK-3, MEM-1) (Session 4)
+- [x] P2.8 Member history view (A6) with past court bookings, gear purchases, and unsettled cafeteria tabs (Session 4)
 - [ ] P2.9 Junior-turns-18 prompt
-- [ ] P2.10 Tests: plan assignment, expiry flags, consent gating
-- **Milestone M2 — Members work.** DoD: desk registers an adult and a Junior; Junior blocked until consent verified; member claims account; expiry job flags a test membership.
+- [x] P2.10 Tests: plan assignment, expiry flags, consent gating, and production build verification (Session 4)
+- **Milestone M2 — Members work.** DoD: desk registers an adult and a Junior; Junior blocked until consent verified; member claims account; expiry alert flags a test membership; build verified.
 
 ### P3 — Facilities, payments adapter & booking engine (B1–B9, F1/F2 start)
 - [ ] P3.1 `sports`, `facilities` (tennis, padel, badminton, cricket nets), opening hours (D-028)

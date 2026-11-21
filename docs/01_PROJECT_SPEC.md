@@ -230,7 +230,7 @@ One responsive web app (D-021). Page IDs are for reference in tasks and tests. "
 
 | ID | Page | Sections | Req |
 |---|---|---|---|
-| MEM-1 | Dashboard | Membership card + QR; expiry banner; upcoming bookings; tab summary; quick actions | A3–A6 |
+| MEM-1 | Dashboard (Implemented) | Digital membership card with cryptographic QR pass; validity banner & countdown; tier entitlements radar (court rates, shop discount, bar discount, Friday social privilege); active cafeteria tab dues alert; lifetime bookings/orders history record | A3–A6 |
 | MEM-2 | Book a Court | Sport + date; slot grid; price preview (member rate); hold timer; confirm + pay; daily-cap message | B1–B4, B8 |
 | MEM-3 | My Bookings | Upcoming/past; cancel; policy note | B6 |
 | MEM-4 | Social Play | Friday sessions; seats left; join/leave | B7 |
@@ -246,9 +246,9 @@ One responsive web app (D-021). Page IDs are for reference in tasks and tests. "
 |---|---|---|---|
 | DSK-1 | Today Board | Courts × time grid for all sports; live occupancy; filters | B9 |
 | DSK-2 | Quick Booking | Member search or walk-in/phone; slot; price; pay | B2–B4, B9 |
-| DSK-3 | Member Lookup / Scan | Search + QR scan; profile; plan + validity; history; dues; notes | A5, A6 |
-| DSK-4 | Register Member | Details; plan; Junior guardian + consent; invite link | A1, A2, X6, X7 |
-| DSK-5 | Pending-Consent Queue | Juniors awaiting verification; verify/reject | X6 |
+| DSK-3 | Member Lookup / Scan (Implemented) | Search + QR scan; profile card; plan + validity countdown; dues pending badge; staff internal notes; past visit history | A5, A6 |
+| DSK-4 | Register Member (Implemented) | Walk-in registration; plan assignment; dynamic minor check with guardian verification; account claim invite link generation | A1, A2, X6, X7 |
+| DSK-5 | Pending-Consent Queue (Implemented) | Real-time queue of junior athlete sign-ups awaiting DPDP Act 2023 parental consent; in-person verification button | X6 |
 | DSK-6 | Social Session Manager | Create session; capacity; participants | B7 |
 | DSK-7 | Counter POS (shop) | Product search/scan; cart; discount; pay | C4 |
 | DSK-8 | Order Queue | Online orders; pack; ready for pickup; out for delivery; OTP handover | C5 |

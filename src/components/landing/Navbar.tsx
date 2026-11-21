@@ -93,34 +93,50 @@ export default function Navbar() {
           {/* Action CTAs & Auth Profile */}
           <div className="hidden sm:flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-2.5 bg-[#141414] border border-[#222222] pl-3 pr-2 py-1.5 rounded-full">
-                <Link
-                  href={user.status === "pending_consent" ? "/pending-consent" : "/#availability"}
-                  className="flex items-center gap-2 group"
-                >
-                  <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center text-xs font-bold">
-                    <User className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-white group-hover:text-[#CCFF00] transition-colors leading-none truncate max-w-[120px]">
-                      {user.fullName.split(" ")[0]}
-                    </span>
-                    {badge && (
-                      <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded border mt-0.5 inline-block ${badge.color}`}>
-                        {badge.text}
+              <div className="flex items-center gap-2">
+                {user.role !== "member" && (
+                  <Link
+                    href="/desk"
+                    className="text-xs font-bold uppercase tracking-wider text-[#CCFF00] bg-[#CCFF00]/10 border border-[#CCFF00]/30 hover:bg-[#CCFF00]/20 px-3 py-1.5 rounded-full transition-all"
+                  >
+                    Desk Console
+                  </Link>
+                )}
+                <div className="flex items-center gap-2.5 bg-[#141414] border border-[#222222] pl-3 pr-2 py-1.5 rounded-full">
+                  <Link
+                    href={
+                      user.status === "pending_consent"
+                        ? "/pending-consent"
+                        : user.role !== "member"
+                        ? "/desk"
+                        : "/member"
+                    }
+                    className="flex items-center gap-2 group"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-[#CCFF00]/20 text-[#CCFF00] flex items-center justify-center text-xs font-bold">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="text-xs font-bold text-white group-hover:text-[#CCFF00] transition-colors leading-none truncate max-w-[120px]">
+                        {user.fullName.split(" ")[0]}
                       </span>
-                    )}
-                  </div>
-                </Link>
+                      {badge && (
+                        <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded border mt-0.5 inline-block ${badge.color}`}>
+                          {badge.text}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
 
-                <button
-                  onClick={() => signOut()}
-                  className="p-1.5 rounded-full hover:bg-[#222222] text-[#777777] hover:text-white transition-colors"
-                  title="Sign Out"
-                  aria-label="Sign Out"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
+                  <button
+                    onClick={() => signOut()}
+                    className="p-1.5 rounded-full hover:bg-[#222222] text-[#777777] hover:text-white transition-colors"
+                    title="Sign Out"
+                    aria-label="Sign Out"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -207,7 +223,26 @@ export default function Navbar() {
                     >
                       Guardian Verification Pending
                     </Link>
-                  ) : null
+                  ) : (
+                    <>
+                      {user.role !== "member" && (
+                        <Link
+                          href="/desk"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="w-full text-center bg-[#CCFF00] text-[#0A0A0A] font-bold text-sm uppercase tracking-wider py-3 rounded-full shadow-[0_0_15px_rgba(204,255,0,0.3)]"
+                        >
+                          Front Desk Console
+                        </Link>
+                      )}
+                      <Link
+                        href="/member"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full text-center bg-[#141414] border border-[#333333] text-white font-bold text-sm uppercase tracking-wider py-3 rounded-full hover:border-[#CCFF00]"
+                      >
+                        My Member Pass & Dashboard
+                      </Link>
+                    </>
+                  )
                 ) : (
                   <>
                     <Link

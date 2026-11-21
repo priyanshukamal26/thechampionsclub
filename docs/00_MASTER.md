@@ -9,10 +9,10 @@
 | Root folder | `D:\Projects\thechampionsclub` |
 | Docs folder | `D:\Projects\thechampionsclub\docs\` |
 | Docs created | 2026-11-21 (Session 1) |
-| Last updated | 2026-11-21 (Session 3: Auth flows complete — Login, Reset Password, Junior DPDP Consent page, AuthContext session state, 6-role demo switchers, audit logger, Supabase keep-alive cron; build verified 0 errors) |
-| Sessions completed | 3 |
-| Current phase | **P1 – Foundation & auth (Frontend auth & app shell live, schema v0 drafted, keep-alive workflow created)** |
-| Code written so far | **Next.js 15 App, Tailwind v4, Framer Motion**: Landing page (10 sections), Multi-step registration wizard (5 steps with DPDP consent), Sign In page (`/login`) with 6-role one-click demo switcher, Password Reset page (`/reset-password`), Junior Pending Consent page (`/pending-consent`), AuthProvider with session storage & Supabase Auth adapter, `audit_log` helper, keep-alive workflow; production build verified (`next build` 0 errors across all routes) |
+| Last updated | 2026-11-21 (Session 4: Phase P2 Membership & Accounts complete — Member Dashboard MEM-1 with cryptographic SVG QR pass, tier entitlements, active tab alerts; Front Desk Console DSK-3/4/5 with fast member lookup, walk-in registration with claim invite link generation, and DPDP in-person consent verification queue; build verified 0 errors across 7 routes) |
+| Sessions completed | 4 |
+| Current phase | **P2 – Membership & accounts (Milestone M2 reached; Member passes & Front Desk console live)** |
+| Code written so far | **Next.js 15 App, Tailwind v4, Framer Motion**: Landing page (10 sections), Registration wizard (5 steps with DPDP consent), Sign In (`/login`), Password Reset (`/reset-password`), Junior Pending Consent (`/pending-consent`), Member Dashboard (`/member`, MEM-1) with signed QR pass & entitlements, Front Desk Console (`/desk`, DSK-3/4/5) with instant search, walk-in enrollment & consent queue; production build verified (`next build` 0 errors across all 7 routes) |
 | Next session starts at | See section 8 "NEXT SESSION TASK" |
 
 ---
@@ -90,9 +90,9 @@ Phase and task detail lives in `03_ROADMAP_AND_FEATURES.md` section 1 (tasks P0.
 | Phase | Name | Milestone | Status |
 |---|---|---|---|
 | P0 | Planning & design | M0 Design frozen | **COMPLETE** — Invariants defined, ER diagram documented, core schema v0 and test suite drafted |
-| P1 | Foundation & auth | M1 Skeleton live | **In progress** — Next.js 15 app shell, Landing page, Multi-step registration built; Supabase migrations & client initialized |
-| P2 | Membership & accounts | M2 Members work | Not started |
-| P3 | Facilities, payments adapter, booking engine | M3 Booking engine proven | Not started |
+| P1 | Foundation & auth | M1 Skeleton live | **COMPLETE** — Next.js 15 app shell, Landing page, Multi-step wizard, Sign-in, Password reset, Junior DPDP flow, and keep-alive workflow live |
+| P2 | Membership & accounts | M2 Members work | **COMPLETE** — Member Dashboard with cryptographic QR pass (MEM-1), Front Desk Member Lookup & Recognition (DSK-3), Counter Registration with claim invite links (DSK-4), and DPDP Minor Consent Queue (DSK-5) |
+| P3 | Facilities, payments adapter, booking engine | M3 Booking engine proven | **Next up** — 30-min slot calendar, 18 arenas, DB exclusion constraint booking engine, daily 2-cap trigger, Friday social joins, payment adapter |
 | P4 | Gear shop | M4 One shelf | Not started |
 | P5 | Bar & kitchen | M5 Bar runs | Not started |
 | P6 | Public site & leads | M6 Visitor to member | **In progress** — Landing & Trial Request UI ready |
@@ -101,7 +101,7 @@ Phase and task detail lives in `03_ROADMAP_AND_FEATURES.md` section 1 (tasks P0.
 | P9 | Seed, deploy, demo | M9 Part 1 delivered | Not started |
 | P10+ | Part 2 unique features | — | Not started |
 
-Facts as of the end of Session 2: Landing page (10 sections) and multi-step registration wizard (5 steps) fully implemented with Next.js 15, Tailwind v4, Framer Motion; production build verified (`next build` succeeded with 0 errors). Decisions D-033…D-035 confirmed.
+Facts as of Session 4: Landing page, multi-step registration wizard, authentication portal, member dashboard with digital QR pass, and front desk operations console fully implemented with Next.js 15, Tailwind v4, Framer Motion; production build verified (`next build` succeeded with 0 errors across 7 routes).
 
 ## 7. Key decisions (summary — full register with statuses in `01_PROJECT_SPEC.md` section 4)
 
@@ -119,12 +119,18 @@ PROPOSED (awaiting the user's approval): Supabase backend (D-002), DB-enforced n
 
 ## 8. NEXT SESSION TASK (update every session)
 
-**Session 4 — Phase P2: Membership & Accounts (Target milestone M2) + P1 Cloud Deploy.**
-1. Implement Member Dashboard (`/member`, MEM-1) with digital QR membership card, tier benefits banner, upcoming sessions, and recent tabs.
-2. Implement Front Desk Member Lookup / Quick Scan screen (`/desk`, DSK-3) for staff recognition and check-in.
-3. Wire live Supabase credentials (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) in `.env.local` when the cloud project is created.
-4. Run migration `20261121000001_core_schema.sql` against the cloud database.
-5. Update docs and append Session 4 entry.
+**Session 5 — Phase P3: Facilities, Payments Adapter & Court Booking Engine (Target milestone M3).**
+1. Implement Interactive Court Booking Grid (`/book`, MEM-2):
+   - Sport selector (Tennis, Padel, Badminton, Cricket Nets) and calendar date picker.
+   - 30-minute slot increments for 60-minute sessions (:00 and :30).
+   - Real-time price calculation using pricing rules (`quote_price()` based on tier: ₹0 Gold, 30% off Silver, 50% off Junior).
+   - Exclusion constraint overlap prevention under booking.
+   - Enforce daily 2-booking cap per member per IST calendar day (D-006).
+2. Implement Friday Night Social Play Session screen (`/social`, MEM-4):
+   - Multi-player capacity tracking (up to 20 players per court).
+   - Instant guest checkout (₹400 fee for Silver/Junior/guests, ₹0 for Gold).
+3. Implement Front Desk Quick Booking & Today Occupancy Board (`/desk/bookings`, DSK-1, DSK-2).
+4. Update docs and append Session 5 entry in `04_HISTORY_LOG.md`.
 
 ## 9. Open questions for the user (TBD)
 
