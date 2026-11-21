@@ -23,6 +23,8 @@ import QRCode from "@/components/common/QRCode";
 
 export default function MemberPassPage() {
   const { user } = useAuth();
+  const [showQrModal, setShowQrModal] = useState(false);
+
   if (!user) return null;
 
   const currentMember: ClubMember =
@@ -31,7 +33,6 @@ export default function MemberPassPage() {
     SEED_MEMBERS[0];
 
   const plan = MEMBERSHIP_PLANS[currentMember.planId] || MEMBERSHIP_PLANS.gold;
-  const [showQrModal, setShowQrModal] = useState(false);
 
   const expiryDate = new Date(currentMember.membershipEnd);
   const today = new Date();

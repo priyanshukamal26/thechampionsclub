@@ -77,7 +77,7 @@ export default function Testimonials() {
                 <Quote className="w-8 h-8 text-[#1F1F1F] mb-4" />
 
                 <p className="text-sm text-[#CCCCCC] leading-relaxed mb-8 italic">
-                  "{t.text}"
+                  &ldquo;{t.text}&rdquo;
                 </p>
               </div>
 

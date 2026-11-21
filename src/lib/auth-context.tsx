@@ -76,21 +76,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<ClubUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // 1. Check local session cache
-    const cached = localStorage.getItem("champions_user");
-    if (cached) {
-      try {
-        setUser(JSON.parse(cached));
-      } catch {
-        localStorage.removeItem("champions_user");
+  const [user, setUser] = useState<ClubUser | null>(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("champions_user");
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {
+          localStorage.removeItem("champions_user");
+        }
       }
     }
+    return null;
+  });
+  const [loading, setLoading] = useState(false);
 
-    // 2. Listen to Supabase Auth state changes if available
+  useEffect(() => {
+    // Listen to Supabase Auth state changes if available
     try {
       const { data: authListener } = supabase.auth.onAuthStateChange(
         async (event, session) => {
@@ -112,12 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       );
 
-      setLoading(false);
       return () => {
         authListener.subscription.unsubscribe();
       };
     } catch {
-      setLoading(false);
+      // Ignore in offline/demo environment
     }
   }, []);
 

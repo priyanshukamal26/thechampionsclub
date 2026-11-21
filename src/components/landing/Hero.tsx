@@ -56,7 +56,6 @@ export default function Hero() {
   const [idx, setIdx] = useState(0);
   const [phase, setPhase] = useState<"enter" | "hold" | "leave">("hold");
   const [prog, setProg] = useState(1);
-  const [panelIdx, setPanelIdx] = useState(0); // which gradient is fully shown
   const [panelBlend, setPanelBlend] = useState(0); // 0=prev 1=current
   const [bobY, setBobY] = useState(0);
   const rafRef = useRef<number>(0);
@@ -122,7 +121,6 @@ export default function Hero() {
       setIdx(idxRef.current);
       setPhase(newPhase);
       setProg(newProg);
-      setPanelIdx(panelIdxRef.current);
       setPanelBlend(panelBlendRef.current);
       setBobY(by);
 

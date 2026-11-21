@@ -198,7 +198,7 @@ export default function MembershipTeaser() {
                   {/* Features List */}
                   <div className="space-y-3 mb-8">
                     <div className="text-[11px] uppercase tracking-wider text-[#888888] font-bold">
-                      What's Included:
+                      What&apos;s Included:
                     </div>
                     {plan.features.map((feat) => (
                       <div key={feat} className="flex items-start gap-2.5 text-xs text-[#AAAAAA]">
