@@ -238,7 +238,7 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - Production build test (`next build`): PASS (all routes prerendered cleanly).
 - Invariant SQL test suite (`supabase/tests/concurrency_and_invariants_test.sql`): documented and prepared.
 
-**Commits:** Pending commit for Session 3 work.
+**Commits:** `004bfee` — feat(auth): implement login, password reset, junior dpdp consent page, auth context with demo switcher, and audit logger
 
 **Deployments/URLs:** Local development server running at `http://localhost:3000`.
 
