@@ -96,9 +96,13 @@ export default function MemberPassPage() {
         }
         meta={
           <>
-            <StatusPill tone={daysLeft < 0 ? "danger" : daysLeft <= 14 ? "warn" : "success"}>
-              {daysLeft < 0 ? "Expired" : `${daysLeft} days valid`}
-            </StatusPill>
+            {member.status === "pending_consent" ? (
+              <StatusPill tone="warn">Parental Consent Pending</StatusPill>
+            ) : (
+              <StatusPill tone={daysLeft < 0 ? "danger" : daysLeft <= 14 ? "warn" : "success"}>
+                {daysLeft < 0 ? "Expired" : `${daysLeft} days valid`}
+              </StatusPill>
+            )}
             <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">{member.memberCode}</span>
             <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
               {plan.name} · since {formatDate(member.membershipStart)}
@@ -161,10 +165,39 @@ export default function MemberPassPage() {
             Installable: add the club to your home screen and the pass is cached for offline use.
           </div>
 
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <Stat label="Visits" value={String(bookings)} unit="courts" />
-            <Stat label="Spend" value={inr(spend)} unit="lifetime" />
-            <Stat label="Plan" value={plan.shortName ?? "—"} unit={`${plan.shopDiscountPct}% shop`} />
+          <div className="mt-3.5 grid grid-cols-3 gap-2">
+            <div className="flex flex-col justify-between rounded-xl border border-line bg-paper-soft p-3 min-w-0">
+              <div className="u-eyebrow text-muted text-[9.5px]">Visits</div>
+              <div className="mt-1.5 flex items-baseline gap-1 min-w-0">
+                <span className="u-value text-[16px] sm:text-[18px] text-ink leading-tight font-semibold">
+                  {bookings}
+                </span>
+                <span className="u-mono text-[9px] uppercase tracking-wider text-muted truncate">
+                  courts
+                </span>
+              </div>
+              <div className="mt-1 text-[9.5px] text-muted truncate">Bookings</div>
+            </div>
+
+            <div className="flex flex-col justify-between rounded-xl border border-line bg-paper-soft p-3 min-w-0">
+              <div className="u-eyebrow text-muted text-[9.5px]">Spend</div>
+              <div className="mt-1.5 flex items-baseline gap-1 min-w-0">
+                <span className="u-value text-[16px] sm:text-[18px] text-ink leading-tight font-semibold truncate">
+                  {inr(spend)}
+                </span>
+              </div>
+              <div className="mt-1 text-[9.5px] text-muted truncate">Lifetime</div>
+            </div>
+
+            <div className="flex flex-col justify-between rounded-xl border border-line bg-paper-soft p-3 min-w-0">
+              <div className="u-eyebrow text-muted text-[9.5px]">Plan</div>
+              <div className="mt-1.5 flex items-baseline gap-1 min-w-0">
+                <span className="u-value text-[16px] sm:text-[18px] text-ink leading-tight font-semibold truncate">
+                  {plan.shortName ?? plan.name}
+                </span>
+              </div>
+              <div className="mt-1 text-[9.5px] text-muted truncate">{plan.shopDiscountPct}% Privilege</div>
+            </div>
           </div>
         </div>
 

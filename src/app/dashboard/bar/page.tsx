@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -18,6 +18,7 @@ import {
 import { EmptyState, PageHeader, Panel, Stat, StatusPill } from "@/components/ui/kit";
 import { Drawer, Segmented } from "@/components/ui/overlay";
 import { SettleTabModal } from "@/components/commerce/SettleTabModal";
+import { PaymentMethodDetails } from "@/components/commerce/PaymentMethodDetails";
 import { useAuth } from "@/lib/auth-context";
 import {
   BAR_MENU,
@@ -67,7 +68,23 @@ export default function BarPage() {
   );
   const kitchen = useMemo(() => (mounted ? kitchenQueue() : []), [mounted, version]);
 
-  const member: ClubMember | undefined = members.find((m) => m.id === memberId);
+  const selfMember = useMemo(() => {
+    if (!mounted || !user) return undefined;
+    return members.find((m) => m.email.toLowerCase() === user.email.toLowerCase());
+  }, [mounted, user, members]);
+
+  useEffect(() => {
+    if (user && user.role === "member" && selfMember) {
+      setMemberId(selfMember.id);
+    }
+  }, [user, selfMember]);
+
+  const isStaff = user?.role !== "member";
+  const member: ClubMember | undefined = isStaff
+    ? members.find((m) => m.id === memberId)
+    : selfMember;
+  const isPendingConsent = Boolean(member && member.status === "pending_consent");
+
   const priced = useMemo(
     () => (mounted ? priceCart("bar", cart, member?.planId) : { items: [], subtotal: 0, discount: 0, discountPct: 0, gst: 0, total: 0, deliveryFee: 0 }),
     [mounted, cart, member?.planId, version]
@@ -98,6 +115,10 @@ export default function BarPage() {
 
   const send = () => {
     if (!cart.length) return;
+    if (isPendingConsent) {
+      note("Under DPDP Act 2023, bar ordering is locked pending parental consent verification.");
+      return;
+    }
     if (mode === "tab" && !member) {
       note("A tab needs a member. Pick a member or settle by cash, card or UPI.");
       return;
@@ -142,6 +163,8 @@ export default function BarPage() {
 
   const openTabsTotal = tabs.reduce((sum, tab) => sum + tab.total, 0);
   const visible = BAR_MENU.filter((item) => item.category === category);
+  const canAccessKitchen = ["owner", "manager", "cafe_manager", "bar_staff"].includes(user?.role ?? "");
+  const myTab = tabs.find((t) => t.memberId === member?.id);
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-6 p-5 sm:p-6 lg:p-8">
@@ -151,10 +174,12 @@ export default function BarPage() {
         description="Table and counter orders reach the kitchen instantly. Member discounts apply themselves, tabs accrue, and the floor map knows which tables are sitting."
         actions={
           <>
-            <Link href="/dashboard/kitchen" className="btn btn-outline btn-sm">
-              <ChefHat className="h-3.5 w-3.5" />
-              Kitchen ({kitchen.length})
-            </Link>
+            {canAccessKitchen && (
+              <Link href="/dashboard/kitchen" className="btn btn-outline btn-sm">
+                <ChefHat className="h-3.5 w-3.5" />
+                Kitchen ({kitchen.length})
+              </Link>
+            )}
             <button className="btn btn-clay btn-sm" onClick={() => setDrawerOpen(true)}>
               <ShoppingBag className="h-3.5 w-3.5" />
               New order {cart.length ? `(${cart.length})` : ""}
@@ -162,17 +187,31 @@ export default function BarPage() {
           </>
         }
         meta={
-          <>
-            <StatusPill tone={tabs.length ? "warn" : "success"}>
-              <Wallet className="h-3 w-3" /> {tabs.length} open tab{tabs.length === 1 ? "" : "s"} · {inr(openTabsTotal)}
-            </StatusPill>
-            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-              {ordersToday.length} orders today
-            </span>
-            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-              {tables.filter((t) => t.status === "occupied").length}/{tables.length} tables seated
-            </span>
-          </>
+          isStaff ? (
+            <>
+              <StatusPill tone={tabs.length ? "warn" : "success"}>
+                <Wallet className="h-3 w-3" /> {tabs.length} open tab{tabs.length === 1 ? "" : "s"} · {inr(openTabsTotal)}
+              </StatusPill>
+              <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                {ordersToday.length} orders today
+              </span>
+              <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                {tables.filter((t) => t.status === "occupied").length}/{tables.length} tables seated
+              </span>
+            </>
+          ) : (
+            <>
+              <StatusPill tone="success">
+                <Armchair className="h-3 w-3" /> {tables.filter((t) => t.status === "available").length} tables free
+              </StatusPill>
+              <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                Open 7:00 AM – 11:00 PM IST
+              </span>
+              <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                {member ? `${MEMBERSHIP_PLANS[member.planId]?.barDiscountPct}% Privilege Discount` : "Member Lounge"}
+              </span>
+            </>
+          )
         }
       />
 
@@ -187,12 +226,21 @@ export default function BarPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Open tabs" value={inr(openTabsTotal)} unit="unsettled" note={`${tabs.length} members running a tab`} />
-        <Stat label="Sold today" value={inr(ordersToday.reduce((s, o) => s + o.total, 0))} unit="bar" note={`${ordersToday.length} tickets`} />
-        <Stat label="Tables seated" value={String(tables.filter((t) => t.status === "occupied").length)} unit={`of ${tables.length}`} note="Live floor map" />
-        <Stat label="Kitchen queue" value={String(kitchen.length)} unit="tickets" note="Placed or preparing" />
-      </div>
+      {isStaff ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="Open tabs" value={inr(openTabsTotal)} unit="unsettled" note={`${tabs.length} members running a tab`} />
+          <Stat label="Sold today" value={inr(ordersToday.reduce((s, o) => s + o.total, 0))} unit="bar" note={`${ordersToday.length} tickets`} />
+          <Stat label="Tables seated" value={String(tables.filter((t) => t.status === "occupied").length)} unit={`of ${tables.length}`} note="Live floor map" />
+          <Stat label="Kitchen queue" value={String(kitchen.length)} unit="tickets" note="Placed or preparing" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="My Tab" value={myTab ? inr(myTab.total) : "₹0"} unit={myTab ? "open" : "settled"} note={myTab ? `${myTab.orderCodes.length} orders running` : "No unsettled tab"} />
+          <Stat label="Available Tables" value={String(tables.filter((t) => t.status === "available").length)} unit={`of ${tables.length}`} note="3 dining zones" />
+          <Stat label="Club Privilege" value={`${member ? MEMBERSHIP_PLANS[member.planId]?.barDiscountPct : 15}%`} unit="off food & bar" note={member ? MEMBERSHIP_PLANS[member.planId]?.name : "Standard discount"} />
+          <Stat label="Service Hours" value="7–23h" unit="daily" note="Breakfast to post-match drinks" />
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-8">
@@ -278,42 +326,58 @@ export default function BarPage() {
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 p-3 sm:grid-cols-4">
-              {tables.map((table) => (
-                <button
-                  key={table.id}
-                  onClick={() => {
-                    setTableId(table.id === tableId ? "" : table.id);
-                    if (table.status === "available") setTableStatus(table.id, "reserved");
-                    setVersion((v) => v + 1);
-                  }}
-                  className={cn(
-                    "flex flex-col items-start rounded-lg border p-2.5 text-left transition-colors",
-                    tableId === table.id
-                      ? "border-ink bg-ink text-chalk"
-                      : table.status === "occupied"
-                        ? "border-clay/40 bg-clay/[0.07]"
-                        : table.status === "reserved"
-                          ? "border-gold/40 bg-gold/[0.08]"
-                          : "border-line bg-paper-soft hover:border-ink/40"
-                  )}
-                >
-                  <span className="flex w-full items-center justify-between">
-                    <span className="u-mono text-[10px]">{table.label}</span>
-                    <Armchair className="h-3 w-3 opacity-50" />
-                  </span>
-                  <span className="mt-0.5 text-[9.5px] uppercase tracking-[0.1em] opacity-70">
-                    {table.zone} · {table.seats} seats
-                  </span>
-                  <span
+              {tables.map((table) => {
+                const isSelected = tableId === table.id;
+                const isUnavailable = (table.status === "reserved" || table.status === "occupied") && !isSelected;
+                return (
+                  <button
+                    key={table.id}
+                    type="button"
+                    disabled={isUnavailable}
+                    onClick={() => {
+                      if (isUnavailable) return;
+                      if (isSelected) {
+                        setTableId("");
+                      } else if (table.status === "available") {
+                        setTableId(table.id);
+                      }
+                      setVersion((v) => v + 1);
+                    }}
                     className={cn(
-                      "mt-1 text-[9px] uppercase tracking-[0.1em]",
-                      tableId === table.id ? "text-chalk/70" : "text-muted"
+                      "flex flex-col items-start rounded-lg border p-2.5 text-left transition-colors",
+                      isSelected
+                        ? "border-ink bg-ink text-chalk"
+                        : table.status === "occupied"
+                          ? "border-clay/40 bg-clay/[0.07] opacity-60 cursor-not-allowed"
+                          : table.status === "reserved"
+                            ? "border-gold/40 bg-gold/[0.08] opacity-60 cursor-not-allowed"
+                            : "border-line bg-paper-soft hover:border-ink/40"
                     )}
                   >
-                    {tableId === table.id ? "Selected" : table.status}
-                  </span>
-                </button>
-              ))}
+                    <span className="flex w-full items-center justify-between">
+                      <span className="u-mono text-[10px]">{table.label}</span>
+                      <Armchair className="h-3 w-3 opacity-50" />
+                    </span>
+                    <span className="mt-0.5 text-[9.5px] uppercase tracking-[0.1em] opacity-70">
+                      {table.zone} · {table.seats} seats
+                    </span>
+                    <span
+                      className={cn(
+                        "mt-1 text-[9px] uppercase tracking-[0.1em]",
+                        isSelected
+                          ? "text-chalk/70"
+                          : table.status === "reserved"
+                            ? "text-gold font-medium"
+                            : table.status === "occupied"
+                              ? "text-clay font-medium"
+                              : "text-muted"
+                      )}
+                    >
+                      {isSelected ? "Selected" : table.status === "reserved" ? "Reserved" : table.status === "occupied" ? "Seated" : "Free"}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
             {tableId && (
               <div className="flex items-center justify-between border-t border-line px-3 py-2 text-[11px]">
@@ -402,9 +466,14 @@ export default function BarPage() {
               <span className="text-muted">Total</span>
               <span className="u-value text-[18px]">{inr(priced.total)}</span>
             </div>
-            <button className="btn btn-clay btn-block" disabled={!cart.length} onClick={send}>
+            {isPendingConsent && (
+              <p className="rounded-lg border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-[10.5px] text-[#7d5d17] leading-relaxed">
+                Parental consent verification required under DPDP Act 2023. Bar ordering is locked until verified.
+              </p>
+            )}
+            <button className="btn btn-clay btn-block" disabled={!cart.length || isPendingConsent} onClick={send}>
               <Receipt className="h-4 w-4" />
-              Send to kitchen
+              {isPendingConsent ? "Locked (Consent Pending)" : "Send to kitchen"}
             </button>
           </div>
         }
@@ -424,14 +493,21 @@ export default function BarPage() {
             </div>
             <div>
               <label className="u-label" htmlFor="bar-member">Member</label>
-              <select id="bar-member" className="select" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
-                <option value="">Guest</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.fullName} · {MEMBERSHIP_PLANS[m.planId].shortName}
-                  </option>
-                ))}
-              </select>
+              {isStaff ? (
+                <select id="bar-member" className="select" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+                  <option value="">Guest</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.fullName} · {MEMBERSHIP_PLANS[m.planId].shortName}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="input bg-paper-soft text-[11.5px] flex items-center justify-between">
+                  <span className="font-medium text-ink truncate">{member?.fullName ?? user?.fullName}</span>
+                  <span className="chip chip-clay text-[8.5px] uppercase shrink-0">{member ? MEMBERSHIP_PLANS[member.planId]?.shortName : "Member"}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -449,6 +525,8 @@ export default function BarPage() {
               ]}
             />
           </div>
+
+          <PaymentMethodDetails mode={mode} amount={priced.total} />
 
           {cart.length === 0 ? (
             <p className="py-8 text-center text-[11.5px] text-muted">

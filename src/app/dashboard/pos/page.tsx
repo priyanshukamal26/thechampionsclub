@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { EmptyState, PageHeader, Panel, StatusPill } from "@/components/ui/kit";
 import { Modal, Segmented } from "@/components/ui/overlay";
+import { PaymentMethodDetails } from "@/components/commerce/PaymentMethodDetails";
 import { useAuth } from "@/lib/auth-context";
 import {
   PRODUCT_CATEGORIES,
@@ -351,6 +352,9 @@ export default function ShopPosPage() {
                     { value: "cash", label: "Cash" },
                   ]}
                 />
+                <div className="mt-2.5">
+                  <PaymentMethodDetails mode={mode} amount={priced.total} />
+                </div>
               </div>
 
               {error && (

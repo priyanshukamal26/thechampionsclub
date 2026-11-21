@@ -49,6 +49,8 @@ export default function MyBookingsPage() {
   }, [mounted, user]);
 
   const isStaff = user ? user.role !== "member" : false;
+  const isDeskAdmin = user ? ["owner", "manager", "front_desk"].includes(user.role) : false;
+  const isCafeManager = user?.role === "cafe_manager";
 
   const rows = useMemo(() => {
     if (!mounted) return [];
@@ -103,12 +105,20 @@ export default function MyBookingsPage() {
   return (
     <div className="mx-auto max-w-[1100px] space-y-6 p-5 sm:p-6 lg:p-8">
       <PageHeader
-        eyebrow={isStaff ? "Front desk · today's courts" : "My bookings · B6"}
+        eyebrow={
+          isCafeManager
+            ? "Bar & cafeteria · court footfall schedule"
+            : isStaff
+              ? "Front desk · today's courts"
+              : "My bookings · B6"
+        }
         title={isStaff ? "Today's court sheet." : "Your court, your time."}
         description={
-          isStaff
-            ? "Every session booked for today, across all members. Check a player in when they arrive at the counter."
-            : "Bookings, cancellations and the twelve-hour rule in one place. The court is released the moment you cancel."
+          isCafeManager
+            ? "Real-time schedule of all court sessions today. Track match completions to prepare table turnaround and post-match beverage orders."
+            : isStaff
+              ? "Every session booked for today, across all members. Check a player in when they arrive at the counter."
+              : "Bookings, cancellations and the twelve-hour rule in one place. The court is released the moment you cancel."
         }
         actions={
           <Link href="/dashboard/courts" className="btn btn-clay btn-sm">
@@ -233,7 +243,7 @@ export default function MyBookingsPage() {
                       )}
                     </div>
                     <div className="flex gap-1.5">
-                      {isStaff && booking.status === "confirmed" && !booking.checkedIn && !isPast && (
+                      {isDeskAdmin && booking.status === "confirmed" && !booking.checkedIn && !isPast && (
                         <button
                           className="btn btn-outline btn-sm"
                           onClick={() => {
@@ -252,7 +262,7 @@ export default function MyBookingsPage() {
                           Check in
                         </button>
                       )}
-                      {booking.status === "confirmed" && (isStaff || !isPast) && (
+                      {booking.status === "confirmed" && (isDeskAdmin || (!isStaff && !isPast)) && (
                         <button className="btn btn-quiet btn-sm" onClick={() => setCancelTarget(booking)}>
                           Cancel
                         </button>

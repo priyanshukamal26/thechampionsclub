@@ -56,6 +56,8 @@ export default function FridaySocialPage() {
   const onRoster = session?.players.find((p) => p.name.toLowerCase() === myName.toLowerCase());
   const seatsLeft = session ? Math.max(0, session.capacity - session.players.length) : 0;
   const fee = plan?.id === "gold" ? 0 : session?.guestFee ?? SOCIAL_GUEST_FEE;
+  const isClubManager = ["owner", "manager", "front_desk"].includes(user?.role ?? "");
+  const isPendingConsent = Boolean(member && member.status === "pending_consent");
 
   const note = (message: string) => {
     setFlash(message);
@@ -64,6 +66,10 @@ export default function FridaySocialPage() {
 
   const join = (asGuest = false) => {
     if (!session) return;
+    if (!asGuest && isPendingConsent) {
+      note("Under DPDP Act 2023, Friday Social participation requires parental consent verification on file.");
+      return;
+    }
     const name = asGuest ? guestName.trim() : myName;
     if (!name) return;
     const result = joinSocial(session.id, {
@@ -247,14 +253,20 @@ export default function FridaySocialPage() {
                 <>
                   <button
                     className="btn btn-clay"
-                    disabled={seatsLeft === 0}
+                    disabled={seatsLeft === 0 || isPendingConsent}
                     onClick={() => join(false)}
                   >
                     <Dices className="h-4 w-4" />
-                    {fee === 0 ? "Join — included with Gold" : `Join — pay ${inr(fee)}`}
+                    {isPendingConsent
+                      ? "Locked (Consent Pending)"
+                      : fee === 0
+                      ? "Join — included with Gold"
+                      : `Join — pay ${inr(fee)}`}
                   </button>
                   <p className="max-w-xs text-[10.5px] leading-relaxed text-muted">
-                    {seatsLeft === 0
+                    {isPendingConsent
+                      ? "DPDP Act 2023: Parental consent verification required before joining club draws."
+                      : seatsLeft === 0
                       ? "This draw is full. Ask the desk to add you to the waitlist."
                       : `Joining counts as one of your two daily plays. There is no refund inside 12 hours.`}
                   </p>
@@ -291,7 +303,7 @@ export default function FridaySocialPage() {
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <StatusPill tone={player.paid ? "success" : "warn"}>{player.paid ? "Paid" : "Unpaid"}</StatusPill>
-                      {(mine || user?.role !== "member") && (
+                      {(mine || isClubManager) && (
                         <button
                           onClick={() => leave(player.id)}
                           className="rounded-full border border-line p-1 text-muted hover:border-clay hover:text-clay"

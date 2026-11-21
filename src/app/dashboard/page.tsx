@@ -11,8 +11,11 @@ import {
   Coffee,
   CreditCard,
   IndianRupee,
+  Package,
   ScanLine,
+  ShieldAlert,
   ShoppingBag,
+  Store,
   Users,
   Wallet,
 } from "lucide-react";
@@ -21,11 +24,20 @@ import { useAuth } from "@/lib/auth-context";
 import {
   DAILY_BOOKING_CAP,
   activeBookingsForMemberOnDate,
+  bookingsOnDate,
   getFacility,
   nextSocialSession,
   upcomingBookingsForMember,
 } from "@/lib/bookings";
-import { getOpenTabs, kitchenQueue, activeOrdersForMember } from "@/lib/orders";
+import {
+  getOpenTabs,
+  kitchenQueue,
+  activeOrdersForMember,
+  getProducts,
+  lowStockProducts,
+  getOrders,
+  getTables,
+} from "@/lib/orders";
 import { getTodayWeekMonth, getZReport } from "@/lib/finance";
 import {
   MEMBERSHIP_PLANS,
@@ -78,8 +90,17 @@ export default function DashboardOverviewPage() {
     );
   }
 
-  if (user && user.role !== "member") {
-    return <StaffOverview user={user} data={data} />;
+  if (user && user.role === "shop_manager") {
+    return <SportsShopOverview user={user} />;
+  }
+  if (user && user.role === "cafe_manager") {
+    return <BarCafeOverview user={user} />;
+  }
+  if (user && (user.role === "front_desk" || user.role === "manager")) {
+    return <FrontDeskOverview user={user} />;
+  }
+  if (user && user.role === "owner") {
+    return <OwnerOverview user={user} data={data} />;
   }
 
   const { member, upcoming, tab, orders, plays, expiringDays } = data;
@@ -322,7 +343,308 @@ export default function DashboardOverviewPage() {
   );
 }
 
-function StaffOverview({
+function SportsShopOverview({ user }: { user: { fullName: string; role: string } }) {
+  const allOrders = getOrders().filter((o) => o.channel === "shop");
+  const todayOrders = allOrders.filter((o) => o.placedAt.slice(0, 10) === todayISO());
+  const todayGross = todayOrders.reduce((sum, o) => sum + o.total, 0);
+  const lowStock = lowStockProducts();
+  const pendingOrders = allOrders.filter((o) => o.status === "placed" || o.status === "preparing");
+  const products = getProducts();
+
+  return (
+    <div className="mx-auto max-w-[1200px] space-y-6 p-5 sm:p-6 lg:p-8">
+      <PageHeader
+        eyebrow="Sports Pro Shop · Inventory & sales console"
+        title={`Good to see you, ${user.fullName.split(" ")[0]}.`}
+        description="Counter sales, shelf stock levels and pending orders for the Champions Pro Shop."
+        actions={
+          <>
+            <Link href="/dashboard/pos" className="btn btn-clay btn-sm">
+              <Store className="h-3.5 w-3.5" />
+              Shop POS
+            </Link>
+            <Link href="/dashboard/shop" className="btn btn-ink btn-sm">
+              <ShoppingBag className="h-3.5 w-3.5" />
+              Pro shop shelf
+            </Link>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <Stat label="Today's Sales" value={inr(todayGross)} unit="shop" note={`${todayOrders.length} counter tickets`} />
+        <Stat label="Low Stock" value={String(lowStock.length)} unit="SKUs" note="Items below reorder mark" />
+        <Stat label="Pending Orders" value={String(pendingOrders.length)} unit="active" note="Pickup & delivery queue" />
+        <Stat label="Shelf Inventory" value={String(products.length)} unit="products" note="Active catalogue items" />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-12">
+        <Panel className="lg:col-span-7">
+          <div className="flex items-start justify-between border-b border-line pb-3">
+            <div>
+              <div className="u-eyebrow text-clay">Inventory alerts</div>
+              <h2 className="u-display mt-1 text-[15px]">Running low on shelf</h2>
+            </div>
+            <Link href="/dashboard/shop" className="btn btn-outline btn-sm">
+              Manage stock
+            </Link>
+          </div>
+          {lowStock.length === 0 ? (
+            <p className="py-6 text-center text-[11.5px] text-muted">All products are healthy above reorder levels.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-line-soft">
+              {lowStock.slice(0, 5).map((item) => (
+                <li key={item.id} className="flex items-center justify-between py-2 text-[11.5px]">
+                  <div>
+                    <span className="font-medium text-ink">{item.name}</span>
+                    <span className="ml-2 font-mono text-[9px] uppercase tracking-wider text-muted">{item.sku}</span>
+                  </div>
+                  <StatusPill tone={item.stock === 0 ? "danger" : "warn"}>
+                    {item.stock === 0 ? "Out of stock" : `${item.stock} remaining`}
+                  </StatusPill>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <div className="space-y-4 lg:col-span-5">
+          <Panel tone="deep">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="u-eyebrow text-muted">Order queue</div>
+                <div className="u-display mt-1 text-[13px]">{pendingOrders.length} pending fulfillment</div>
+              </div>
+              <Package className="h-4 w-4 text-muted" />
+            </div>
+            <ul className="mt-3 space-y-2">
+              {pendingOrders.slice(0, 4).map((order) => (
+                <li key={order.id} className="flex items-center justify-between rounded-lg border border-line bg-chalk p-2 text-[10.5px]">
+                  <div>
+                    <span className="font-mono font-medium text-ink">{order.code}</span>
+                    <span className="ml-1.5 text-muted">· {order.memberName.split(" ")[0]}</span>
+                  </div>
+                  <span className="u-mono text-clay-deep">{order.fulfilment === "delivery" ? `OTP: ${order.otp}` : `Code: ${order.pickupCode}`}</span>
+                </li>
+              ))}
+              {pendingOrders.length === 0 && <li className="text-[10.5px] text-muted">No pending orders.</li>}
+            </ul>
+            <Link href="/dashboard/shop" className="btn btn-ink btn-sm btn-block mt-3">
+              View all orders
+            </Link>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BarCafeOverview({ user }: { user: { fullName: string; role: string } }) {
+  const todayBarOrders = getOrders().filter((o) => o.channel === "bar" && o.placedAt.slice(0, 10) === todayISO());
+  const todayBarGross = todayBarOrders.reduce((sum, o) => sum + o.total, 0);
+  const tabs = getOpenTabs();
+  const openValue = tabs.reduce((sum, tab) => sum + tab.total, 0);
+  const tables = getTables();
+  const seatedTables = tables.filter((t) => t.status === "occupied").length;
+  const kitchen = kitchenQueue();
+
+  return (
+    <div className="mx-auto max-w-[1200px] space-y-6 p-5 sm:p-6 lg:p-8">
+      <PageHeader
+        eyebrow="Bar & Cafeteria · Floor & kitchen console"
+        title={`Good to see you, ${user.fullName.split(" ")[0]}.`}
+        description="Live floor seating, kitchen display tickets and member tabs for the Clubhouse Bar & Lounge."
+        actions={
+          <>
+            <Link href="/dashboard/kitchen" className="btn btn-clay btn-sm">
+              <ChefHat className="h-3.5 w-3.5" />
+              Kitchen ({kitchen.length})
+            </Link>
+            <Link href="/dashboard/bar" className="btn btn-ink btn-sm">
+              <Coffee className="h-3.5 w-3.5" />
+              Bar floor map
+            </Link>
+            <Link href="/dashboard/bookings" className="btn btn-outline btn-sm">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Court footfall
+            </Link>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <Stat label="Bar takings" value={inr(todayBarGross)} unit="today" note={`${todayBarOrders.length} bar orders`} />
+        <Stat label="Open tabs" value={inr(openValue)} unit="unsettled" note={`${tabs.length} running tabs`} />
+        <Stat label="Seated tables" value={String(seatedTables)} unit={`of ${tables.length}`} note="Live floor status" />
+        <Stat label="Kitchen queue" value={String(kitchen.length)} unit="tickets" note="Placed or preparing" />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-12">
+        <Panel className="lg:col-span-7">
+          <div className="flex items-start justify-between border-b border-line pb-3">
+            <div>
+              <div className="u-eyebrow text-clay">Kitchen live pass</div>
+              <h2 className="u-display mt-1 text-[15px]">Active tickets by station</h2>
+            </div>
+            <Link href="/dashboard/kitchen" className="btn btn-outline btn-sm">
+              Open KDS
+            </Link>
+          </div>
+          {kitchen.length === 0 ? (
+            <p className="py-6 text-center text-[11.5px] text-muted">The kitchen pass is clear. No active tickets.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-line-soft">
+              {kitchen.slice(0, 5).map((order) => (
+                <li key={order.id} className="flex items-center justify-between py-2 text-[11.5px]">
+                  <div>
+                    <span className="font-mono font-medium text-ink">{order.code}</span>
+                    <span className="ml-2 text-muted">· {order.memberName}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="u-mono text-[10px] text-muted">{formatTime(order.placedAt)}</span>
+                    <StatusPill tone={order.status === "preparing" ? "warn" : "info"}>{order.status}</StatusPill>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <div className="space-y-4 lg:col-span-5">
+          <Panel tone="deep">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="u-eyebrow text-muted">Floor seating</div>
+                <div className="u-display mt-1 text-[13px]">{seatedTables} of {tables.length} tables seated</div>
+              </div>
+              <Coffee className="h-4 w-4 text-muted" />
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-1.5 text-center font-mono text-[9px]">
+              {tables.map((t) => (
+                <div
+                  key={t.id}
+                  className={`rounded border p-1.5 ${
+                    t.status === "occupied"
+                      ? "border-clay bg-clay/10 text-clay-deep"
+                      : t.status === "reserved"
+                      ? "border-gold bg-gold/10 text-[#7d5d17]"
+                      : "border-court/30 bg-court/10 text-court"
+                  }`}
+                >
+                  <div className="font-bold">{t.label}</div>
+                  <div className="text-[8px] uppercase">{t.status.slice(0, 3)}</div>
+                </div>
+              ))}
+            </div>
+            <Link href="/dashboard/bar" className="btn btn-ink btn-sm btn-block mt-3">
+              Open floor map
+            </Link>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FrontDeskOverview({ user }: { user: { fullName: string; role: string } }) {
+  const todayBookings = bookingsOnDate(todayISO());
+  const checkedIn = todayBookings.filter((b) => b.checkedIn).length;
+  const pendingConsents = getLocalMembers().filter((m) => m.status === "pending_consent" && m.isMinor);
+  const social = nextSocialSession();
+
+  return (
+    <div className="mx-auto max-w-[1200px] space-y-6 p-5 sm:p-6 lg:p-8">
+      <PageHeader
+        eyebrow="Front Desk · Operations & check-in console"
+        title={`Good to see you, ${user.fullName.split(" ")[0]}.`}
+        description="Player check-in, court schedule monitoring, member lookup and guardian consent verifications."
+        actions={
+          <>
+            <Link href="/dashboard/desk" className="btn btn-clay btn-sm">
+              <ScanLine className="h-3.5 w-3.5" />
+              Desk console
+            </Link>
+            <Link href="/dashboard/courts" className="btn btn-ink btn-sm">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Book courts
+            </Link>
+            <Link href="/dashboard/bookings" className="btn btn-outline btn-sm">
+              Today&apos;s court sheet
+            </Link>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <Stat label="Checked in" value={String(checkedIn)} unit={`of ${todayBookings.length}`} note="Players on court" />
+        <Stat label="Reservations" value={String(todayBookings.length)} unit="today" note="All 18 courts" />
+        <Stat label="Minor Consents" value={String(pendingConsents.length)} unit="pending" note="DPDP Act validation" />
+        <Stat label="Friday Social" value={String(social ? social.players.length : 0)} unit={`of ${social ? social.capacity : 20}`} note="Roster entries" />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-12">
+        <Panel className="lg:col-span-7">
+          <div className="flex items-start justify-between border-b border-line pb-3">
+            <div>
+              <div className="u-eyebrow text-clay">Today&apos;s court arrivals</div>
+              <h2 className="u-display mt-1 text-[15px]">Court schedule</h2>
+            </div>
+            <Link href="/dashboard/bookings" className="btn btn-outline btn-sm">
+              Full sheet
+            </Link>
+          </div>
+          {todayBookings.length === 0 ? (
+            <p className="py-6 text-center text-[11.5px] text-muted">No reservations booked for today.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-line-soft">
+              {todayBookings.slice(0, 5).map((b) => (
+                <li key={b.id} className="flex items-center justify-between py-2 text-[11.5px]">
+                  <div>
+                    <span className="font-medium text-ink">{b.memberName}</span>
+                    <span className="ml-2 text-muted">· {getFacility(b.facilityId)?.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="u-mono text-[10px] text-muted">{b.start}</span>
+                    <StatusPill tone={b.checkedIn ? "success" : "info"}>{b.checkedIn ? "Checked in" : "Confirmed"}</StatusPill>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <div className="space-y-4 lg:col-span-5">
+          <Panel tone="deep">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="u-eyebrow text-muted">DPDP Consent Queue</div>
+                <div className="u-display mt-1 text-[13px]">{pendingConsents.length} minor records pending</div>
+              </div>
+              <ShieldAlert className="h-4 w-4 text-clay" />
+            </div>
+            <ul className="mt-3 space-y-1.5">
+              {pendingConsents.slice(0, 3).map((m) => (
+                <li key={m.id} className="flex items-center justify-between rounded-lg border border-line bg-chalk p-2 text-[10.5px]">
+                  <div>
+                    <span className="font-medium text-ink">{m.fullName}</span>
+                    <span className="ml-1 text-muted">({m.memberCode})</span>
+                  </div>
+                  <span className="u-mono text-clay-deep">Pending</span>
+                </li>
+              ))}
+              {pendingConsents.length === 0 && <li className="text-[10.5px] text-muted">All minor consents verified.</li>}
+            </ul>
+            <Link href="/dashboard/desk" className="btn btn-ink btn-sm btn-block mt-3">
+              Open desk verification
+            </Link>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OwnerOverview({
   user,
   data,
 }: {
@@ -340,27 +662,28 @@ function StaffOverview({
   return (
     <div className="mx-auto max-w-[1200px] space-y-6 p-5 sm:p-6 lg:p-8">
       <PageHeader
-        eyebrow={`${user.role.replace("_", " ")} console`}
-        title={`Good to see you, ${user.fullName.split(" ")[0]}.`}
-        description="A live read of the club: takings, the pass, tabs and the kitchen. Jump into the counter or the ledger from here."
+        eyebrow="Executive Console · Club-wide financials"
+        title={`Welcome, ${user.fullName.split(" ")[0]}.`}
+        description="Comprehensive read of clubhouse performance: revenue ledgers, P&L, Z-report daily close and department operations."
         actions={
           <>
-            <Link href="/dashboard/desk" className="btn btn-clay btn-sm">
+            <Link href="/dashboard/owner" className="btn btn-clay btn-sm">
+              <Wallet className="h-3.5 w-3.5" />
+              Owner console
+            </Link>
+            <Link href="/dashboard/desk" className="btn btn-ink btn-sm">
               <ScanLine className="h-3.5 w-3.5" />
               Front desk
-            </Link>
-            <Link href={user.role === "owner" || user.role === "manager" ? "/dashboard/owner" : "/dashboard/pos"} className="btn btn-ink btn-sm">
-              {user.role === "owner" || user.role === "manager" ? "Owner ledger" : "Counter POS"}
             </Link>
           </>
         }
       />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Stat label="Today" value={inr(twm.today.gross)} unit="gross" note={`${twm.today.count} transactions`} />
+        <Stat label="Today gross" value={inr(twm.today.gross)} unit="gross" note={`${twm.today.count} transactions`} />
         <Stat label="This week" value={inr(twm.week.gross)} unit="gross" note={`${twm.week.count} transactions`} />
         <Stat label="Open tabs" value={inr(openValue)} unit="unsettled" note={`${tabs.length} members`} />
-        <Stat label="Kitchen" value={String(kitchen.length)} unit="tickets" note="Placed or preparing" />
+        <Stat label="Kitchen tickets" value={String(kitchen.length)} unit="active" note="Placed or preparing" />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12">
@@ -395,11 +718,13 @@ function StaffOverview({
 
         <div className="space-y-4 lg:col-span-5">
           <Panel>
-            <div className="u-eyebrow text-muted">Jump to</div>
+            <div className="u-eyebrow text-muted">Department consoles</div>
             <div className="mt-2 grid grid-cols-2 gap-2">
               {[
-                { href: "/dashboard/pos", label: "Counter sale", icon: Wallet },
-                { href: "/dashboard/kitchen", label: "Kitchen", icon: ChefHat },
+                { href: "/dashboard/owner", label: "P&L Ledger", icon: Wallet },
+                { href: "/dashboard/desk", label: "Front Desk", icon: ScanLine },
+                { href: "/dashboard/pos", label: "Shop POS", icon: Store },
+                { href: "/dashboard/kitchen", label: "Kitchen KDS", icon: ChefHat },
                 { href: "/dashboard/bar", label: "Bar floor", icon: Coffee },
                 { href: "/dashboard/courts", label: "Court sheet", icon: CalendarDays },
               ].map((item) => {
@@ -417,38 +742,8 @@ function StaffOverview({
               })}
             </div>
           </Panel>
-
-          <Panel tone="deep">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="u-eyebrow text-muted">Kitchen</div>
-                <div className="u-display mt-1 text-[13px]">{kitchen.length} open tickets</div>
-              </div>
-              <ArrowUpRight className="h-4 w-4 text-muted" />
-            </div>
-            <ul className="mt-2 space-y-1">
-              {kitchen.slice(0, 3).map((order) => (
-                <li key={order.id} className="flex items-center justify-between text-[10.5px] text-muted">
-                  <span className="u-mono">{order.code}</span>
-                  <span>{formatTime(order.placedAt)}</span>
-                  <span>{inr(order.total)}</span>
-                </li>
-              ))}
-              {kitchen.length === 0 && <li className="text-[10.5px] text-muted">The pass is clear.</li>}
-            </ul>
-            <Link href="/dashboard/kitchen" className="btn btn-ink btn-sm btn-block mt-3">
-              Open KDS
-            </Link>
-          </Panel>
         </div>
       </div>
-
-      <p className="flex items-center gap-1.5 text-[10px] text-muted">
-        <IndianRupee className="h-3 w-3" />
-        Amounts are GST-inclusive and computed from the same ledger the owner console reads.
-        <Clock className="ml-2 h-3 w-3" />
-        {offsetDate(0)} · {todayISO()}
-      </p>
     </div>
   );
 }

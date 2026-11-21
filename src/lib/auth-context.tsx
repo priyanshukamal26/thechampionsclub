@@ -32,32 +32,11 @@ export const DEMO_USERS: Record<string, ClubUser> = {
     role: "owner",
     status: "active_member",
   },
-  manager: {
-    id: "00000000-0000-0000-0000-000000000002",
-    email: "manager@championsclub.in",
-    fullName: "Simran Kaur",
-    role: "manager",
-    status: "active_member",
-  },
   front_desk: {
     id: "00000000-0000-0000-0000-000000000003",
     email: "frontdesk@championsclub.in",
     fullName: "Amit Sharma",
     role: "front_desk",
-    status: "active_member",
-  },
-  bar_staff: {
-    id: "00000000-0000-0000-0000-000000000004",
-    email: "bar@championsclub.in",
-    fullName: "Chef Vikram",
-    role: "bar_staff",
-    status: "active_member",
-  },
-  shop_manager: {
-    id: "00000000-0000-0000-0000-000000000007",
-    email: "shop@championsclub.in",
-    fullName: "Neha Kapoor",
-    role: "shop_manager",
     status: "active_member",
   },
   cafe_manager: {
@@ -67,6 +46,13 @@ export const DEMO_USERS: Record<string, ClubUser> = {
     role: "cafe_manager",
     status: "active_member",
   },
+  shop_manager: {
+    id: "00000000-0000-0000-0000-000000000007",
+    email: "shop@championsclub.in",
+    fullName: "Neha Kapoor",
+    role: "shop_manager",
+    status: "active_member",
+  },
   gold_member: {
     id: "00000000-0000-0000-0000-000000000005",
     email: "rohan@championsclub.in",
@@ -74,6 +60,7 @@ export const DEMO_USERS: Record<string, ClubUser> = {
     role: "member",
     status: "active_member",
     planId: "gold",
+    memberId: "mem-001",
   },
   junior_minor: {
     id: "00000000-0000-0000-0000-000000000006",
@@ -83,6 +70,7 @@ export const DEMO_USERS: Record<string, ClubUser> = {
     status: "pending_consent",
     planId: "junior",
     isMinor: true,
+    memberId: "mem-003",
   },
 };
 
@@ -168,13 +156,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ? "owner"
           : cleanEmail.includes("manager")
           ? "manager"
-          : cleanEmail.includes("desk")
+          : cleanEmail.includes("desk") || cleanEmail.includes("front")
           ? "front_desk"
-          : cleanEmail.includes("bar")
-          ? "bar_staff"
           : cleanEmail.includes("shop")
           ? "shop_manager"
-          : cleanEmail.includes("cafe") || cleanEmail.includes("kitchen")
+          : cleanEmail.includes("cafe") || cleanEmail.includes("bar") || cleanEmail.includes("kitchen")
           ? "cafe_manager"
           : "member",
         status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",

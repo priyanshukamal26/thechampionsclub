@@ -37,12 +37,12 @@ type NavItem = {
 
 const CLUB_NAV: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, short: "Overview" },
-  { href: "/dashboard/courts", label: "Book Courts", icon: CalendarDays, short: "Courts" },
-  { href: "/dashboard/bookings", label: "Bookings", icon: CalendarCheck, short: "Bookings", roles: ["owner", "manager", "front_desk", "member"] },
-  { href: "/dashboard/social", label: "Friday Social", icon: Users2, short: "Social" },
-  { href: "/dashboard/shop", label: "Pro Shop", icon: ShoppingBag, short: "Shop" },
-  { href: "/dashboard/bar", label: "Bar & Lounge", icon: Coffee, short: "Bar" },
-  { href: "/dashboard/pass", label: "My Pass", icon: CreditCard, short: "Pass" },
+  { href: "/dashboard/courts", label: "Book Courts", icon: CalendarDays, short: "Courts", roles: ["owner", "manager", "front_desk", "member"] },
+  { href: "/dashboard/bookings", label: "Bookings", icon: CalendarCheck, short: "Bookings", roles: ["owner", "manager", "front_desk", "cafe_manager", "member"] },
+  { href: "/dashboard/social", label: "Friday Social", icon: Users2, short: "Social", roles: ["owner", "manager", "front_desk", "member"] },
+  { href: "/dashboard/shop", label: "Pro Shop", icon: ShoppingBag, short: "Shop", roles: ["owner", "manager", "shop_manager", "member"] },
+  { href: "/dashboard/bar", label: "Bar & Lounge", icon: Coffee, short: "Bar", roles: ["owner", "manager", "cafe_manager", "member"] },
+  { href: "/dashboard/pass", label: "My Pass", icon: CreditCard, short: "Pass", roles: ["member"] },
 ];
 
 /** Route-level access matrix (X1). The sidebar is filtered by role; this
@@ -50,25 +50,30 @@ const CLUB_NAV: NavItem[] = [
 const PAGE_ACCESS: Array<{ prefix: string; roles: AppRole[] }> = [
   { prefix: "/dashboard/owner", roles: ["owner", "manager"] },
   { prefix: "/dashboard/desk", roles: ["owner", "manager", "front_desk"] },
-  { prefix: "/dashboard/pos", roles: ["owner", "manager", "shop_manager", "cafe_manager", "bar_staff"] },
-  { prefix: "/dashboard/kitchen", roles: ["owner", "manager", "bar_staff", "cafe_manager"] },
+  { prefix: "/dashboard/pos", roles: ["owner", "manager", "shop_manager"] },
+  { prefix: "/dashboard/kitchen", roles: ["owner", "manager", "cafe_manager"] },
   { prefix: "/dashboard/pass", roles: ["member"] },
+  { prefix: "/dashboard/bookings", roles: ["owner", "manager", "front_desk", "cafe_manager", "member"] },
+  { prefix: "/dashboard/courts", roles: ["owner", "manager", "front_desk", "member"] },
+  { prefix: "/dashboard/social", roles: ["owner", "manager", "front_desk", "member"] },
+  { prefix: "/dashboard/shop", roles: ["owner", "manager", "shop_manager", "member"] },
+  { prefix: "/dashboard/bar", roles: ["owner", "manager", "cafe_manager", "member"] },
 ];
 
 const OPERATIONS_NAV: NavItem[] = [
   { href: "/dashboard/owner", label: "Owner Console", icon: Wallet, roles: ["owner", "manager"], short: "Finance" },
   { href: "/dashboard/desk", label: "Front Desk", icon: ScanLine, roles: ["owner", "manager", "front_desk"], short: "Desk" },
   { href: "/dashboard/pos", label: "Shop POS", icon: Store, roles: ["owner", "manager", "shop_manager"], short: "POS" },
-  { href: "/dashboard/kitchen", label: "Kitchen Display", icon: ChefHat, roles: ["owner", "manager", "bar_staff", "cafe_manager"], short: "Kitchen" },
+  { href: "/dashboard/kitchen", label: "Kitchen Display", icon: ChefHat, roles: ["owner", "manager", "cafe_manager"], short: "Kitchen" },
 ];
 
 const ROLE_LABEL: Record<AppRole, string> = {
   owner: "Owner",
   manager: "Club Manager",
-  front_desk: "Front Desk",
-  bar_staff: "Bar / Kitchen Staff",
-  shop_manager: "Shop Manager",
-  cafe_manager: "Café Manager",
+  front_desk: "Front Desk & Club Manager",
+  bar_staff: "Bar & Cafe Staff",
+  shop_manager: "Sports Shop Owner",
+  cafe_manager: "Bar & Cafe Owner",
   member: "Member",
 };
 
@@ -126,6 +131,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const accessRule = PAGE_ACCESS.find((rule) => pathname.startsWith(rule.prefix));
   const blocked = Boolean(accessRule && !accessRule.roles.includes(user.role));
   const ops = OPERATIONS_NAV.filter(can);
+  const clubNav = CLUB_NAV.filter(can);
   const page = PAGE_TITLES.find((p) => p.match(pathname)) ?? { title: "Clubhouse", section: "The Club" };
 
   const handleSignOut = async () => {
@@ -174,7 +180,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <nav className="flex-1 overflow-y-auto px-3 py-5">
         <div className="u-eyebrow mb-2 px-3 text-chalk/30">The Club</div>
         <div className="space-y-0.5">
-          {CLUB_NAV.map((item) => (
+          {clubNav.map((item) => (
             <NavLink key={item.href} item={item} onNavigate={() => setSidebarOpen(false)} />
           ))}
         </div>

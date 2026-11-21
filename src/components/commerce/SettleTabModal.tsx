@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Modal, Segmented } from "@/components/ui/overlay";
+import { PaymentMethodDetails } from "@/components/commerce/PaymentMethodDetails";
 import { formatTime, inr } from "@/lib/store";
 import { settleTab, type MemberTab, type PaymentMode } from "@/lib/orders";
 
@@ -102,6 +103,7 @@ export function SettleTabModal({
             <div className="u-eyebrow mb-2 text-muted">Payment mode</div>
             <Segmented options={MODE_OPTIONS} value={mode} onChange={(value) => setMode(value)} />
           </div>
+          <PaymentMethodDetails mode={mode} amount={tab.total} />
           {error && <p className="text-[11.5px] text-clay-deep">{error}</p>}
           <p className="text-[11px] text-muted">Settling posts a bar revenue entry and frees the table.</p>
         </div>

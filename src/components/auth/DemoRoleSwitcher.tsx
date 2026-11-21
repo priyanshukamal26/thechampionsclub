@@ -7,20 +7,20 @@ import { cn } from "@/lib/utils";
 
 export type DemoKey = keyof typeof DEMO_USERS;
 
-const ROLE_LABEL: Record<AppRole, string> = {
+const ROLE_LABEL: Record<string, string> = {
   owner: "Owner",
-  manager: "Manager",
-  front_desk: "Front desk",
-  bar_staff: "Bar / kitchen",
-  shop_manager: "Shop manager",
-  cafe_manager: "Café manager",
+  manager: "Club Manager",
+  front_desk: "Front Desk & Club Manager",
+  bar_staff: "Bar & Cafe Staff",
+  shop_manager: "Sports Shop Owner",
+  cafe_manager: "Bar & Cafe Owner",
   member: "Member",
 };
 
 const GROUPS: { label: string; keys: DemoKey[] }[] = [
   {
-    label: "Staff",
-    keys: ["owner", "manager", "front_desk", "bar_staff", "shop_manager", "cafe_manager"],
+    label: "Staff & Management",
+    keys: ["owner", "front_desk", "cafe_manager", "shop_manager"],
   },
   {
     label: "Members",
@@ -33,7 +33,7 @@ export default function DemoRoleSwitcher({ onSelect }: { onSelect: (key: DemoKey
     <div>
       <div className="flex items-center justify-between gap-3">
         <span className="u-eyebrow text-clay">Demo access</span>
-        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted">8 roles</span>
+        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted">6 demo accounts</span>
       </div>
 
       {GROUPS.map((group) => (

@@ -70,6 +70,7 @@ export default function CourtsPage() {
   const member: ClubMember | undefined = members.find((m) => m.id === memberId) ?? selfMember;
   const plan = member ? MEMBERSHIP_PLANS[member.planId] : undefined;
   const isStaff = user ? user.role !== "member" : false;
+  const isPendingConsent = Boolean(member && member.status === "pending_consent");
 
   const facilities = useMemo(() => (mounted ? facilitiesBySport(sport) : []), [mounted, sport]);
   const availability = useMemo(
@@ -110,6 +111,10 @@ export default function CourtsPage() {
 
   const confirm = () => {
     if (!selected || !member || !facility) return;
+    if (isPendingConsent) {
+      setFlash({ tone: "clay", message: "Under DPDP Act 2023, court bookings are locked until guardian consent is verified." });
+      return;
+    }
     const result = createBooking({
       facilityId: selected.facilityId,
       date,
@@ -344,7 +349,14 @@ export default function CourtsPage() {
                   </div>
                 </div>
 
-                {quote && !quote.ok && (
+                {isPendingConsent && (
+                  <div className="mt-2 rounded-lg border border-gold/40 bg-gold/10 p-2.5 text-[10.5px] text-[#7d5d17] leading-relaxed">
+                    <div className="font-semibold">DPDP Act 2023 · Parental Consent Required</div>
+                    Court reservations are locked until your guardian verifies consent on file or at the front desk.
+                  </div>
+                )}
+
+                {quote && !quote.ok && !isPendingConsent && (
                   <p className="mt-2 rounded-lg border border-clay/30 bg-clay/10 px-2.5 py-1.5 text-[10.5px] text-clay-deep">
                     {quote.reason}
                   </p>
@@ -352,11 +364,11 @@ export default function CourtsPage() {
 
                 <button
                   className="btn btn-clay btn-block mt-3"
-                  disabled={!member || (quote ? !quote.ok : true)}
+                  disabled={!member || isPendingConsent || (quote ? !quote.ok : true)}
                   onClick={confirm}
                 >
                   <Check className="h-4 w-4" />
-                  Confirm booking
+                  {isPendingConsent ? "Locked (Consent Pending)" : "Confirm booking"}
                 </button>
                 <button className="btn btn-quiet btn-sm btn-block mt-1" onClick={() => setSelected(null)}>
                   Clear

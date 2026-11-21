@@ -30,6 +30,7 @@ import {
 } from "@/lib/orders";
 import { OrderStatusPill, PriceRows, QtyStepper } from "@/components/commerce/common";
 import { OrderTimeline } from "@/components/commerce/OrderTimeline";
+import { PaymentMethodDetails } from "@/components/commerce/PaymentMethodDetails";
 
 const FULFILMENT_OPTIONS: { value: "pickup" | "delivery"; label: string }[] = [
   { value: "pickup", label: "Club pickup" },
@@ -156,6 +157,10 @@ export default function ShopPage() {
 
   const placeOrder = () => {
     setError("");
+    if (user?.status === "pending_consent") {
+      setError("Under DPDP Act 2023, gear orders are locked pending parental consent verification.");
+      return;
+    }
     if (!cartLines.length) {
       setError("Your cart is empty.");
       return;
@@ -529,13 +534,23 @@ export default function ShopPage() {
             </div>
           ) : (
             <div className="space-y-2">
+              {user?.status === "pending_consent" && (
+                <p className="rounded-lg border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-[10.5px] text-[#7d5d17] leading-relaxed">
+                  Parental consent verification required under DPDP Act 2023. Gear purchases are locked.
+                </p>
+              )}
               {error && (
                 <p role="alert" className="flex items-start gap-2 text-[11.5px] text-clay-deep">
                   {error}
                 </p>
               )}
-              <button type="button" onClick={placeOrder} disabled={!cartLines.length} className="btn btn-clay btn-block">
-                Place order · {inr(grandTotal)}
+              <button
+                type="button"
+                onClick={placeOrder}
+                disabled={!cartLines.length || user?.status === "pending_consent"}
+                className="btn btn-clay btn-block"
+              >
+                {user?.status === "pending_consent" ? "Locked (Consent Pending)" : `Place order · ${inr(grandTotal)}`}
               </button>
               <button type="button" onClick={closeCart} className="btn btn-outline btn-block btn-sm">
                 Keep browsing
@@ -669,9 +684,9 @@ export default function ShopPage() {
             <div>
               <div className="u-eyebrow mb-2 text-muted">Payment</div>
               <Segmented options={PAY_OPTIONS} value={payMode} onChange={(value) => setPayMode(value)} />
-              <p className="mt-2 text-[10.5px] text-muted">
-                {payMode === "cash" ? "Cash is collected at handover." : "Pay online now — the order is marked paid on placement."}
-              </p>
+              <div className="mt-2.5">
+                <PaymentMethodDetails mode={payMode} amount={grandTotal} />
+              </div>
             </div>
 
             <div className="rounded-xl border border-line bg-paper-soft p-4">
