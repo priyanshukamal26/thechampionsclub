@@ -9,10 +9,10 @@
 | Root folder | `D:\Projects\thechampionsclub` |
 | Docs folder | `D:\Projects\thechampionsclub\docs\` |
 | Docs created | 2026-11-21 (Session 1) |
-| Last updated | 2026-11-21 (Session 4: Phase P2 Membership & Accounts complete — Member Dashboard MEM-1 with cryptographic SVG QR pass, tier entitlements, active tab alerts; Front Desk Console DSK-3/4/5 with fast member lookup, walk-in registration with claim invite link generation, and DPDP in-person consent verification queue; build verified 0 errors across 7 routes) |
-| Sessions completed | 4 |
-| Current phase | **P2 – Membership & accounts (Milestone M2 reached; Member passes & Front Desk console live)** |
-| Code written so far | **Next.js 15 App, Tailwind v4, Framer Motion**: Landing page (10 sections), Registration wizard (5 steps with DPDP consent), Sign In (`/login`), Password Reset (`/reset-password`), Junior Pending Consent (`/pending-consent`), Member Dashboard (`/member`, MEM-1) with signed QR pass & entitlements, Front Desk Console (`/desk`, DSK-3/4/5) with instant search, walk-in enrollment & consent queue; production build verified (`next build` 0 errors across all 7 routes) |
+| Last updated | 2026-11-21 (Session 5: Unified Dashboard `/dashboard` implemented with sidebar/mobile-drawer navigation and dedicated service sections: `/dashboard/courts` for 18-facility court bookings, `/dashboard/shop` for gear catalogue & cart checkout, `/dashboard/bar` for kitchen orders & table floor map, `/dashboard/pass` for digital QR credentials, `/dashboard/desk` for staff counter scanner, `/dashboard/settings` for profile & DPDP preferences; fixed post-login redirect flow so authenticated users are routed to dashboard rather than re-login; verified with 0 errors across 17 static routes in `next build`) |
+| Sessions completed | 5 |
+| Current phase | **P2/P3 – Unified Dashboard, Multi-Service Sections & Auth Flow Integrity (Milestone M2+ reached; 17 routes live)** |
+| Code written so far | **Next.js 16 App, Tailwind v4, Framer Motion**: Landing page (10 sections with role-aware CTAs), Registration wizard (5 steps with DPDP consent), Sign In (`/login` with 6-role demo switcher), Password Reset (`/reset-password`), Junior Pending Consent (`/pending-consent`), Unified Dashboard (`/dashboard`), Court Booking (`/dashboard/courts`), Pro Shop (`/dashboard/shop`), Bar & Lounge (`/dashboard/bar`), Member Pass (`/dashboard/pass`), Front Desk Console (`/dashboard/desk`), Account Settings (`/dashboard/settings`); production build verified (`next build` 0 errors across all 17 routes) |
 | Next session starts at | See section 8 "NEXT SESSION TASK" |
 
 ---
@@ -119,18 +119,12 @@ PROPOSED (awaiting the user's approval): Supabase backend (D-002), DB-enforced n
 
 ## 8. NEXT SESSION TASK (update every session)
 
-**Session 5 — Phase P3: Facilities, Payments Adapter & Court Booking Engine (Target milestone M3).**
-1. Implement Interactive Court Booking Grid (`/book`, MEM-2):
-   - Sport selector (Tennis, Padel, Badminton, Cricket Nets) and calendar date picker.
-   - 30-minute slot increments for 60-minute sessions (:00 and :30).
-   - Real-time price calculation using pricing rules (`quote_price()` based on tier: ₹0 Gold, 30% off Silver, 50% off Junior).
-   - Exclusion constraint overlap prevention under booking.
-   - Enforce daily 2-booking cap per member per IST calendar day (D-006).
-2. Implement Friday Night Social Play Session screen (`/social`, MEM-4):
-   - Multi-player capacity tracking (up to 20 players per court).
-   - Instant guest checkout (₹400 fee for Silver/Junior/guests, ₹0 for Gold).
-3. Implement Front Desk Quick Booking & Today Occupancy Board (`/desk/bookings`, DSK-1, DSK-2).
-4. Update docs and append Session 5 entry in `04_HISTORY_LOG.md`.
+**Session 6 — Phase P3/P4: Live Supabase Backend Wiring & Automated Concurrency Testing.**
+1. Connect live Supabase project instance (or local Supabase CLI) replacing placeholder credentials.
+2. Wire PostgreSQL exclusion constraints (`EXCLUDE USING gist`) and atomic stock reservation triggers to the live runtime.
+3. Wire payment simulator (UPI dynamic QR generation + mock webhook confirmation).
+4. Run live concurrency validation test suite for double-booking prevention.
+5. Update docs and append Session 6 entry in `04_HISTORY_LOG.md`.
 
 ## 9. Open questions for the user (TBD)
 

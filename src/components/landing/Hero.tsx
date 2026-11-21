@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import { ArrowRight, Calendar, Zap, ShieldCheck, Flame, ChevronDown } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function Hero() {
+  const { user } = useAuth();
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -85,21 +87,43 @@ export default function Hero() {
             variants={itemVariants}
             className="mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
           >
-            <Link
-              href="/register"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-full hover:bg-[#a8cc00] transition-all duration-300 shadow-[0_0_30px_rgba(204,255,0,0.4)] hover:shadow-[0_0_45px_rgba(204,255,0,0.6)] hover:scale-[1.02] active:scale-95"
-            >
-              <span>Get Your Membership</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-full hover:bg-[#a8cc00] transition-all duration-300 shadow-[0_0_30px_rgba(204,255,0,0.4)] hover:shadow-[0_0_45px_rgba(204,255,0,0.6)] hover:scale-[1.02] active:scale-95"
+                >
+                  <span>Go to Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
 
-            <a
-              href="#availability"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#141414] border border-[#1F1F1F] text-white font-semibold text-sm uppercase tracking-wider px-8 py-4 rounded-full hover:border-[#CCFF00]/60 hover:text-[#CCFF00] transition-all duration-200"
-            >
-              <Calendar className="w-4 h-4 text-[#CCFF00]" />
-              <span>Explore Court Slots</span>
-            </a>
+                <Link
+                  href="/dashboard/courts"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#141414] border border-[#1F1F1F] text-white font-semibold text-sm uppercase tracking-wider px-8 py-4 rounded-full hover:border-[#CCFF00]/60 hover:text-[#CCFF00] transition-all duration-200"
+                >
+                  <Calendar className="w-4 h-4 text-[#CCFF00]" />
+                  <span>Book Courts Now</span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-full hover:bg-[#a8cc00] transition-all duration-300 shadow-[0_0_30px_rgba(204,255,0,0.4)] hover:shadow-[0_0_45px_rgba(204,255,0,0.6)] hover:scale-[1.02] active:scale-95"
+                >
+                  <span>Get Your Membership</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+
+                <a
+                  href="#availability"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-[#141414] border border-[#1F1F1F] text-white font-semibold text-sm uppercase tracking-wider px-8 py-4 rounded-full hover:border-[#CCFF00]/60 hover:text-[#CCFF00] transition-all duration-200"
+                >
+                  <Calendar className="w-4 h-4 text-[#CCFF00]" />
+                  <span>View Live Slots</span>
+                </a>
+              </>
+            )}
           </motion.div>
 
           {/* Value Badges */}

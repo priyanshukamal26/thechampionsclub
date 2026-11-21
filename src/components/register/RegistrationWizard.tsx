@@ -141,10 +141,10 @@ export default function RegistrationWizard() {
         </div>
 
         <a
-          href="/"
+          href="/dashboard"
           className="inline-flex items-center gap-2 bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase tracking-wider px-8 py-4 rounded-full hover:bg-[#a8cc00] transition-all shadow-[0_0_30px_rgba(204,255,0,0.3)]"
         >
-          <span>Explore Facilities & Book Slots</span>
+          <span>Open Athlete Dashboard & Book</span>
           <ArrowRight className="w-4 h-4" />
         </a>
       </div>

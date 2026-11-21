@@ -36,7 +36,7 @@ export default function LoginPage() {
       if (email.toLowerCase().includes("junior") || email.toLowerCase().includes("aarav")) {
         router.push("/pending-consent");
       } else {
-        router.push("/");
+        router.push("/dashboard");
       }
     } else {
       setErrorMsg(result.error || "Login failed. Please check your credentials.");
@@ -49,7 +49,7 @@ export default function LoginPage() {
     if (demo.status === "pending_consent") {
       router.push("/pending-consent");
     } else {
-      router.push("/");
+      router.push("/dashboard");
     }
   };
 

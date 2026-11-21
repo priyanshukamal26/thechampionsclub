@@ -3,8 +3,10 @@
 import { motion } from "framer-motion";
 import { Coffee, Flame, Users, Clock, Award, Sparkles, Utensils } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 
 export default function BarSocial() {
+  const { user } = useAuth();
   return (
     <section id="bar" className="py-28 bg-[#050505] border-t border-[#1F1F1F] relative overflow-hidden">
       {/* Background Glow */}
@@ -95,10 +97,10 @@ export default function BarSocial() {
             </div>
 
             <Link
-              href="/register"
-              className="w-full py-4 rounded-full bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase tracking-wider text-center hover:bg-[#a8cc00] transition-all shadow-[0_0_25px_rgba(204,255,0,0.3)]"
+              href={user ? "/dashboard/bar" : "/register"}
+              className="w-full py-4 rounded-full bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase tracking-wider text-center hover:bg-[#a8cc00] transition-all shadow-[0_0_25px_rgba(204,255,0,0.3)] block"
             >
-              Reserve Friday Social Spot
+              {user ? "View Lounge & Friday Social" : "Reserve Friday Social Spot"}
             </Link>
           </motion.div>
         </div>

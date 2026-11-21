@@ -261,3 +261,102 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - *How is DPDP Act 2023 compliance handled for minor logins?* When a user under 18 signs up or logs in, their account state is flagged as `pending_consent`. The client detects this and routes them to `/pending-consent`, preventing access to court booking transactions or digital payments until parental verification is recorded.
 
 **Next session task:** Session 4 — Phase P2: Membership & Accounts (Target milestone M2) + P1 Cloud Deploy. Implement Member Dashboard (`/member`, MEM-1) with digital QR pass and Front Desk Member Lookup (`/desk`, DSK-3).
+
+
+---
+
+## Session 5 — 2026-11-21
+
+**Goal of the session:** Resolve post-login navigation workflow gaps (prevent redirecting logged-in users back to landing/login pages), create a unified Dashboard (`/dashboard`) with responsive sidebar navigation and dedicated, functional service sections for Court Booking, Pro Shop, Bar & Lounge, Digital Member Pass, Front Desk Console, and Account Settings.
+
+**Phase(s):** P2 / P3 — Membership & Accounts, Service Sections & Auth Integrity.
+
+**What was actually done:**
+- Created Unified Dashboard Layout (`src/app/dashboard/layout.tsx`):
+  - Obsidian dark aesthetic with obsidian-panel surfaces, electric lime (`#CCFF00`) accents, Space Grotesk headings, and Inter typography.
+  - Desktop fixed sidebar + responsive mobile slide-out drawer navigation with icons for Overview, Book Courts, Pro Shop, Bar & Lounge, My Pass, and Settings (+ Front Desk console for staff roles).
+  - Client-side auth guard redirecting unauthenticated users to `/login`.
+- Created Dashboard Overview (`src/app/dashboard/page.tsx`):
+  - Quick action launcher cards to all 4 core club services.
+  - Live metric widgets (Court sessions, Pro Shop orders, Bar visits, Total spent).
+  - Dynamic alert system for membership expiry (<30 days remaining) and unsettled post-match bar tabs.
+  - Upcoming court reservations list and recent multi-service activity feed.
+- Created Interactive Court Booking Section (`src/app/dashboard/courts/page.tsx`):
+  - 18 facility slots across 4 sports (Tennis, Padel, Badminton, Cricket Nets).
+  - Multi-day calendar date offset switcher with formatted IST dates.
+  - Dynamic slot grid (:00 & :30 intervals) with plan-based pricing calculation (₹0 Gold, 30% off Silver, 50% off Junior).
+  - Real-time slot locking with confirmation banner and Exclusion Constraint enforcement notice.
+- Created Pro Shop Section (`src/app/dashboard/shop/page.tsx`):
+  - Categorised equipment & apparel catalogue (Rackets, Balls, Shuttlecocks, Accessories, Apparel, Footwear, Nutrition).
+  - Live search filter and category pills.
+  - Plan discount privilege calculation (15% Gold, 5% Silver, 10% Junior).
+  - Interactive slide-over cart drawer with MRP subtotal, privilege discount deduction, 18% GST calculation, and instant order placement.
+- Created Bar & Lounge Section (`src/app/dashboard/bar/page.tsx`):
+  - Post-match recovery menu with dietary badges (Veg/Non-veg) and tier discount pricing.
+  - Interactive table floor map (12 tables with live occupancy status: Available, Reserved, Occupied).
+  - Active cafeteria tab notification with clear dues action.
+  - Floating order drawer with instant kitchen dispatch.
+- Migrated Digital Member Pass (`src/app/dashboard/pass/page.tsx`):
+  - Holographic Gold/Silver/Junior pass with procedural SVG QR code, tier entitlement radar, and lifetime activity log.
+- Migrated Front Desk Console (`src/app/dashboard/desk/page.tsx`):
+  - Staff scanner, walk-in registration with invite claim links, and DPDP parental consent verification queue.
+- Created Account Settings (`src/app/dashboard/settings/page.tsx`):
+  - Profile attributes, security settings, notification preferences, and DPDP Act 2023 statutory rights advisory.
+- Fixed Auth & Navigation Routing:
+  - Updated `/login` and registration wizard to redirect directly to `/dashboard` upon authentication.
+  - Updated landing page Navbar, Hero, Sports Showcase, Availability Strip, Shop Teaser, and Bar Social components with role-aware logic: authenticated athletes are presented with direct dashboard links rather than re-registration prompts.
+  - Set up seamless client redirects on `/member` and `/desk` pointing to `/dashboard/pass` and `/dashboard/desk`.
+- Verified Production Build:
+  - Executed `npm run build` (`next build` with Turbopack) outside sandbox: compiled and statically prerendered all 17 routes with 0 errors.
+
+**Files created/changed:**
+- Created: `src/app/dashboard/layout.tsx`
+- Created: `src/app/dashboard/page.tsx`
+- Created: `src/app/dashboard/courts/page.tsx`
+- Created: `src/app/dashboard/shop/page.tsx`
+- Created: `src/app/dashboard/bar/page.tsx`
+- Created: `src/app/dashboard/pass/page.tsx`
+- Created: `src/app/dashboard/desk/page.tsx`
+- Created: `src/app/dashboard/settings/page.tsx`
+- Modified: `src/app/login/page.tsx`
+- Modified: `src/app/member/page.tsx`
+- Modified: `src/app/desk/page.tsx`
+- Modified: `src/components/register/RegistrationWizard.tsx`
+- Modified: `src/components/landing/Navbar.tsx`
+- Modified: `src/components/landing/Hero.tsx`
+- Modified: `src/components/landing/SportsShowcase.tsx`
+- Modified: `src/components/landing/AvailabilityStrip.tsx`
+- Modified: `src/components/landing/ShopTeaser.tsx`
+- Modified: `src/components/landing/BarSocial.tsx`
+- Modified: `src/components/landing/MembershipTeaser.tsx`
+- Modified: `docs/00_MASTER.md`
+- Modified: `docs/04_HISTORY_LOG.md`
+
+**Commands run / outputs:**
+- `npm run build`: Compiled successfully in 2.7s; TypeScript passed in 12.5s; 17 static pages generated in 960ms; 0 errors.
+- `git status --short`: Verified all modified and newly created files.
+
+**Tests run and results:**
+- Next.js Production Build (`next build`): PASS (17/17 routes prerendered).
+- Auth state inspection: Verified fallback authentication, local storage caching, and demo switcher routing.
+
+**Commits:** Pending commit.
+
+**Deployments/URLs:** Local development server running at `http://localhost:3000`.
+
+**Decisions made or changed:**
+- D-037: Unified Dashboard Architecture — Post-login user experience is consolidated under `/dashboard/*` with dedicated service sub-routes rather than disjoint top-level routes, preventing navigation disorientation.
+
+**Verified facts (source + date):**
+- None this session.
+
+**Problems hit, causes, fixes:**
+- Problem: Leftover JSX closing tags in `Hero.tsx` caused Turbopack build failure on first attempt. Fix: Removed stray tags and re-ran build successfully.
+
+**Not done / carried over:**
+- Live Supabase cloud project connection.
+
+**Interview notes added:**
+- *Why consolidate member services into a unified dashboard rather than discrete standalone pages?* Athletic club members frequently transition between interconnected workflows (e.g. reserving a court, ordering grip tape from the pro shop, and placing a post-match smoothie order to their table). A unified dashboard architecture with a persistent navigation shell provides persistent session context, preserves active tab balances, and minimizes cognitive load while strictly segregating service responsibilities.
+
+**Next session task:** Session 6 — Phase P3/P4: Live Supabase Backend Wiring & Automated Concurrency Testing.

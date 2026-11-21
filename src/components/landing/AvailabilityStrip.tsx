@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Calendar, Clock, ChevronRight, CheckCircle, ShieldAlert, Sparkles } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface SlotData {
   time: string;
@@ -27,6 +28,7 @@ const mockSchedule: SlotData[] = [
 ];
 
 export default function AvailabilityStrip() {
+  const { user } = useAuth();
   const [selectedDay, setSelectedDay] = useState("Today");
 
   const days = ["Today", "Tomorrow", "Friday Social", "Saturday", "Sunday"];
@@ -170,13 +172,23 @@ export default function AvailabilityStrip() {
               </span>
             </div>
 
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#CCFF00] hover:underline"
-            >
-              <span>Sign in to book 60-min slots</span>
-              <ChevronRight className="w-4 h-4" />
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard/courts"
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#CCFF00] hover:underline"
+              >
+                <span>Book Court in Member Dashboard</span>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#CCFF00] hover:underline"
+              >
+                <span>Sign in to book 60-min slots</span>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            )}
           </div>
         </div>
       </div>

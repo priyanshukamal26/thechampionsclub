@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 
 interface SportCardProps {
   title: string;
@@ -59,6 +60,7 @@ const sportsData: SportCardProps[] = [
 ];
 
 export default function SportsShowcase() {
+  const { user } = useAuth();
   return (
     <section id="sports" className="py-28 bg-[#0A0A0A] relative overflow-hidden">
       {/* Decorative Blur */}
@@ -142,13 +144,23 @@ export default function SportsShowcase() {
 
               {/* Card Footer CTA */}
               <div className="relative z-10 pt-6 mt-6 border-t border-[#1F1F1F]/60 flex items-center justify-between">
-                <a
-                  href="#availability"
-                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white group-hover:text-[#CCFF00] transition-colors"
-                >
-                  <span>Book A Slot</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </a>
+                {user ? (
+                  <Link
+                    href="/dashboard/courts"
+                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white group-hover:text-[#CCFF00] transition-colors"
+                  >
+                    <span>Book A Slot</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </Link>
+                ) : (
+                  <a
+                    href="#availability"
+                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white group-hover:text-[#CCFF00] transition-colors"
+                  >
+                    <span>Book A Slot</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </a>
+                )}
               </div>
             </motion.div>
           ))}

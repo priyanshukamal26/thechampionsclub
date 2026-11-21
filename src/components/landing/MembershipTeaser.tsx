@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Check, Sparkles, Star, Zap, Shield, ArrowRight } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface PlanTier {
   id: string;
@@ -78,6 +79,7 @@ const plans: PlanTier[] = [
 ];
 
 export default function MembershipTeaser() {
+  const { user } = useAuth();
   const [annualBilling, setAnnualBilling] = useState(false);
 
   return (
@@ -209,14 +211,14 @@ export default function MembershipTeaser() {
 
                 {/* CTA Link */}
                 <Link
-                  href={`/register?plan=${plan.id}`}
+                  href={user ? "/dashboard/pass" : `/register?plan=${plan.id}`}
                   className={`w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
                     plan.isPopular
                       ? "bg-[#CCFF00] text-[#0A0A0A] hover:bg-[#a8cc00] shadow-[0_0_20px_rgba(204,255,0,0.3)] hover:shadow-[0_0_30px_rgba(204,255,0,0.5)]"
                       : "bg-[#1F1F1F] text-white hover:bg-[#2A2A2A] hover:text-[#CCFF00]"
                   }`}
                 >
-                  <span>{plan.ctaText}</span>
+                  <span>{user ? "View Tier In Pass" : plan.ctaText}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </motion.div>

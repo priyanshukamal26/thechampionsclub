@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ShoppingBag, ArrowUpRight, Flame, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 
 interface ProductItem {
   name: string;
@@ -49,6 +50,7 @@ const products: ProductItem[] = [
 ];
 
 export default function ShopTeaser() {
+  const { user } = useAuth();
   return (
     <section id="shop" className="py-28 bg-[#0A0A0A] relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -110,9 +112,9 @@ export default function ShopTeaser() {
                   </div>
 
                   <Link
-                    href="/register"
+                    href={user ? "/dashboard/shop" : "/login"}
                     className="w-9 h-9 rounded-full bg-[#1F1F1F] group-hover:bg-[#CCFF00] text-white group-hover:text-[#0A0A0A] flex items-center justify-center transition-colors shadow-md"
-                    title="Order item"
+                    title={user ? "Order via Pro Shop" : "Sign in to order"}
                   >
                     <ArrowUpRight className="w-4 h-4" />
                   </Link>
