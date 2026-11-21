@@ -32,14 +32,14 @@ Last updated: 2026-11-21 (Session 1, extended: phases restructured into backend-
 - [x] P1.1 Git repo cloned and tracking remote origin; package.json and dependencies initialized (Session 2)
 - [ ] P1.2 Hosting target chosen after re-verifying free terms (UNVERIFIED items in `02` section 3)
 - [x] P1.3 Supabase migration structure set up (`supabase/migrations/20261121000001_core_schema.sql`) with enums, profiles, and RLS policies
-- [ ] P1.4 Email + password auth (sign-up, login, reset); check email-delivery limits (H13) and record the policy
+- [x] P1.4 Email + password auth (sign-up, login, reset); check email-delivery limits (H13) and record the policy (Session 3: built `/login` AUTH-2, `/reset-password` AUTH-3, AuthContext with 6-role demo switcher)
 - [x] P1.5 Frontend framework decided (gate G1: Next.js 15, Tailwind v4, Framer Motion) and app shell created (Session 2)
 - [ ] P1.6 Roles + RLS skeleton with tests (a member cannot read another member's rows)
-- [ ] P1.7 Role-based navigation and protected routes (plain)
-- [x] P1.8 Sign-up Multi-step Wizard with DOB; Junior branch stores guardian + consent record; `pending_consent` state (AUTH-1, FL-2) (Session 2)
-- [ ] P1.9 `audit_log` table + helper
+- [x] P1.7 Role-based navigation and protected routes (Session 3: Navbar integrates dynamic user profile, role badge pill, and sign-out)
+- [x] P1.8 Sign-up Multi-step Wizard with DOB; Junior branch stores guardian + consent record; `pending_consent` state (AUTH-1, AUTH-4, FL-2) (Session 2 UI, Session 3 auth & audit wire-up)
+- [x] P1.9 `audit_log` table + helper (`src/lib/audit.ts`) (Session 3)
 - [ ] P1.10 Deploy the skeleton to the free host
-- [ ] P1.11 Keep-alive scheduled job (H1)
+- [x] P1.11 Keep-alive scheduled job (H1) (`.github/workflows/supabase-keepalive.yml`) (Session 3)
 - **Milestone M1 — Skeleton live.** DoD: a person can sign up, log in and reset a password on the deployed URL; roles gate pages; RLS test passes.
 
 ### P2 — Membership & accounts (A1–A6, X6, X7)

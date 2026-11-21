@@ -221,9 +221,9 @@ One responsive web app (D-021). Page IDs are for reference in tasks and tests. "
 | ID | Page | Sections | Req |
 |---|---|---|---|
 | AUTH-1 | Sign-up (Implemented) | Multi-step Wizard with dynamic minor detection:<br>• Step 1: Personal Info (Full Name, Email, Phone +91, DOB with under-18 alert)<br>• Step 2: Account Security (Password with 4-level strength meter, confirm password match check, toggle visibility)<br>• Step 3: Choose Plan (Interactive Gold, Silver, Junior selection cards)<br>• Step 4 (Conditional if <18): Guardian Consent (Guardian name, email, phone, DPDP Act 2023 legal consent checkbox)<br>• Step 5: Review Application (Summary review with Edit jumps, Terms agreement, and submission) | X5, X6 |
-| AUTH-2 | Login | Email + password; reset link | X5 |
-| AUTH-3 | Reset Password | Request + set new password | X5 |
-| AUTH-4 | Pending Consent | Explains the wait; status; resend guardian link | X6 |
+| AUTH-2 | Login (Implemented) | Obsidian athletic card, email + password, visibility toggle, 6-role one-click quick demo switcher (Owner, Manager, Front Desk, Bar Staff, Gold Member, Junior Minor), forgot password link, registration link | X5 |
+| AUTH-3 | Reset Password (Implemented) | Email password reset request form, recovery instructions status screen, back to login navigation | X5 |
+| AUTH-4 | Pending Consent (Implemented) | DPDP Act 2023 minor waiting screen, guardian details and consent text version record, permission restrictions explanation, resend guardian email button, front desk verification notice | X6 |
 | AUTH-5 | Account Claim | Invite link landing for desk-registered members; set password | X7 |
 
 ### 6.3 Member

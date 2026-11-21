@@ -1,0 +1,24 @@
+name: Supabase Database Keep-Alive
+
+on:
+  schedule:
+    # Run every 3 days at midnight UTC to prevent Supabase Free Tier auto-pause
+    - cron: '0 0 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Supabase secrets not configured yet; skipping ping."
+            exit 0
+          fi
+          echo "Pinging Supabase database health..."
+          curl -s -f -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY" "$SUPABASE_URL/rest/v1/plans?select=id&limit=1" > /dev/null
+          echo "Supabase keep-alive ping succeeded!"

@@ -8,6 +8,8 @@ import CreatePassword from "./steps/CreatePassword";
 import ChoosePlan from "./steps/ChoosePlan";
 import GuardianConsent from "./steps/GuardianConsent";
 import Confirmation from "./steps/Confirmation";
+import { useAuth, ClubUser } from "@/lib/auth-context";
+import { recordAuditLog } from "@/lib/audit";
 
 export interface RegisterFormData {
   fullName: string;
@@ -25,6 +27,7 @@ export interface RegisterFormData {
 }
 
 export default function RegistrationWizard() {
+  const { setUser } = useAuth();
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: "",
     email: "",
@@ -74,6 +77,22 @@ export default function RegistrationWizard() {
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1);
     } else {
+      const newUser: ClubUser = {
+        id: crypto.randomUUID(),
+        email: formData.email,
+        fullName: formData.fullName,
+        role: "member",
+        status: isMinor ? "pending_consent" : "active_member",
+        planId: formData.planId,
+        isMinor,
+      };
+      setUser(newUser);
+      localStorage.setItem("champions_user", JSON.stringify(newUser));
+      recordAuditLog({
+        action: isMinor ? "register_minor_pending_consent" : "register_member",
+        entity: "profiles",
+        details: { plan: formData.planId, email: formData.email, isMinor },
+      });
       setSubmitted(true);
     }
   };

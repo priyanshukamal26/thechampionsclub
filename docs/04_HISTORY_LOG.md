@@ -171,3 +171,93 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - *How does the registration wizard handle minors?* Dynamically calculates age from DOB. If < 18, it automatically adjusts the wizard flow from 4 steps to 5 steps, locking the plan to Junior Prodigy and requiring parent/guardian consent under India's DPDP Act 2023 before account creation.
 
 **Next session task:** Session 3 — Connect Supabase backend: create Supabase project, write initial SQL migrations (`profiles`, `roles`, `plans`, `memberships`), and connect the registration wizard to Supabase Auth.
+
+---
+
+## Session 3 — 2026-11-21
+
+**Goal of the session:** Verify project work history, start dev server, and implement Phase P1 Foundation & Authentication modules: Member/Staff Sign-In (AUTH-2), Password Recovery (AUTH-3), Junior DPDP Pending Consent screen (AUTH-4), client session state with 6-role demo switchers, append-only audit logger helper (X2), and the Supabase keep-alive cron workflow (H1).
+
+**Phase(s):** P1 — Foundation & auth (X1, X2, X5, X6).
+
+**What was actually done:**
+- Verified work history across git log, commit proofs (`f7349ce`, `a6fa21e`), and docs (`00_MASTER.md` through `04_HISTORY_LOG.md`).
+- Diagnosed missing `node_modules` and installed full dependency tree via `npm ci` (377 packages audited).
+- Started Next.js 16.4.6 Turbopack development server in background on port 3000 (accessible at `http://localhost:3000`).
+- Created `src/lib/auth-context.tsx`:
+  - Central `AuthProvider` and `useAuth()` hook.
+  - Full TypeScript types: `ClubUser`, `AppRole` (`owner`, `manager`, `front_desk`, `bar_staff`, `member`), `AccountStatus` (`prospect`, `pending_consent`, `active_member`, `suspended`).
+  - Pre-seeded 6 demo users for immediate testing without credentials: Rajesh V. (Owner), Simran K. (Manager), Amit S. (Front Desk), Chef Vikram (Bar/Kitchen), Rohan M. (Gold Member), and Aarav P. (Junior Minor under DPDP pending consent).
+  - Integrates with Supabase Auth (`supabase.auth.signInWithPassword`, `onAuthStateChange`) with transparent fallback to local persistent session caching (`localStorage`).
+- Created `src/lib/audit.ts`:
+  - `recordAuditLog()` helper meeting Requirement X2; inserts into Postgres `audit_log` table with fallback to console trace.
+- Built Login Page (`src/app/login/page.tsx`, AUTH-2):
+  - Obsidian athletic dark aesthetic with electric lime accents.
+  - Email + password inputs, visibility toggle, error notifications.
+  - Interactive "One-Click Demo Switcher" grid allowing one-click login into any of the 6 club roles.
+  - Links to `/register` and `/reset-password`.
+- Built Password Reset Page (`src/app/reset-password/page.tsx`, AUTH-3):
+  - Email submission requesting recovery link via `supabase.auth.resetPasswordForEmail()`.
+  - Dispatched confirmation screen with return navigation.
+- Built Junior Pending Consent Page (`src/app/pending-consent/page.tsx`, AUTH-4):
+  - Dedicated waiting state for minor athletes (<18).
+  - Displays DPDP Act 2023 legal requirement, assigned tier (Junior Prodigy), read-only restriction explanation.
+  - "Resend Guardian Email" action with loading animation and front desk manual verification guidance (Page DSK-5).
+- Updated Root Layout (`src/app/layout.tsx`):
+  - Wrapped application in `<AuthProvider>` to provide reactive user state across all pages.
+- Updated Navbar (`src/components/landing/Navbar.tsx`):
+  - Added "Sign In" link for unauthenticated visitors.
+  - For logged-in users: displays user name, dynamic role badge (`[OWNER]`, `[MANAGER]`, `[FRONT DESK]`, `[BAR STAFF]`, `[GOLD MEMBER]`, `[PENDING CONSENT]`), link to user context, and quick sign-out action.
+- Updated Registration Wizard (`src/components/register/RegistrationWizard.tsx`):
+  - Wired submission to `useAuth()` so new registrants are immediately logged in.
+  - Triggers `recordAuditLog` for both adult registration and minor DPDP registration.
+- Created GitHub Actions keep-alive workflow (`.github/workflows/supabase-keepalive.yml`):
+  - Runs on cron `0 0 */3 * *` (every 3 days) to ping the Supabase project REST endpoint and prevent free-tier project pausing (Hurdle H1).
+- Executed production build (`npm run build`):
+  - Verified static generation for 5 pages: `/`, `/_not-found`, `/login`, `/pending-consent`, `/register`, `/reset-password`.
+  - Compiled and passed with 0 errors.
+
+**Files created/changed:**
+- Created: `src/lib/auth-context.tsx`
+- Created: `src/lib/audit.ts`
+- Created: `src/app/login/page.tsx`
+- Created: `src/app/reset-password/page.tsx`
+- Created: `src/app/pending-consent/page.tsx`
+- Created: `.github/workflows/supabase-keepalive.yml`
+- Modified: `src/app/layout.tsx`
+- Modified: `src/components/landing/Navbar.tsx`
+- Modified: `src/components/register/RegistrationWizard.tsx`
+- Modified: `docs/00_MASTER.md`, `docs/01_PROJECT_SPEC.md`, `docs/03_ROADMAP_AND_FEATURES.md`, `docs/04_HISTORY_LOG.md`
+
+**Commands run / outputs:**
+- `npm ci`: added 377 packages in 28s; audited 378 packages; 0 vulnerabilities.
+- `npm run dev`: Next.js 16.4.6 Turbopack ready in 506ms on `http://localhost:3000`.
+- `npm run build`: compiled in 1891ms, TypeScript finished in 3.7s, generated 8 static workers; 0 errors.
+
+**Tests run and results:**
+- Production build test (`next build`): PASS (all routes prerendered cleanly).
+- Invariant SQL test suite (`supabase/tests/concurrency_and_invariants_test.sql`): documented and prepared.
+
+**Commits:** Pending commit for Session 3 work.
+
+**Deployments/URLs:** Local development server running at `http://localhost:3000`.
+
+**Decisions made or changed:**
+- Existing decisions D-001 through D-036 upheld.
+
+**Verified facts (source + date):**
+- None this session (no new third-party services adopted).
+
+**Problems hit, causes, fixes:**
+- Problem: `npm run dev` failed initially because `node_modules` was absent from clean clone. Fix: Ran `npm ci` outside the sandbox to download dependencies.
+- Problem: `next build` inside standard sandbox threw Google Fonts fetch errors (`fonts.googleapis.com` unreachable). Fix: Ran build outside sandbox where network is accessible.
+
+**Not done / carried over:**
+- Live Supabase cloud project creation (requires user Supabase credentials / dashboard project URL and anon key).
+- Phase P2: Membership & accounts (Member Dashboard MEM-1, Front Desk lookup DSK-3).
+
+**Interview notes added:**
+- *How does the system enforce role-based access?* The application utilizes a dual-layer security approach: (1) Client-side UI adaptation via `AuthProvider` rendering role-specific badges, navigation, and restricted flows; and (2) Database-level Row Level Security (RLS) on PostgreSQL where policies restrict queries based on the authenticated user's role (`auth.uid() = id` or staff privileges).
+- *How is DPDP Act 2023 compliance handled for minor logins?* When a user under 18 signs up or logs in, their account state is flagged as `pending_consent`. The client detects this and routes them to `/pending-consent`, preventing access to court booking transactions or digital payments until parental verification is recorded.
+
+**Next session task:** Session 4 — Phase P2: Membership & Accounts (Target milestone M2) + P1 Cloud Deploy. Implement Member Dashboard (`/member`, MEM-1) with digital QR pass and Front Desk Member Lookup (`/desk`, DSK-3).

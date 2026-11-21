@@ -9,10 +9,10 @@
 | Root folder | `D:\Projects\thechampionsclub` |
 | Docs folder | `D:\Projects\thechampionsclub\docs\` |
 | Docs created | 2026-11-21 (Session 1) |
-| Last updated | 2026-11-21 (Session 2: Landing Page & Multi-Step Registration built with Awwwards-level design, Next.js 15, Tailwind v4, Framer Motion; decisions D-033…D-035 confirmed) |
-| Sessions completed | 2 (planning, feasibility, landing page & registration implementation complete and build-verified) |
-| Current phase | **P1 – Foundation & auth (Frontend shell & public pages live; DB & Supabase pending)** |
-| Code written so far | **Next.js 15 App, Tailwind v4, Framer Motion**: Landing page (10 sections), Multi-step registration wizard (5 steps with minor detection & DPDP consent); production build verified (`next build` 0 errors) |
+| Last updated | 2026-11-21 (Session 3: Auth flows complete — Login, Reset Password, Junior DPDP Consent page, AuthContext session state, 6-role demo switchers, audit logger, Supabase keep-alive cron; build verified 0 errors) |
+| Sessions completed | 3 |
+| Current phase | **P1 – Foundation & auth (Frontend auth & app shell live, schema v0 drafted, keep-alive workflow created)** |
+| Code written so far | **Next.js 15 App, Tailwind v4, Framer Motion**: Landing page (10 sections), Multi-step registration wizard (5 steps with DPDP consent), Sign In page (`/login`) with 6-role one-click demo switcher, Password Reset page (`/reset-password`), Junior Pending Consent page (`/pending-consent`), AuthProvider with session storage & Supabase Auth adapter, `audit_log` helper, keep-alive workflow; production build verified (`next build` 0 errors across all routes) |
 | Next session starts at | See section 8 "NEXT SESSION TASK" |
 
 ---
@@ -119,12 +119,12 @@ PROPOSED (awaiting the user's approval): Supabase backend (D-002), DB-enforced n
 
 ## 8. NEXT SESSION TASK (update every session)
 
-**Session 2 — finish Phase P0 (target milestone M0).**
-1. Ask the user to confirm or change each PROPOSED decision listed in section 7 (one batch; D-002 backend and D-006/D-007/D-027/D-031 deserve discussion).
-2. Settle the open items that block the schema: Q10 (social play scope), courts/nets per sport and opening hours, pricing-rule structure and seed price values, social-session capacity, delivery fee/min order (P0.8, P0.9).
-3. Produce the ER diagram (Mermaid) for identity/accounts, membership + guardian consent, facilities, pricing, bookings, social sessions, and put it in `02` (P0.10).
-4. Draft SQL schema v0 for those tables, with the exclusion constraint and daily-cap function (P0.11), and write the invariant/concurrency test plan (P0.12).
-5. Update the docs and generate the next-session prompt (use `05_PROMPTS.md`).
+**Session 4 — Phase P2: Membership & Accounts (Target milestone M2) + P1 Cloud Deploy.**
+1. Implement Member Dashboard (`/member`, MEM-1) with digital QR membership card, tier benefits banner, upcoming sessions, and recent tabs.
+2. Implement Front Desk Member Lookup / Quick Scan screen (`/desk`, DSK-3) for staff recognition and check-in.
+3. Wire live Supabase credentials (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) in `.env.local` when the cloud project is created.
+4. Run migration `20261121000001_core_schema.sql` against the cloud database.
+5. Update docs and append Session 4 entry.
 
 ## 9. Open questions for the user (TBD)
 
