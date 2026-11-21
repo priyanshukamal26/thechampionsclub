@@ -33,6 +33,8 @@ import {
   getOpenTabs,
   kitchenQueue,
   activeOrdersForMember,
+  getCustomerActiveQueue,
+  getOrderQueueStatus,
   getProducts,
   lowStockProducts,
   getOrders,
@@ -47,11 +49,25 @@ import {
   type ClubMember,
 } from "@/lib/membership";
 import { formatDate, formatTime, inr, labelToMinutes, minutesToLabel, offsetDate, todayISO } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 export default function DashboardOverviewPage() {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    setMounted(true);
+    const handleUpdate = () => setTick((t) => t + 1);
+    window.addEventListener("tcc_orders_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    const interval = window.setInterval(handleUpdate, 8000);
+    return () => {
+      window.removeEventListener("tcc_orders_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const data = useMemo(() => {
     if (!mounted || !user) return null;
@@ -65,6 +81,7 @@ export default function DashboardOverviewPage() {
     const tabs = getOpenTabs();
     const tab = tabs.find((t) => t.memberName.toLowerCase() === member.fullName.toLowerCase());
     const orders = activeOrdersForMember(member.fullName);
+    const activeQueueData = getCustomerActiveQueue(member.fullName);
     const plays = activeBookingsForMemberOnDate(member.id, todayISO()).length;
     const expiringDays = Math.ceil(
       (new Date(`${member.membershipEnd}T00:00:00`).getTime() - Date.now()) / 86_400_000
@@ -73,8 +90,8 @@ export default function DashboardOverviewPage() {
     const twm = getTodayWeekMonth();
     const report = getZReport();
     const kitchen = kitchenQueue();
-    return { member, upcoming, tab, orders, plays, expiringDays, twm, report, kitchen, tabs };
-  }, [mounted, user]);
+    return { member, upcoming, tab, orders, plays, expiringDays, twm, report, kitchen, tabs, activeQueueData };
+  }, [mounted, user, tick]);
 
   if (!mounted || !data) {
     return (
@@ -103,7 +120,7 @@ export default function DashboardOverviewPage() {
     return <OwnerOverview user={user} data={data} />;
   }
 
-  const { member, upcoming, tab, orders, plays, expiringDays } = data;
+  const { member, upcoming, tab, orders, plays, expiringDays, activeQueueData } = data;
   const plan = MEMBERSHIP_PLANS[member.planId];
   const next = upcoming[0];
   const nextFacility = next ? getFacility(next.facilityId) : undefined;
@@ -139,6 +156,33 @@ export default function DashboardOverviewPage() {
           </>
         }
       />
+
+      {/* Live kitchen order queue tracker banner */}
+      {activeQueueData.totalCount > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/40 bg-gold/[0.08] p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gold/20 text-[#7d5d17]">
+              <ChefHat className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-[13px] text-ink">
+                  {activeQueueData.primaryQueueInfo?.label ?? "Order in Kitchen"}
+                </span>
+                <span className="u-mono rounded bg-ink px-2 py-0.5 text-[9px] uppercase tracking-wider text-chalk">
+                  {activeQueueData.totalCount} active ticket{activeQueueData.totalCount === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="mt-0.5 text-[11px] text-muted">
+                Current total: <span className="font-semibold text-ink">{inr(activeQueueData.totalAmount)}</span> · Being prepared fresh under Chef Vikram
+              </div>
+            </div>
+          </div>
+          <Link href="/dashboard/bar" className="btn btn-ink btn-sm">
+            Track order & floor map →
+          </Link>
+        </div>
+      )}
 
       {member.duesPending > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-clay/40 bg-clay/[0.07] px-4 py-3">
@@ -326,15 +370,47 @@ export default function DashboardOverviewPage() {
 
           {orders.length > 0 && (
             <Panel>
-              <div className="u-eyebrow text-muted">Order status</div>
-              <ul className="mt-2 divide-y divide-line-soft">
-                {orders.slice(0, 3).map((order) => (
-                  <li key={order.id} className="flex items-center justify-between py-2 text-[11px]">
-                    <span className="u-mono text-[9.5px] text-muted">{order.code}</span>
-                    <span className="capitalize text-ink">{order.status}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="flex items-center justify-between border-b border-line pb-2">
+                <div>
+                  <div className="u-eyebrow text-clay">Kitchen & Bar Orders</div>
+                  <div className="u-display text-[12.5px] mt-0.5">Live ticket status</div>
+                </div>
+                {activeQueueData.totalCount > 0 && (
+                  <span className="u-mono text-[11px] text-ink font-semibold">
+                    {inr(activeQueueData.totalAmount)}
+                  </span>
+                )}
+              </div>
+              <div className="max-h-[220px] overflow-y-auto pr-1">
+                <ul className="divide-y divide-line-soft">
+                  {orders.map((order) => {
+                    const qInfo = getOrderQueueStatus(order.id);
+                    return (
+                      <li key={order.id} className="flex items-center justify-between py-2 text-[11px]">
+                        <div>
+                          <span className="u-mono font-medium text-ink">{order.code}</span>
+                          <span className="ml-1.5 text-muted">· {inr(order.total)}</span>
+                        </div>
+                        <span
+                          className={cn(
+                            "u-mono rounded px-1.5 py-0.5 text-[9px] font-medium",
+                            order.status === "ready"
+                              ? "bg-court/20 text-court font-semibold"
+                              : order.status === "preparing"
+                                ? "bg-gold/20 text-[#7d5d17] font-semibold"
+                                : "bg-ink/10 text-muted"
+                          )}
+                        >
+                          {qInfo?.label ?? order.status}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              <Link href="/dashboard/bar" className="btn btn-quiet btn-xs btn-block mt-2">
+                Open Bar Floor →
+              </Link>
             </Panel>
           )}
         </div>
@@ -493,20 +569,24 @@ function BarCafeOverview({ user }: { user: { fullName: string; role: string } })
           {kitchen.length === 0 ? (
             <p className="py-6 text-center text-[11.5px] text-muted">The kitchen pass is clear. No active tickets.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-line-soft">
-              {kitchen.slice(0, 5).map((order) => (
-                <li key={order.id} className="flex items-center justify-between py-2 text-[11.5px]">
-                  <div>
-                    <span className="font-mono font-medium text-ink">{order.code}</span>
-                    <span className="ml-2 text-muted">· {order.memberName}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="u-mono text-[10px] text-muted">{formatTime(order.placedAt)}</span>
-                    <StatusPill tone={order.status === "preparing" ? "warn" : "info"}>{order.status}</StatusPill>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="max-h-[260px] overflow-y-auto pr-1">
+              <ul className="mt-3 divide-y divide-line-soft">
+                {kitchen.map((order, idx) => (
+                  <li key={order.id} className="flex items-center justify-between py-2 text-[11.5px]">
+                    <div>
+                      <span className="font-mono font-medium text-ink">#{idx + 1} {order.code}</span>
+                      <span className="ml-2 text-muted">· {order.memberName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="u-mono text-[10px] text-muted">{formatTime(order.placedAt)}</span>
+                      <StatusPill tone={order.status === "ready" ? "success" : order.status === "preparing" ? "warn" : "info"}>
+                        {order.status === "ready" ? "Ready" : order.status === "preparing" ? "Cooking" : "Placed"}
+                      </StatusPill>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </Panel>
 

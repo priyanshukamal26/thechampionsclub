@@ -9,6 +9,7 @@ import {
   Phone,
   Plus,
   Search,
+  ShieldCheck,
   ShoppingCart,
   Store,
   Truck,
@@ -395,11 +396,11 @@ export default function ShopPage() {
             </div>
             <div className="rounded-xl border border-court/25 bg-court/5 p-3">
               <div className="flex items-center gap-2">
-                <PackageCheck className="h-4 w-4 text-court" />
-                <span className="u-eyebrow text-court">Single shelf</span>
+                <ShieldCheck className="h-4 w-4 text-court" />
+                <span className="u-eyebrow text-court">Authenticity guarantee</span>
               </div>
               <p className="mt-1 text-[11px] leading-relaxed text-muted">
-                The counter and this catalogue share one stock count. If it is on the shelf, it can be sold — and it decrements the moment an order is placed.
+                100% genuine equipment sourced directly from authorized brand distributors. Full manufacturer warranty on all racquets and gear.
               </p>
             </div>
           </Panel>
@@ -489,46 +490,48 @@ export default function ShopPage() {
               }
             />
           ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {myOrders.map((order) => {
-                const unpaid = !order.paid;
-                return (
-                  <article key={order.id} className="rounded-xl border border-line bg-paper-soft p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="u-value text-[15px] text-ink">{order.code}</div>
-                        <div className="u-mono mt-1 text-[9.5px] uppercase tracking-[0.12em] text-muted">
-                          {formatDate(order.placedAt.slice(0, 10), { day: "numeric", month: "short" })} · {formatTime(order.placedAt)} IST
+            <div className="max-h-[560px] overflow-y-auto pr-1">
+              <div className="grid gap-4 lg:grid-cols-2">
+                {myOrders.map((order) => {
+                  const unpaid = !order.paid;
+                  return (
+                    <article key={order.id} className="rounded-xl border border-line bg-paper-soft p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="u-value text-[15px] text-ink">{order.code}</div>
+                          <div className="u-mono mt-1 text-[9.5px] uppercase tracking-[0.12em] text-muted">
+                            {formatDate(order.placedAt.slice(0, 10), { day: "numeric", month: "short" })} · {formatTime(order.placedAt)} IST
+                          </div>
                         </div>
+                        <OrderStatusPill status={order.status} />
                       </div>
-                      <OrderStatusPill status={order.status} />
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                      <span className="chip chip-ink">
-                        {order.fulfilment === "delivery" ? <Truck className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
-                        {order.fulfilment === "delivery" ? "Delivery" : "Club pickup"}
-                      </span>
-                      <span className="chip">{order.lines.reduce((sum, line) => sum + line.qty, 0)} items</span>
-                      {order.fulfilment === "delivery" && order.otp && <span className="chip chip-clay">OTP {order.otp}</span>}
-                      {order.fulfilment !== "delivery" && order.pickupCode && <span className="chip chip-court">Pickup {order.pickupCode}</span>}
-                      {order.etaMin && <span className="chip">ETA {order.etaMin}m</span>}
-                    </div>
-                    <div className="mt-3 space-y-1">
-                      {order.lines.map((line, index) => (
-                        <div key={`${order.id}-${index}`} className="flex items-center justify-between gap-2 text-[11.5px]">
-                          <span className="truncate text-ink">{line.qty}× {line.name}</span>
-                          <span className="u-value shrink-0 text-muted">{inr(line.unitPrice * line.qty)}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-2">
-                      <span className="text-[11px] text-muted">{unpaid ? "Payment pending" : `Paid · ${order.paymentMode.toUpperCase()}`}</span>
-                      <span className="u-value text-[14px] text-ink">{inr(order.total)}</span>
-                    </div>
-                    <OrderTimeline order={order} className="mt-3" />
-                  </article>
-                );
-              })}
+                      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                        <span className="chip chip-ink">
+                          {order.fulfilment === "delivery" ? <Truck className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
+                          {order.fulfilment === "delivery" ? "Delivery" : "Club pickup"}
+                        </span>
+                        <span className="chip">{order.lines.reduce((sum, line) => sum + line.qty, 0)} items</span>
+                        {order.fulfilment === "delivery" && order.otp && <span className="chip chip-clay">OTP {order.otp}</span>}
+                        {order.fulfilment !== "delivery" && order.pickupCode && <span className="chip chip-court">Pickup {order.pickupCode}</span>}
+                        {order.etaMin && <span className="chip">ETA {order.etaMin}m</span>}
+                      </div>
+                      <div className="mt-3 space-y-1">
+                        {order.lines.map((line, index) => (
+                          <div key={`${order.id}-${index}`} className="flex items-center justify-between gap-2 text-[11.5px]">
+                            <span className="truncate text-ink">{line.qty}× {line.name}</span>
+                            <span className="u-value shrink-0 text-muted">{inr(line.unitPrice * line.qty)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-2">
+                        <span className="text-[11px] text-muted">{unpaid ? "Payment pending" : `Paid · ${order.paymentMode.toUpperCase()}`}</span>
+                        <span className="u-value text-[14px] text-ink">{inr(order.total)}</span>
+                      </div>
+                      <OrderTimeline order={order} className="mt-3" />
+                    </article>
+                  );
+                })}
+              </div>
             </div>
           )}
         </Panel>

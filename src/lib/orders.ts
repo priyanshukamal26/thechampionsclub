@@ -348,8 +348,80 @@ export function getOrders(): Order[] {
   return seeded;
 }
 
+export function broadcastOrdersUpdated(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("tcc_orders_updated"));
+  }
+}
+
 function saveOrders(orders: Order[]): void {
   writeStore(ORDERS_KEY, orders);
+  broadcastOrdersUpdated();
+}
+
+export interface OrderQueueStatus {
+  orderId: string;
+  code: string;
+  status: OrderStatus;
+  position: number;
+  totalInQueue: number;
+  ordersAhead: number;
+  estimatedWaitMinutes: number;
+  label: string;
+}
+
+export function getOrderQueueStatus(orderId: string): OrderQueueStatus | null {
+  const queue = kitchenQueue();
+  const index = queue.findIndex((o) => o.id === orderId);
+  if (index === -1) return null;
+  const order = queue[index];
+
+  const ahead = queue.slice(0, index).filter((o) => o.status === "placed" || o.status === "preparing");
+  const position = ahead.length + 1;
+  const estimatedWaitMinutes = Math.max(3, (ahead.length + 1) * 4);
+
+  let label = `Queue #${position}`;
+  if (order.status === "ready") {
+    label = "Ready to serve!";
+  } else if (order.status === "preparing") {
+    label = "Cooking now on pass";
+  } else if (position === 1) {
+    label = "Queue #1 · Next up!";
+  } else {
+    label = `Queue #${position} · ${ahead.length} ahead`;
+  }
+
+  return {
+    orderId: order.id,
+    code: order.code,
+    status: order.status,
+    position,
+    totalInQueue: queue.length,
+    ordersAhead: ahead.length,
+    estimatedWaitMinutes,
+    label,
+  };
+}
+
+export function getCustomerActiveQueue(identifier: string) {
+  const key = identifier.toLowerCase();
+  const queue = kitchenQueue();
+  const myOrders = queue.filter(
+    (o) =>
+      (o.memberId && o.memberId.toLowerCase() === key) ||
+      o.memberName.toLowerCase() === key
+  );
+
+  const totalAmount = round2(myOrders.reduce((sum, o) => sum + o.total, 0));
+  const earliestOrder = myOrders[0];
+  const queueInfo = earliestOrder ? getOrderQueueStatus(earliestOrder.id) : null;
+
+  return {
+    activeOrders: myOrders,
+    totalCount: myOrders.length,
+    totalAmount,
+    primaryQueueInfo: queueInfo,
+  };
 }
 
 export function getOrderByCode(code: string): Order | undefined {
@@ -549,6 +621,7 @@ function addToTab(order: Order): void {
     });
   }
   writeStore(TABS_KEY, tabs);
+  broadcastOrdersUpdated();
 }
 
 export function settleTab(id: string, mode: PaymentMode = "upi"): { ok: boolean; total?: number } {
@@ -557,6 +630,7 @@ export function settleTab(id: string, mode: PaymentMode = "upi"): { ok: boolean;
   if (!tab || tab.status === "settled") return { ok: false };
   tab.status = "settled";
   writeStore(TABS_KEY, tabs);
+  broadcastOrdersUpdated();
   if (tab.tableId) setTableStatus(tab.tableId, "available");
   if (mode !== "tab") {
     recordTransaction({

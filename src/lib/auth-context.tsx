@@ -92,6 +92,14 @@ interface AuthContextType {
   setUser: React.Dispatch<React.SetStateAction<ClubUser | null>>;
 }
 
+export const PRESET_PASSWORDS = [
+  "Champions@2026",
+  "password123",
+  "champions123",
+  "demo123",
+  "admin123",
+];
+
 export function getRegisteredUsers(): Record<string, { email: string; password?: string; user: ClubUser }> {
   try {
     const raw = localStorage.getItem("champions_registered_users");
@@ -214,6 +222,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password?.trim() || "";
+
+    if (!cleanEmail) {
+      return { success: false, error: "Please enter your registered email address." };
+    }
+    if (!cleanPassword) {
+      return { success: false, error: "Please enter your password." };
+    }
 
     // 1. Check if matching demo user
     const matchedKey = Object.keys(DEMO_USERS).find(
@@ -221,6 +237,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (matchedKey) {
+      if (!PRESET_PASSWORDS.includes(cleanPassword)) {
+        return { success: false, error: "Invalid password for this demo profile. Use 'Champions@2026' or 'password123'." };
+      }
       const demoUser = DEMO_USERS[matchedKey];
       setUser(demoUser);
       localStorage.setItem("champions_user", JSON.stringify(demoUser));
@@ -231,11 +250,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const registered = getRegisteredUsers();
     if (registered[cleanEmail]) {
       const record = registered[cleanEmail];
-      if (!password || !record.password || record.password === password) {
-        setUser(record.user);
-        localStorage.setItem("champions_user", JSON.stringify(record.user));
-        return { success: true };
+      if (record.password && record.password !== cleanPassword) {
+        return { success: false, error: "Invalid password. Please check your credentials." };
       }
+      setUser(record.user);
+      localStorage.setItem("champions_user", JSON.stringify(record.user));
+      return { success: true };
     }
 
     // 3. Check if matching seed or local member in the club registry
@@ -244,6 +264,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         (m) => m.email.toLowerCase() === cleanEmail
       );
       if (localMember) {
+        if (!PRESET_PASSWORDS.includes(cleanPassword)) {
+          return { success: false, error: "Invalid password for this club profile. Use 'Champions@2026' or 'password123'." };
+        }
         const memberUser: ClubUser = {
           id: `user-${localMember.id}`,
           email: localMember.email,
@@ -263,11 +286,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // 4. Try Supabase Auth when configured
-    if (isSupabaseConfigured && password) {
+    if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
-          password,
+          password: cleanPassword,
         });
 
         if (!error && data?.user) {
@@ -282,38 +305,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(u);
           localStorage.setItem("champions_user", JSON.stringify(u));
           return { success: true };
+        } else if (error) {
+          return { success: false, error: error.message };
         }
       } catch (err) {
         console.warn("Supabase auth error:", err);
       }
     }
 
-    // 5. Fallback for offline mode when Supabase is not configured
-    if (!isSupabaseConfigured) {
-      const fallbackUser: ClubUser = {
-        id: crypto.randomUUID(),
-        email: cleanEmail,
-        fullName: cleanEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-        role: cleanEmail.includes("owner")
-          ? "owner"
-          : cleanEmail.includes("manager")
-          ? "manager"
-          : cleanEmail.includes("desk") || cleanEmail.includes("front")
-          ? "front_desk"
-          : cleanEmail.includes("shop")
-          ? "shop_manager"
-          : cleanEmail.includes("cafe") || cleanEmail.includes("bar") || cleanEmail.includes("kitchen")
-          ? "cafe_manager"
-          : "member",
-        status: cleanEmail.includes("junior") ? "pending_consent" : "active_member",
-        planId: cleanEmail.includes("gold") ? "gold" : cleanEmail.includes("junior") ? "junior" : "silver",
-      };
-      setUser(fallbackUser);
-      localStorage.setItem("champions_user", JSON.stringify(fallbackUser));
-      return { success: true };
-    }
-
-    return { success: false, error: "Invalid credentials. Please verify your email and password." };
+    return { success: false, error: "Invalid login credentials. Please check your email and password." };
   };
 
   const signOut = async () => {

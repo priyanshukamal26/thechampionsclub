@@ -11,9 +11,8 @@ import {
   Phone,
   Send,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
-import { PageHeader, Panel, StatusPill } from "@/components/ui/kit";
+import { Panel } from "@/components/ui/kit";
 
 export default function ContactPage() {
   const [name, setName] = useState("");

@@ -9,7 +9,7 @@ import CreatePassword from "./steps/CreatePassword";
 import ChoosePlan from "./steps/ChoosePlan";
 import GuardianConsent from "./steps/GuardianConsent";
 import Confirmation from "./steps/Confirmation";
-import { useAuth, ClubUser } from "@/lib/auth-context";
+import { useAuth } from "@/lib/auth-context";
 import { registerMemberAtDesk } from "@/lib/membership";
 import { recordAuditLog } from "@/lib/audit";
 import { MEMBERSHIP_PLANS } from "@/lib/membership";
@@ -34,7 +34,7 @@ export interface RegisterFormData {
 type Step = { id: string; label: string };
 
 export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gold" | "silver" | "junior" }) {
-  const { setUser, signUp } = useAuth();
+  const { signUp } = useAuth();
   const [formData, setFormData] = useState<RegisterFormData>({
     fullName: "",
     email: "",

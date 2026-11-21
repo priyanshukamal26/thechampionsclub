@@ -7,11 +7,15 @@ import {
   Check,
   ChefHat,
   Coffee,
+  Flame,
   Minus,
   Plus,
   Receipt,
+  ShieldCheck,
   ShoppingBag,
+  Sparkles,
   Users,
+  Utensils,
   Wallet,
   X,
 } from "lucide-react";
@@ -24,6 +28,7 @@ import {
   BAR_MENU,
   createOrder,
   getOpenTabs,
+  getOrderQueueStatus,
   getOrders,
   getTables,
   kitchenQueue,
@@ -54,7 +59,18 @@ export default function BarPage() {
   const [settleTarget, setSettleTarget] = useState<MemberTab | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const handleUpdate = () => setVersion((v) => v + 1);
+    window.addEventListener("tcc_orders_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    const interval = window.setInterval(handleUpdate, 8000);
+    return () => {
+      window.removeEventListener("tcc_orders_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   const tables = useMemo(() => (mounted ? getTables() : []), [mounted, version]);
   const tabs = useMemo(() => (mounted ? getOpenTabs() : []), [mounted, version]);
@@ -90,6 +106,32 @@ export default function BarPage() {
     [mounted, cart, member?.planId, version]
   );
 
+  const myActiveOrders = useMemo(() => {
+    if (!mounted || !user) return [];
+    const memberKey = member?.id ?? user?.memberId ?? user?.id;
+    const nameKey = (member?.fullName ?? user?.fullName ?? "").toLowerCase();
+    return getOrders()
+      .filter(
+        (o) =>
+          o.channel === "bar" &&
+          ((o.memberId && (o.memberId === memberKey || o.memberId === user?.id || o.memberId === `user-${member?.id}`)) ||
+            (o.memberName && o.memberName.toLowerCase() === nameKey)) &&
+          ["placed", "preparing", "ready"].includes(o.status)
+      )
+      .sort((a, b) => b.placedAt.localeCompare(a.placedAt));
+  }, [mounted, user, member, version]);
+
+  const activeTotal = useMemo(
+    () => myActiveOrders.reduce((sum, o) => sum + o.total, 0),
+    [myActiveOrders]
+  );
+
+  const primaryQueueInfo = useMemo(() => {
+    if (!myActiveOrders.length) return null;
+    const earliest = [...myActiveOrders].sort((a, b) => a.placedAt.localeCompare(b.placedAt))[0];
+    return getOrderQueueStatus(earliest.id);
+  }, [myActiveOrders, kitchen]);
+
   const note = (message: string) => {
     setFlash(message);
     window.setTimeout(() => setFlash(null), 3600);
@@ -124,12 +166,16 @@ export default function BarPage() {
       return;
     }
     const guestTable = tables.find((t) => t.id === tableId);
+    const orderMemberId = member?.id ?? user?.memberId ?? (user?.role === "member" ? user?.id : undefined);
+    const orderMemberName = member?.fullName ?? user?.fullName ?? (guestTable ? `Guest · ${guestTable.label}` : "Counter guest");
+    const orderPlanId = member?.planId ?? user?.planId;
+
     const result = createOrder({
       channel: "bar",
       lines: cart,
-      memberId: member?.id,
-      memberName: member?.fullName ?? (guestTable ? `Guest · ${guestTable.label}` : "Counter guest"),
-      planId: member?.planId,
+      memberId: orderMemberId,
+      memberName: orderMemberName,
+      planId: orderPlanId,
       paymentMode: mode,
       fulfilment: tableId ? "dine_in" : undefined,
       tableId: tableId || undefined,
@@ -152,8 +198,8 @@ export default function BarPage() {
     setVersion((v) => v + 1);
     note(
       mode === "tab"
-        ? `Sent to the kitchen · added to ${member?.fullName.split(" ")[0]}'s tab.`
-        : `Sent to the kitchen · ${inr(result.order?.total ?? 0)} collected by ${mode.toUpperCase()}.`
+        ? `Order ${result.order?.code ?? ""} sent to kitchen · added to ${orderMemberName.split(" ")[0]}'s tab.`
+        : `Order ${result.order?.code ?? ""} sent to kitchen · ${inr(result.order?.total ?? 0)} paid via ${mode.toUpperCase()}. Preparing now!`
     );
   };
 
@@ -235,10 +281,30 @@ export default function BarPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="My Tab" value={myTab ? inr(myTab.total) : "₹0"} unit={myTab ? "open" : "settled"} note={myTab ? `${myTab.orderCodes.length} orders running` : "No unsettled tab"} />
-          <Stat label="Available Tables" value={String(tables.filter((t) => t.status === "available").length)} unit={`of ${tables.length}`} note="3 dining zones" />
-          <Stat label="Club Privilege" value={`${member ? MEMBERSHIP_PLANS[member.planId]?.barDiscountPct : 15}%`} unit="off food & bar" note={member ? MEMBERSHIP_PLANS[member.planId]?.name : "Standard discount"} />
-          <Stat label="Service Hours" value="7–23h" unit="daily" note="Breakfast to post-match drinks" />
+          <Stat
+            label="Live Kitchen Queue"
+            value={primaryQueueInfo ? (primaryQueueInfo.status === "ready" ? "Ready" : `#${primaryQueueInfo.position}`) : "Clear"}
+            unit={primaryQueueInfo ? (primaryQueueInfo.status === "ready" ? "to serve" : primaryQueueInfo.ordersAhead === 0 ? "next up" : `${primaryQueueInfo.ordersAhead} ahead`) : "in pass"}
+            note={primaryQueueInfo ? primaryQueueInfo.label : (myActiveOrders.length === 0 ? "No active orders" : "Cooking on pass")}
+          />
+          <Stat
+            label="Active Orders Total"
+            value={myActiveOrders.length > 0 ? inr(activeTotal) : (myTab ? inr(myTab.total) : "₹0")}
+            unit={myActiveOrders.length > 0 ? `${myActiveOrders.length} ticket${myActiveOrders.length === 1 ? "" : "s"}` : (myTab ? "open tab" : "settled")}
+            note={myActiveOrders.length > 0 ? `${myActiveOrders.filter(o => o.status === "ready").length} ready · ${myActiveOrders.filter(o => o.status === "preparing").length} preparing` : (myTab ? `${myTab.orderCodes.length} orders on tab` : "All settled")}
+          />
+          <Stat
+            label="Available Tables"
+            value={String(tables.filter((t) => t.status === "available").length)}
+            unit={`of ${tables.length}`}
+            note="3 dining zones"
+          />
+          <Stat
+            label="Club Privilege"
+            value={`${member ? MEMBERSHIP_PLANS[member.planId]?.barDiscountPct : 15}%`}
+            unit="off food & bar"
+            note={member ? MEMBERSHIP_PLANS[member.planId]?.name : "Standard discount"}
+          />
         </div>
       )}
 
@@ -397,6 +463,83 @@ export default function BarPage() {
               </div>
             )}
           </Panel>
+
+          {/* Chef Vikram's Kitchen Board & Pre-Match Nutrition: balances vertical space and provides useful member context */}
+          <Panel className="mt-4">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-clay/10 text-clay">
+                  <ChefHat className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="u-eyebrow text-clay">Kitchen & pass · Chef Vikram</div>
+                  <h3 className="u-display text-[14px]">Pre-Match Nutrition & Fresh Kitchen Pass</h3>
+                </div>
+              </div>
+              <span className="chip chip-court text-[9px]">Live service</span>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-line bg-paper-soft p-3">
+                <div className="flex items-center gap-2 text-ink">
+                  <Flame className="h-4 w-4 text-clay" />
+                  <span className="text-[12px] font-semibold">Fresh On Order</span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                  All mains and post-match recovery meals prepared fresh on order under Chef Vikram. Average ticket prep time is 10–14 minutes.
+                </p>
+                <div className="mt-2 text-[10px] font-medium text-clay">
+                  100% in-house sourdough & marinades
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-line bg-paper-soft p-3">
+                <div className="flex items-center gap-2 text-ink">
+                  <Sparkles className="h-4 w-4 text-gold" />
+                  <span className="text-[12px] font-semibold">Athlete Recovery</span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                  Grass-fed whey isolate shakes (25g protein) and chilled citrus electrolyte coolers engineered for fast glycogen repletion.
+                </p>
+                <div className="mt-2 text-[10px] font-medium text-gold-deep">
+                  Zero refined sugars in athlete coolers
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-line bg-paper-soft p-3">
+                <div className="flex items-center gap-2 text-ink">
+                  <ShieldCheck className="h-4 w-4 text-court" />
+                  <span className="text-[12px] font-semibold">Court & Terrace Service</span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                  Order from your phone while resting between games. Runners deliver directly to Courts 1–6 benchside or Terrace tables.
+                </p>
+                <div className="mt-2 text-[10px] font-medium text-court">
+                  Table & bench delivery included
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line-soft bg-chalk p-3 text-[11px]">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1.5 font-medium text-ink">
+                  <span className="h-2 w-2 rounded-full bg-court" />
+                  Kitchen Station: Active
+                </span>
+                <span className="text-muted">·</span>
+                <span className="text-muted">Pass Dispatch: 2–4 min</span>
+                <span className="text-muted">·</span>
+                <span className="text-muted">Beverage Bar: Instant</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                className="btn btn-quiet btn-xs"
+              >
+                Order from menu →
+              </button>
+            </div>
+          </Panel>
         </div>
 
         <div className="space-y-4 lg:col-span-4">
@@ -413,25 +556,27 @@ export default function BarPage() {
                 {tabs.length === 0 ? (
                   <EmptyState title="No open tabs" description="Tabs appear when a member orders on account." className="mt-3" />
                 ) : (
-                  <ul className="mt-1 divide-y divide-line-soft">
-                    {tabs.map((tab) => (
-                      <li key={tab.id} className="flex items-center justify-between gap-2 py-2.5">
-                        <div className="min-w-0">
-                          <div className="truncate text-[12px] font-medium">{tab.memberName}</div>
-                          <div className="u-mono text-[9.5px] text-muted">
-                            {tab.tableId ? tables.find((t) => t.id === tab.tableId)?.label ?? tab.tableId : "Counter"} · opened{" "}
-                            {formatTime(tab.openedAt)}
+                  <div className="max-h-[280px] overflow-y-auto pr-1">
+                    <ul className="mt-1 divide-y divide-line-soft">
+                      {tabs.map((tab) => (
+                        <li key={tab.id} className="flex items-center justify-between gap-2 py-2.5">
+                          <div className="min-w-0">
+                            <div className="truncate text-[12px] font-medium">{tab.memberName}</div>
+                            <div className="u-mono text-[9.5px] text-muted">
+                              {tab.tableId ? tables.find((t) => t.id === tab.tableId)?.label ?? tab.tableId : "Counter"} · opened{" "}
+                              {formatTime(tab.openedAt)}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <span className="u-value text-[12px]">{inr(tab.total)}</span>
-                          <button className="btn btn-ink btn-sm" onClick={() => setSettleTarget(tab)}>
-                            Settle
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="u-value text-[12px]">{inr(tab.total)}</span>
+                            <button className="btn btn-ink btn-sm" onClick={() => setSettleTarget(tab)}>
+                              Settle
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 <p className="mt-3 border-t border-line-soft pt-2 text-[10px] leading-relaxed text-muted">
                   Member discounts are already applied inside each tab total. Settling records the payment mode
@@ -457,6 +602,62 @@ export default function BarPage() {
             </>
           ) : (
             <>
+              {myActiveOrders.length > 0 && (
+                <Panel tone="ink" className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-line-inverse pb-2">
+                    <div>
+                      <div className="u-eyebrow text-clay-soft">Kitchen · live</div>
+                      <div className="u-display mt-0.5 text-[13px] text-chalk">
+                        {myActiveOrders.length} active ticket{myActiveOrders.length === 1 ? "" : "s"} · {inr(activeTotal)}
+                      </div>
+                    </div>
+                    <ChefHat className="h-4 w-4 text-clay-soft" />
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto pr-1">
+                    <ul className="divide-y divide-line-inverse">
+                      {myActiveOrders.map((order) => {
+                        const qStatus = getOrderQueueStatus(order.id);
+                        return (
+                          <li key={order.id} className="py-2.5 space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="u-mono text-[11px] font-bold text-chalk">
+                                {order.code}
+                              </span>
+                              <span
+                                className={cn(
+                                  "u-mono rounded px-2 py-0.5 text-[9.5px] font-medium tracking-wide",
+                                  order.status === "ready"
+                                    ? "bg-court text-chalk"
+                                    : order.status === "preparing"
+                                      ? "bg-gold text-ink"
+                                      : "bg-chalk/20 text-chalk"
+                                )}
+                              >
+                                {qStatus?.label ?? (order.status === "ready" ? "Ready to serve" : "Cooking")}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-chalk/80">
+                              {order.lines.map((l) => `${l.qty}× ${l.name}`).join(", ")}
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-chalk/60 pt-0.5">
+                              <span>
+                                {order.tableId ? `Table ${tables.find((t) => t.id === order.tableId)?.label ?? order.tableId}` : "Counter pickup"} · {inr(order.total)}
+                              </span>
+                              <span className="chip text-[8.5px] uppercase tracking-wider text-chalk">
+                                {order.paymentMode === "tab" ? "On Tab" : `Paid via ${order.paymentMode.toUpperCase()}`}
+                              </span>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                  <p className="border-t border-line-inverse pt-2 text-[10px] leading-relaxed text-chalk/60">
+                    Your order was received and is being prepared fresh under Chef Vikram.
+                  </p>
+                </Panel>
+              )}
+
               <Panel>
                 <div className="flex items-center justify-between border-b border-line pb-2">
                   <div>
@@ -484,7 +685,7 @@ export default function BarPage() {
                 ) : (
                   <div className="mt-3">
                     <p className="text-[11.5px] text-muted leading-relaxed">
-                      You have no open tab. When you order at any table or at the bar counter, items are added to your personal clubhouse ledger.
+                      You have no open tab. When you order at any table or at the bar counter on tab, items are added to your personal clubhouse ledger.
                     </p>
                   </div>
                 )}

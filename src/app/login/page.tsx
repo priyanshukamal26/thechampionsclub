@@ -288,6 +288,9 @@ export default function LoginPage() {
                       {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   </div>
+                  <p className="mt-1.5 font-mono text-[9px] text-muted">
+                    Pre-set demo & club accounts password: <span className="font-semibold text-ink">Champions@2026</span> or <span className="font-semibold text-ink">password123</span>
+                  </p>
                 </div>
 
                 <button type="submit" disabled={loading} className="btn btn-clay btn-block">
