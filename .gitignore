@@ -24,6 +24,12 @@
 .DS_Store
 *.pem
 
+# local QA artefacts (browser profiles must stay outside the build scan)
+/.qa
+/.shots
+/.dom
+/.chrome-profile
+
 # debug
 npm-debug.log*
 yarn-debug.log*

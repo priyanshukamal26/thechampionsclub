@@ -178,7 +178,7 @@ export default function MyBookingsPage() {
         {rows.length === 0 ? (
           <div className="p-4">
             <EmptyState
-              title={isStaff ? "No sessions booked today" : "Nothing here yet"}
+              title={isStaff ? "No sessions booked today" : "No sessions booked yet"}
               description={
                 isStaff
                   ? "The sheet is clear. Walk-ins can be booked from the court grid."

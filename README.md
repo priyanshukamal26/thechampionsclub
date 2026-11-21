@@ -61,6 +61,20 @@ npm run build
 ```
 *Expected result: Compiled successfully in ~2.7s; 25/25 routes generated with 0 errors.*
 
+### If the UI looks unstyled, monochrome or "unorganised"
+
+That appearance means the browser is being served an **old CSS chunk**, not that the design is missing. It happens when a dev server started *before* a design-system change is still running: Next keeps the old compiled Tailwind output in `.next/dev` while the markup comes from the new source.
+
+1. Stop every running dev server (`Ctrl+C`; if unsure which process holds the port, run `Get-NetTCPConnection -LocalPort 3000` on Windows or `lsof -i :3000` on macOS).
+2. Clear the build cache and restart:
+   ```bash
+   npm run clean
+   npm run dev        # or simply: npm run dev:clean
+   ```
+3. Hard-refresh the browser (`Ctrl/Cmd + Shift + R`).
+
+Dependencies are pinned and the lockfile is consistent (`npm ci --dry-run` reports *up to date*). If a package is genuinely broken, reinstall with `npm ci` instead of deleting individual folders under `node_modules`.
+
 ---
 
 ## 🎭 One-Click Evaluator Demo Personas
@@ -168,6 +182,8 @@ src/
 | **Bar floor** — menu, tables, running tabs | **Counter POS** — shared stock, member discount |
 | ![Friday social](docs/screenshots/11-friday-social.png) | ![Consent gate](docs/screenshots/12-consent-gate.png) |
 | **Friday social** — roster, guest fee, the draw | **Consent gate** — DPDP holding state |
+| ![My bookings](docs/screenshots/13-my-bookings.png) | |
+| **My bookings** — upcoming sessions, free-cancellation quote, twelve-hour rule | |
 
 ---
 
