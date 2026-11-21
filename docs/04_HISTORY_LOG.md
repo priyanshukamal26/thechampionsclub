@@ -309,7 +309,7 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - Production build test (`next build`): PASS (all 7 routes prerendered).
 - Milestone M2 Definition of Done (DoD): PASS (desk registers adult & junior; junior blocked until consent verified; member claims account; expiry alert flags expiring membership).
 
-**Commits:** Pending commit for Session 4 work.
+**Commits:** `52ce971` — feat(p2): implement member dashboard with qr pass, front desk scanner, walk-in registration, and dpdp consent queue
 
 **Deployments/URLs:** Dev server running at `http://localhost:3000`.
 
