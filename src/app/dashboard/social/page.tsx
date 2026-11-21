@@ -299,44 +299,46 @@ export default function FridaySocialPage() {
               </div>
               <StatusPill tone="neutral">{session.players.length} names</StatusPill>
             </div>
-            <ul className="mt-1 divide-y divide-line-soft">
-              {session.players.map((player) => {
-                const mine = player.name.toLowerCase() === myName.toLowerCase();
-                return (
-                  <li key={player.id} className="flex items-center justify-between gap-3 py-2">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <span className="u-mono w-6 text-[9.5px] text-muted">
-                        {String(session.players.indexOf(player) + 1).padStart(2, "0")}
-                      </span>
-                      <div className="min-w-0">
-                        <div className={cn("truncate text-[12px]", mine && "font-medium")}>
-                          {player.name} {mine && <span className="text-[9.5px] text-muted">(you)</span>}
-                        </div>
-                        <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted">
-                          {getPlayerTierLabel(player)}
+            <div className="max-h-[380px] overflow-y-auto pr-1">
+              <ul className="mt-1 divide-y divide-line-soft">
+                {session.players.map((player) => {
+                  const mine = player.name.toLowerCase() === myName.toLowerCase();
+                  return (
+                    <li key={player.id} className="flex items-center justify-between gap-3 py-2">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span className="u-mono w-6 text-[9.5px] text-muted">
+                          {String(session.players.indexOf(player) + 1).padStart(2, "0")}
+                        </span>
+                        <div className="min-w-0">
+                          <div className={cn("truncate text-[12px]", mine && "font-medium")}>
+                            {player.name} {mine && <span className="text-[9.5px] text-muted">(you)</span>}
+                          </div>
+                          <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted">
+                            {getPlayerTierLabel(player)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <StatusPill tone={player.paid ? "success" : "warn"}>{player.paid ? "Paid" : "Unpaid"}</StatusPill>
-                      {(mine || isClubManager) && (
-                        <button
-                          onClick={() => leave(player.id)}
-                          className="rounded-full border border-line p-1 text-muted hover:border-clay hover:text-clay"
-                          aria-label={`Remove ${player.name}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <StatusPill tone={player.paid ? "success" : "warn"}>{player.paid ? "Paid" : "Unpaid"}</StatusPill>
+                        {(mine || isClubManager) && (
+                          <button
+                            onClick={() => leave(player.id)}
+                            className="rounded-full border border-line p-1 text-muted hover:border-clay hover:text-clay"
+                            aria-label={`Remove ${player.name}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </Panel>
         </div>
 
-        <div className="space-y-4 lg:col-span-5">
+        <div className="space-y-4 lg:col-span-5 lg:sticky lg:top-6 self-start">
           <Panel tone="deep">
             <div className="u-eyebrow text-muted">Add a guest</div>
             <p className="mt-1 text-[11px] text-muted">
@@ -378,7 +380,7 @@ export default function FridaySocialPage() {
                 Four players are needed before the draw can be made.
               </p>
             ) : (
-              <div className="mt-2 space-y-3">
+              <div className="mt-2 max-h-[320px] overflow-y-auto pr-1 space-y-3">
                 {rotation.map((round) => (
                   <div key={round.round}>
                     <div className="u-mono text-[9.5px] uppercase tracking-[0.14em] text-clay">

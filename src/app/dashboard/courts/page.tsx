@@ -315,7 +315,7 @@ export default function CourtsPage() {
           </Panel>
         </div>
 
-        <div className="space-y-4 xl:col-span-3">
+        <div className="space-y-4 xl:col-span-3 xl:sticky xl:top-6 self-start">
           <Panel>
             <div className="u-eyebrow text-muted">{selected ? "Confirm the slot" : "Pick a slot"}</div>
             {selected && facility ? (

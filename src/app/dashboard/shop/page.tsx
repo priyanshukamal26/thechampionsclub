@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ChevronRight,
   MapPin,
   PackageCheck,
   Phone,
@@ -292,15 +291,15 @@ export default function ShopPage() {
                 />
               </div>
             ) : (
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 max-h-[460px] overflow-auto rounded-lg border border-line-soft">
                 <table className="u-table min-w-[720px]">
-                  <thead>
+                  <thead className="sticky top-0 z-10 border-b border-line bg-paper-soft shadow-xs">
                     <tr>
-                      <th>Item</th>
-                      <th>Category</th>
-                      <th className="text-right">Stock</th>
-                      <th className="text-right">Price</th>
-                      <th className="text-right">Cart</th>
+                      <th className="bg-paper-soft">Item</th>
+                      <th className="bg-paper-soft">Category</th>
+                      <th className="bg-paper-soft text-right">Stock</th>
+                      <th className="bg-paper-soft text-right">Price</th>
+                      <th className="bg-paper-soft text-right">Cart</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -370,7 +369,7 @@ export default function ShopPage() {
           </Panel>
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-6 lg:sticky lg:top-6 self-start">
           <Panel className="space-y-4">
             <div>
               <div className="u-eyebrow text-clay">Your privilege</div>
@@ -451,16 +450,6 @@ export default function ShopPage() {
               </div>
             </Panel>
           )}
-
-          <Panel tone="ink" className="space-y-3">
-            <div className="u-eyebrow text-clay-soft">Need it today?</div>
-            <p className="text-[11.5px] leading-relaxed text-chalk/60">
-              Choose club pickup at the counter and collect in about 20 minutes. A pickup code is generated on every order.
-            </p>
-            <button type="button" onClick={() => setShowCart(true)} className="btn btn-outline-inv btn-sm btn-block">
-              Review cart <ChevronRight className="h-3 w-3" />
-            </button>
-          </Panel>
         </aside>
       </div>
 
