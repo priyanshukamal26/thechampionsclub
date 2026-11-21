@@ -340,7 +340,7 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - Next.js Production Build (`next build`): PASS (17/17 routes prerendered).
 - Auth state inspection: Verified fallback authentication, local storage caching, and demo switcher routing.
 
-**Commits:** Pending commit.
+**Commits:** `ad508da` — feat(p2-p3): implement unified dashboard with courts, shop, bar, pass, desk and fix auth redirect flow
 
 **Deployments/URLs:** Local development server running at `http://localhost:3000`.
 
