@@ -85,7 +85,7 @@ export default function LoginPage() {
       {/* Main Single-View Two-Panel Layout */}
       <main className="relative z-10 max-w-5xl mx-auto w-full flex-1 flex items-center justify-center min-h-0 py-1">
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch max-h-[calc(100vh-96px)]">
-          
+
           {/* Left Form Card (Floating White Box) */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -256,7 +256,7 @@ export default function LoginPage() {
           <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-[#DCE8FC] via-[#E2EDFF] to-[#C9DCFD] rounded-[26px] p-5 sm:p-6 border border-blue-100/70 flex-col justify-between shadow-[0_20px_50px_-15px_rgba(59,130,246,0.12)] relative overflow-hidden">
             {/* Visual Glass Cards */}
             <div className="space-y-3">
-              
+
               {/* Card 1: Improvement Rate / Active Court Usage */}
               <div className="bg-white/90 backdrop-blur-md rounded-2xl p-3.5 border border-white/60 shadow-sm">
                 <div className="flex items-center justify-between mb-1">
@@ -269,7 +269,7 @@ export default function LoginPage() {
                 <div className="text-xl font-extrabold text-[#0F172A] font-[family-name:var(--font-space-grotesk)]">
                   98.4%
                 </div>
-                
+
                 {/* SVG Curve graph */}
                 <div className="mt-2 h-10 w-full">
                   <svg className="w-full h-full overflow-visible" viewBox="0 0 240 60" fill="none">
@@ -300,9 +300,8 @@ export default function LoginPage() {
                   {[40, 65, 30, 85, 95, 70, 55, 90].map((h, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
                       <div
-                        className={`w-full rounded-t-sm transition-all ${
-                          i === 4 ? "bg-[#3B82F6]" : "bg-[#93C5FD]/60"
-                        }`}
+                        className={`w-full rounded-t-sm transition-all ${i === 4 ? "bg-[#3B82F6]" : "bg-[#93C5FD]/60"
+                          }`}
                         style={{ height: `${h}%` }}
                       />
                     </div>
