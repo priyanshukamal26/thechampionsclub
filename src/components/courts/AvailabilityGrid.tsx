@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType } from "react";
 import { Check, Minus, Users, X } from "lucide-react";
 import { TIME_SLOTS, type Booking, type Facility, type SlotState } from "@/lib/bookings";
@@ -42,10 +42,10 @@ const CELL_LABEL: Record<CellState, string> = {
 };
 
 const CELL_STYLES: Record<CellState, string> = {
-  free: "border-court/30 bg-court/[0.07] text-court hover:border-court hover:bg-court/15",
-  booked: "border-transparent bg-ink/[0.08] text-muted/70",
+  free: "border-court/40 bg-court/15 text-court hover:border-court hover:bg-court hover:text-chalk",
+  booked: "border-transparent bg-ink/[0.10] text-muted/60",
   past: "border-transparent bg-paper-deep/70 text-line",
-  social: "border-court/30 bg-court/15 text-court",
+  social: "border-gold/40 bg-gold/15 text-[#7d5d17]",
 };
 
 function slotEnd(slot: string): string {
@@ -62,6 +62,16 @@ export default function AvailabilityGrid({
   socialBlocks,
 }: AvailabilityGridProps) {
   const [mobileFacilityId, setMobileFacilityId] = useState(facilities[0]?.id ?? "");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Open the scoreboard near the current hour so the usable part of the day is visible.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const hour = Math.max(6, Math.min(22, new Date().getHours()));
+    const column = (hour - 6) * 2;
+    el.scrollLeft = Math.max(0, 220 + column * 28 - 80);
+  }, []);
 
   const hourGroups: { hour: string; count: number }[] = [];
   TIME_SLOTS.forEach((slot) => {
@@ -106,7 +116,7 @@ export default function AvailabilityGrid({
   return (
     <div className="space-y-4">
       {/* ── Desktop / tablet scoreboard table ─────────────────────────── */}
-      <div className="hidden overflow-x-auto md:block">
+      <div ref={scrollRef} className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse">
           <caption className="sr-only">
             Court availability. Rows are facilities, columns are 30-minute session starts between 06:00 and 22:00.

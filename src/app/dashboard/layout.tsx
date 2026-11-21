@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   CalendarDays,
+  CalendarCheck,
   ShoppingBag,
   Coffee,
   CreditCard,
@@ -37,10 +38,21 @@ type NavItem = {
 const CLUB_NAV: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, short: "Overview" },
   { href: "/dashboard/courts", label: "Book Courts", icon: CalendarDays, short: "Courts" },
+  { href: "/dashboard/bookings", label: "Bookings", icon: CalendarCheck, short: "Bookings", roles: ["owner", "manager", "front_desk", "member"] },
   { href: "/dashboard/social", label: "Friday Social", icon: Users2, short: "Social" },
   { href: "/dashboard/shop", label: "Pro Shop", icon: ShoppingBag, short: "Shop" },
   { href: "/dashboard/bar", label: "Bar & Lounge", icon: Coffee, short: "Bar" },
   { href: "/dashboard/pass", label: "My Pass", icon: CreditCard, short: "Pass" },
+];
+
+/** Route-level access matrix (X1). The sidebar is filtered by role; this
+ *  matrix also stops a staff member opening another role's console by URL. */
+const PAGE_ACCESS: Array<{ prefix: string; roles: AppRole[] }> = [
+  { prefix: "/dashboard/owner", roles: ["owner", "manager"] },
+  { prefix: "/dashboard/desk", roles: ["owner", "manager", "front_desk"] },
+  { prefix: "/dashboard/pos", roles: ["owner", "manager", "shop_manager", "cafe_manager", "bar_staff"] },
+  { prefix: "/dashboard/kitchen", roles: ["owner", "manager", "bar_staff", "cafe_manager"] },
+  { prefix: "/dashboard/pass", roles: ["member"] },
 ];
 
 const OPERATIONS_NAV: NavItem[] = [
@@ -111,6 +123,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isStaff = user.role !== "member";
   const can = (item: NavItem) => !item.roles || item.roles.includes(user.role);
+  const accessRule = PAGE_ACCESS.find((rule) => pathname.startsWith(rule.prefix));
+  const blocked = Boolean(accessRule && !accessRule.roles.includes(user.role));
   const ops = OPERATIONS_NAV.filter(can);
   const page = PAGE_TITLES.find((p) => p.match(pathname)) ?? { title: "Clubhouse", section: "The Club" };
 
@@ -326,7 +340,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
         </header>
-        <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
+        <main className="min-h-[calc(100vh-3.5rem)]">
+          {blocked ? (
+            <div className="mx-auto max-w-lg px-5 py-16">
+              <div className="card p-6 text-center">
+                <div className="u-eyebrow text-clay">Role-restricted surface</div>
+                <h1 className="u-display mt-2 text-2xl">Not your counter.</h1>
+                <p className="mt-2 text-[12px] leading-relaxed text-muted">
+                  You are signed in as {ROLE_LABEL[user.role]}. This console belongs to a different
+                  team. Use the role switcher in the sidebar to see how that person works, or head
+                  back to your own overview.
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  <Link href="/dashboard" className="btn btn-ink btn-sm">
+                    My overview
+                  </Link>
+                  <button className="btn btn-outline btn-sm" onClick={handleSignOut}>
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );

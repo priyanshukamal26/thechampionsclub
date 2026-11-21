@@ -2,6 +2,8 @@ import { supabase } from "./supabase";
 
 export interface AuditLogEntry {
   actorId?: string;
+  actor?: string;
+  role?: string;
   action: string;
   entity: string;
   entityId?: string;
@@ -14,6 +16,8 @@ export interface AuditLogEntry {
  */
 export async function recordAuditLog({
   actorId,
+  actor,
+  role,
   action,
   entity,
   entityId,
@@ -25,7 +29,7 @@ export async function recordAuditLog({
       action,
       entity,
       entity_id: entityId || null,
-      details: details || {},
+      details: { ...(details || {}), ...(actor ? { actor } : {}), ...(role ? { role } : {}) },
     });
 
     if (error) {
@@ -40,3 +44,4 @@ export async function recordAuditLog({
     return { success: true }; // Non-blocking failure for frontend operations
   }
 }
+

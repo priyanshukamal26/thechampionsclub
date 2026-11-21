@@ -83,8 +83,8 @@ export const FREE_CANCELLATION_HOURS = 12;
 export const LATE_CANCELLATION_FEE = 300;
 export const WALK_IN_MULTIPLIER = 1.15;
 
-const BOOKINGS_KEY = "champions_bookings_v2";
-const SOCIAL_KEY = "champions_social_v1";
+const BOOKINGS_KEY = "champions_bookings_v3";
+const SOCIAL_KEY = "champions_social_v2";
 
 export interface Booking {
   id: string;
@@ -176,16 +176,28 @@ function seedBookings(): Booking[] {
     });
   }
 
-  // Guaranteed demo bookings for the signed-in Gold member profile (Rohan Mehra)
+  // Guaranteed demo bookings for the signed-in Gold member profile (Rohan Mehra).
+  // Any seeded session that would clash is removed first, so the demo always has
+  // a believable upcoming run of bookings on the member dashboard.
   const demo = [
-    { day: 0, facility: "tc1", slot: "18:00" },
+    { day: 0, facility: "tc1", slot: "21:00" },
+    { day: 1, facility: "tc3", slot: "18:00" },
     { day: 2, facility: "pc2", slot: "19:30" },
+    { day: 3, facility: "bc2", slot: "08:00" },
     { day: 4, facility: "bc3", slot: "07:00" },
+    { day: 5, facility: "pc1", slot: "20:00" },
   ];
   demo.forEach((d) => {
     const date = offsetDate(d.day);
     const facility = getFacility(d.facility)!;
     const id = `demo-rohan-${d.facility}-${date}`;
+    const startMin = labelToMinutes(d.slot);
+    for (let i = seeded.length - 1; i >= 0; i--) {
+      const b = seeded[i];
+      if (b.facilityId !== facility.id || b.date !== date) continue;
+      if (b.memberId === "mem-001") continue;
+      if (Math.abs(labelToMinutes(b.start) - startMin) < SESSION_MINUTES) seeded.splice(i, 1);
+    }
     if (!seeded.some((b) => b.facilityId === facility.id && b.date === date && b.start === d.slot)) {
       seeded.push({
         id,
@@ -491,7 +503,7 @@ function seedSocial(): SocialSession[] {
     const players: SocialPlayer[] = names.slice(0, count).map((name, i) => ({
       id: `sp-${date}-${i}`,
       name,
-      type: i % 4 === 0 ? "guest" : "gold",
+      type: name === "Rohan Mehra" ? "gold" : i % 5 === 4 ? "guest" : "gold",
       joinedAt: `${addDaysISO(date, -2)}T12:00:00`,
       paid: true,
       paymentMode: i % 4 === 0 ? "upi" : "plan",

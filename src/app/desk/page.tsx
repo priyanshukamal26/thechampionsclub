@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -11,8 +11,9 @@ export default function DeskRedirectPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#CCFF00] text-sm uppercase tracking-widest font-bold">
+    <div className="min-h-screen bg-paper flex items-center justify-center text-clay font-mono text-[11px] uppercase tracking-[0.16em]">
       Redirecting to Desk Console...
     </div>
   );
 }
+

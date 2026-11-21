@@ -1,281 +1,543 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
-import { Coffee, Utensils, Zap, Plus, Minus, Check, Users, ChefHat } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  Armchair,
+  Check,
+  ChefHat,
+  Coffee,
+  Minus,
+  Plus,
+  Receipt,
+  ShoppingBag,
+  Users,
+  Wallet,
+  X,
+} from "lucide-react";
+import { EmptyState, PageHeader, Panel, Stat, StatusPill } from "@/components/ui/kit";
+import { Drawer, Segmented } from "@/components/ui/overlay";
+import { SettleTabModal } from "@/components/commerce/SettleTabModal";
 import { useAuth } from "@/lib/auth-context";
-import { MEMBERSHIP_PLANS, getMemberById, SEED_MEMBERS } from "@/lib/membership";
+import {
+  BAR_MENU,
+  createOrder,
+  getOpenTabs,
+  getOrders,
+  getTables,
+  kitchenQueue,
+  priceCart,
+  setTableStatus,
+  type MemberTab,
+  type MenuItem,
+  type PaymentMode,
+} from "@/lib/orders";
+import { getLocalMembers, MEMBERSHIP_PLANS, type ClubMember } from "@/lib/membership";
+import { recordAuditLog } from "@/lib/audit";
+import { formatTime, inr, todayISO } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
-interface MenuItem {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  description: string;
-  emoji: string;
-  popular?: boolean;
-  veg: boolean;
-}
-
-const MENU: MenuItem[] = [
-  { id: "m1", name: "Double Espresso", category: "Beverages", price: 180, description: "Rich dark roast, served hot or iced", emoji: "☕", popular: true, veg: true },
-  { id: "m2", name: "Electrolyte Power Cooler", category: "Beverages", price: 220, description: "Orange + coconut water + essential salts", emoji: "🥤", popular: true, veg: true },
-  { id: "m3", name: "Whey Isolate Protein Shake", category: "Beverages", price: 350, description: "Chocolate / Vanilla / Banana · 30g protein", emoji: "💪", popular: true, veg: true },
-  { id: "m4", name: "Fresh Mint Lime Soda", category: "Beverages", price: 120, description: "Sweet or salted with crushed mountain ice", emoji: "🍋", veg: true },
-  { id: "m5", name: "Paneer Tikka Protein Wrap", category: "Mains", price: 320, description: "Grilled cottage cheese, mint salsa, whole wheat wrap", emoji: "🌯", popular: true, veg: true },
-  { id: "m6", name: "Grilled Chicken Club Sandwich", category: "Mains", price: 380, description: "Multigrain bread, roasted chicken breast, egg white", emoji: "🥪", veg: false },
-  { id: "m7", name: "Athlete Quinoa Power Bowl", category: "Mains", price: 420, description: "Edamame, avocado, sprouts, roasted nuts, tahini", emoji: "🥗", popular: true, veg: true },
-  { id: "m8", name: "Sourdough Toast & Guacamole", category: "Mains", price: 280, description: "Artisanal sourdough, smashed hass avocado, chili flakes", emoji: "🍞", veg: true },
-  { id: "m9", name: "Peri-Peri Sweet Potato Wedges", category: "Snacks", price: 180, description: "Air-fried with Himalayan pink salt", emoji: "🍟", veg: true },
-  { id: "m10", name: "Loaded Post-Match Nachos", category: "Snacks", price: 350, description: "Corn chips, black beans, jalapeños, low-fat queso", emoji: "🧀", veg: true },
-  { id: "m11", name: "Craft Wheat Beer (Pint)", category: "Bar", price: 350, description: "Locally brewed Belgian witbier on tap", emoji: "🍺", veg: true },
-  { id: "m12", name: "Virgin Citrus Mojito", category: "Bar", price: 250, description: "Crushed kaffir lime, spearmint leaves, club soda", emoji: "🍹", veg: true },
-];
-
-const CATEGORIES = ["All", "Beverages", "Mains", "Snacks", "Bar"];
-
-const TABLES = Array.from({ length: 12 }, (_, i) => ({
-  id: `t${i + 1}`,
-  name: `Table ${i + 1}`,
-  seats: i < 4 ? 2 : i < 8 ? 4 : 6,
-  status: i === 6 ? ("occupied" as const) : i === 3 ? ("reserved" as const) : ("available" as const),
-}));
+type CartLine = { refId: string; qty: number };
+const CATEGORIES = ["Beverages", "Mains", "Snacks", "Bar"] as const;
 
 export default function BarPage() {
   const { user } = useAuth();
-  const [category, setCategory] = useState("All");
-  const [order, setOrder] = useState<Record<string, number>>({});
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [orderPlaced, setOrderPlaced] = useState(false);
-  const [activeTab, setActiveTab] = useState<"menu" | "tables">("menu");
+  const [mounted, setMounted] = useState(false);
+  const [version, setVersion] = useState(0);
+  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("Mains");
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [tableId, setTableId] = useState("");
+  const [memberId, setMemberId] = useState("");
+  const [mode, setMode] = useState<PaymentMode>("tab");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [settleTarget, setSettleTarget] = useState<MemberTab | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
 
-  if (!user) return null;
+  useEffect(() => setMounted(true), []);
 
-  const plan = MEMBERSHIP_PLANS[user.planId || "silver"] || MEMBERSHIP_PLANS.silver;
-  const discount = plan.barDiscountPct;
+  const tables = useMemo(() => (mounted ? getTables() : []), [mounted, version]);
+  const tabs = useMemo(() => (mounted ? getOpenTabs() : []), [mounted, version]);
+  const members = useMemo(() => (mounted ? getLocalMembers() : []), [mounted]);
+  const ordersToday = useMemo(
+    () =>
+      mounted
+        ? getOrders().filter((o) => o.channel === "bar" && o.placedAt.slice(0, 10) === todayISO())
+        : [],
+    [mounted, version]
+  );
+  const kitchen = useMemo(() => (mounted ? kitchenQueue() : []), [mounted, version]);
 
-  const currentMember =
-    (user.email && getMemberById(user.email)) ||
-    (user.planId && SEED_MEMBERS.find((m) => m.planId === user.planId)) ||
-    SEED_MEMBERS[0];
+  const member: ClubMember | undefined = members.find((m) => m.id === memberId);
+  const priced = useMemo(
+    () => (mounted ? priceCart("bar", cart, member?.planId) : { items: [], subtotal: 0, discount: 0, discountPct: 0, gst: 0, total: 0, deliveryFee: 0 }),
+    [mounted, cart, member?.planId, version]
+  );
 
-  const filtered = MENU.filter((m) => category === "All" || m.category === category);
-
-  const addItem = (id: string) => setOrder((o) => ({ ...o, [id]: (o[id] || 0) + 1 }));
-  const removeItem = (id: string) =>
-    setOrder((o) => {
-      const n = (o[id] || 0) - 1;
-      if (n <= 0) {
-        const { [id]: _, ...rest } = o;
-        return rest;
-      }
-      return { ...o, [id]: n };
-    });
-
-  const orderItems = Object.entries(order)
-    .map(([id, qty]) => ({ item: MENU.find((m) => m.id === id)!, qty }))
-    .filter((i) => i.item);
-
-  const subtotal = orderItems.reduce((s, i) => s + i.item.price * i.qty, 0);
-  const discountAmt = Math.round((subtotal * discount) / 100);
-  const total = subtotal - discountAmt;
-  const itemCount = Object.values(order).reduce((s, v) => s + v, 0);
-
-  const handlePlaceOrder = () => {
-    setOrderPlaced(true);
-    setTimeout(() => {
-      setOrder({});
-      setOrderPlaced(false);
-    }, 2800);
+  const note = (message: string) => {
+    setFlash(message);
+    window.setTimeout(() => setFlash(null), 3600);
   };
 
-  return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-orange-400 block mb-1">
-          Post-Match Bar & Cafeteria (D1–D8)
-        </span>
-        <h1 className="font-[family-name:var(--font-space-grotesk)] text-3xl font-extrabold uppercase text-white">
-          Lounge & Recovery Fuel
-        </h1>
-        <p className="text-xs text-[#888888] mt-1">
-          {plan.name} privilege: <span className="text-orange-400 font-bold">{discount}% discount on tabs</span> · Order to court or reserve table
-        </p>
-      </div>
+  const add = (item: MenuItem) => {
+    setCart((prev) => {
+      const existing = prev.find((l) => l.refId === item.id);
+      return existing
+        ? prev.map((l) => (l.refId === item.id ? { ...l, qty: l.qty + 1 } : l))
+        : [...prev, { refId: item.id, qty: 1 }];
+    });
+    setDrawerOpen(true);
+  };
 
-      {/* Unsettled Tab Banner */}
-      {currentMember.duesPending > 0 && (
-        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-between">
-          <div className="flex items-center gap-3 text-xs text-red-300">
-            <Coffee className="w-5 h-5 text-red-400 shrink-0" />
-            <div>
-              <span className="font-bold">Active Cafeteria Tab:</span>{" "}
-              <span className="font-mono text-white font-bold">₹{currentMember.duesPending.toFixed(2)}</span> pending settlement.
-            </div>
-          </div>
-          <button className="text-xs font-bold uppercase bg-red-500 hover:bg-red-400 text-white px-4 py-2 rounded-xl transition-colors">
-            Clear With Cashier
+  const remove = (refId: string) => {
+    setCart((prev) =>
+      prev.flatMap((line) =>
+        line.refId !== refId ? [line] : line.qty > 1 ? [{ ...line, qty: line.qty - 1 }] : []
+      )
+    );
+  };
+
+  const send = () => {
+    if (!cart.length) return;
+    if (mode === "tab" && !member) {
+      note("A tab needs a member. Pick a member or settle by cash, card or UPI.");
+      return;
+    }
+    const guestTable = tables.find((t) => t.id === tableId);
+    const result = createOrder({
+      channel: "bar",
+      lines: cart,
+      memberId: member?.id,
+      memberName: member?.fullName ?? (guestTable ? `Guest · ${guestTable.label}` : "Counter guest"),
+      planId: member?.planId,
+      paymentMode: mode,
+      fulfilment: tableId ? "dine_in" : undefined,
+      tableId: tableId || undefined,
+      staff: user?.fullName,
+    });
+    if (!result.ok) {
+      note(result.error ?? "Could not send the order.");
+      return;
+    }
+    recordAuditLog({
+      actor: user?.fullName,
+      role: user?.role,
+      action: mode === "tab" ? "bar.tab_order" : "bar.order",
+      entity: "orders",
+      entityId: result.order?.id,
+      details: { total: result.order?.total, table: tableId, mode },
+    });
+    setCart([]);
+    setDrawerOpen(false);
+    setVersion((v) => v + 1);
+    note(
+      mode === "tab"
+        ? `Sent to the kitchen · added to ${member?.fullName.split(" ")[0]}'s tab.`
+        : `Sent to the kitchen · ${inr(result.order?.total ?? 0)} collected by ${mode.toUpperCase()}.`
+    );
+  };
+
+  if (!mounted) {
+    return <div className="mx-auto max-w-[1400px] p-6"><div className="h-[520px] animate-pulse rounded-2xl bg-ink/[0.05]" /></div>;
+  }
+
+  const openTabsTotal = tabs.reduce((sum, tab) => sum + tab.total, 0);
+  const visible = BAR_MENU.filter((item) => item.category === category);
+
+  return (
+    <div className="mx-auto max-w-[1400px] space-y-6 p-5 sm:p-6 lg:p-8">
+      <PageHeader
+        eyebrow="Bar & cafeteria · D1–D7"
+        title="After the match, the bar."
+        description="Table and counter orders reach the kitchen instantly. Member discounts apply themselves, tabs accrue, and the floor map knows which tables are sitting."
+        actions={
+          <>
+            <Link href="/dashboard/kitchen" className="btn btn-outline btn-sm">
+              <ChefHat className="h-3.5 w-3.5" />
+              Kitchen ({kitchen.length})
+            </Link>
+            <button className="btn btn-clay btn-sm" onClick={() => setDrawerOpen(true)}>
+              <ShoppingBag className="h-3.5 w-3.5" />
+              New order {cart.length ? `(${cart.length})` : ""}
+            </button>
+          </>
+        }
+        meta={
+          <>
+            <StatusPill tone={tabs.length ? "warn" : "success"}>
+              <Wallet className="h-3 w-3" /> {tabs.length} open tab{tabs.length === 1 ? "" : "s"} · {inr(openTabsTotal)}
+            </StatusPill>
+            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+              {ordersToday.length} orders today
+            </span>
+            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+              {tables.filter((t) => t.status === "occupied").length}/{tables.length} tables seated
+            </span>
+          </>
+        }
+      />
+
+      {flash && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-court/30 bg-court/10 px-4 py-2.5 text-[12px] text-court">
+          <span className="flex items-center gap-2">
+            <Check className="h-3.5 w-3.5" /> {flash}
+          </span>
+          <button onClick={() => setFlash(null)} aria-label="Dismiss" className="text-court/70 hover:text-court">
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       )}
 
-      {/* Sub-nav: Menu vs Floor Plan */}
-      <div className="inline-flex p-1.5 rounded-2xl bg-[#141414] border border-[#222222]">
-        <button
-          onClick={() => setActiveTab("menu")}
-          className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-            activeTab === "menu"
-              ? "bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-              : "text-[#888888] hover:text-white"
-          }`}
-        >
-          <Utensils className="w-3.5 h-3.5" /> Food & Drink Menu
-        </button>
-        <button
-          onClick={() => setActiveTab("tables")}
-          className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-            activeTab === "tables"
-              ? "bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-              : "text-[#888888] hover:text-white"
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" /> Table Floor Map ({TABLES.filter((t) => t.status === "available").length} Free)
-        </button>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="Open tabs" value={inr(openTabsTotal)} unit="unsettled" note={`${tabs.length} members running a tab`} />
+        <Stat label="Sold today" value={inr(ordersToday.reduce((s, o) => s + o.total, 0))} unit="bar" note={`${ordersToday.length} tickets`} />
+        <Stat label="Tables seated" value={String(tables.filter((t) => t.status === "occupied").length)} unit={`of ${tables.length}`} note="Live floor map" />
+        <Stat label="Kitchen queue" value={String(kitchen.length)} unit="tickets" note="Placed or preparing" />
       </div>
 
-      {activeTab === "menu" && (
-        <>
-          {/* Category Filter */}
-          <div className="flex gap-2 flex-wrap">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-                  category === cat
-                    ? "bg-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.3)]"
-                    : "bg-[#141414] border border-[#222222] text-[#888888] hover:text-white"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Menu Items */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((item) => {
-              const memberPrice = Math.round(item.price * (1 - discount / 100));
-              const qty = order[item.id] || 0;
-              return (
-                <div key={item.id} className="bg-[#141414] border border-[#1F1F1F] rounded-2xl p-5 hover:border-[#333333] transition-all group relative">
-                  {item.popular && (
-                    <span className="absolute top-3 right-3 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30">
-                      Top Choice
-                    </span>
-                  )}
-                  <div className="flex items-start gap-3">
-                    <span className="text-3xl">{item.emoji}</span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-3 h-3 rounded-sm border ${item.veg ? "border-green-500" : "border-red-500"}`}>
-                          <div className={`w-1.5 h-1.5 rounded-full m-0.5 ${item.veg ? "bg-green-500" : "bg-red-500"}`} />
-                        </div>
-                        <div className="text-sm font-bold text-white group-hover:text-orange-300 transition-colors">{item.name}</div>
-                      </div>
-                      <div className="text-[10px] text-[#777777] mt-0.5">{item.description}</div>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-end gap-2">
-                      <span className="text-base font-extrabold text-white font-mono">₹{memberPrice}</span>
-                      {discount > 0 && <span className="text-[10px] text-[#555555] line-through font-mono">₹{item.price}</span>}
-                    </div>
-                    {qty > 0 ? (
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => removeItem(item.id)} className="w-7 h-7 rounded-lg bg-[#222222] hover:bg-[#333333] text-white flex items-center justify-center transition-colors">
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-xs font-bold text-white w-4 text-center">{qty}</span>
-                        <button onClick={() => addItem(item.id)} className="w-7 h-7 rounded-lg bg-orange-500 hover:bg-orange-400 text-white flex items-center justify-center transition-colors">
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button onClick={() => addItem(item.id)} className="inline-flex items-center gap-1.5 bg-[#0D0D0D] border border-[#333333] text-white hover:border-orange-500 hover:bg-orange-500/10 font-bold text-[10px] uppercase px-3 py-1.5 rounded-lg transition-all">
-                        <Plus className="w-3 h-3" /> Add
-                      </button>
+      <div className="grid gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-8">
+          <Panel padded={false}>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line p-3">
+              <div className="no-scrollbar flex gap-1 overflow-x-auto">
+                {CATEGORIES.map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => setCategory(item)}
+                    className={cn(
+                      "shrink-0 rounded-full border px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.1em]",
+                      category === item ? "border-ink bg-ink text-chalk" : "border-line text-muted hover:text-ink"
                     )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-
-      {activeTab === "tables" && (
-        <div className="bg-[#141414] border border-[#1F1F1F] rounded-3xl p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Select Table for Service</h3>
-            <div className="flex items-center gap-3 text-[10px] text-[#888888]">
-              <span className="flex items-center gap-1">🟢 Available</span>
-              <span className="flex items-center gap-1">🟡 Reserved</span>
-              <span className="flex items-center gap-1">🔴 Occupied</span>
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+              <span className="u-mono text-[9.5px] uppercase tracking-[0.12em] text-muted">
+                {visible.length} items
+              </span>
             </div>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-            {TABLES.map((table) => (
-              <button
-                key={table.id}
-                onClick={() => table.status === "available" && setSelectedTable(table.id)}
-                disabled={table.status !== "available"}
-                className={`p-4 rounded-2xl border text-center transition-all ${
-                  selectedTable === table.id
-                    ? "bg-orange-500/15 border-orange-500 text-orange-400"
-                    : table.status === "available"
-                    ? "bg-[#0D0D0D] border-[#222222] text-white hover:border-[#444444]"
-                    : "bg-[#0D0D0D] border-[#1A1A1A] text-[#444444] cursor-not-allowed"
-                }`}
-              >
-                <div className="text-xl mb-1">{table.status === "occupied" ? "🔴" : table.status === "reserved" ? "🟡" : "🟢"}</div>
-                <div className="text-xs font-bold">{table.name}</div>
-                <div className="text-[10px] text-[#777777]">{table.seats} seats</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Floating Order Bar */}
-      {itemCount > 0 && (
-        <div className="fixed bottom-0 inset-x-0 lg:left-64 z-20 bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-[#1F1F1F] p-4 shadow-2xl">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-            <div>
-              <div className="text-sm font-bold text-white">{itemCount} items ordered</div>
-              <div className="text-xs text-[#888888]">
-                {selectedTable ? `Delivering to ${TABLES.find((t) => t.id === selectedTable)?.name}` : "Pickup at Lounge Counter"} ·{" "}
-                {discount > 0 && <span className="text-orange-400 font-bold">{discount}% discount applied</span>}
+            <div className="grid gap-2 p-3 sm:grid-cols-2">
+              {visible.map((item) => {
+                const qty = cart.find((l) => l.refId === item.id)?.qty ?? 0;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => add(item)}
+                    className={cn(
+                      "flex items-start justify-between gap-3 rounded-xl border bg-paper-soft p-3 text-left transition-colors hover:border-ink hover:bg-chalk",
+                      qty > 0 && "border-clay/40 bg-clay/[0.04]"
+                    )}
+                  >
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "inline-flex h-3 w-3 shrink-0 items-center justify-center border",
+                            item.veg ? "border-court" : "border-clay"
+                          )}
+                          title={item.veg ? "Vegetarian" : "Non-vegetarian"}
+                        >
+                          <span className={cn("h-1.5 w-1.5 rounded-full", item.veg ? "bg-court" : "bg-clay")} />
+                        </span>
+                        <span className="truncate text-[12px] font-medium">{item.name}</span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[10.5px] text-muted">{item.description}</span>
+                      <span className="mt-1 flex items-center gap-2 text-[9.5px] uppercase tracking-[0.1em] text-muted">
+                        <span>{item.prepMin} min</span>
+                        <span>·</span>
+                        <span>{item.station}</span>
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="u-value block text-[12.5px]">{inr(item.price)}</span>
+                      {qty > 0 ? (
+                        <span className="u-mono mt-1 inline-block rounded-full bg-clay px-1.5 py-0.5 text-[9px] text-chalk">
+                          {qty}
+                        </span>
+                      ) : (
+                        <Plus className="ml-auto mt-1 h-3.5 w-3.5 text-muted" />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Panel>
+
+          <Panel className="mt-4" padded={false}>
+            <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
+              <div>
+                <div className="u-eyebrow text-muted">D7 · floor map</div>
+                <div className="u-display mt-0.5 text-[12.5px]">Twelve tables, three zones</div>
+              </div>
+              <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.1em] text-muted">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-court" />Free</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gold" />Reserved</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-clay" />Seated</span>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-lg font-extrabold text-[#CCFF00] font-mono">₹{total}</div>
-              {orderPlaced ? (
-                <div className="inline-flex items-center gap-2 bg-green-500/15 text-green-400 font-bold text-xs uppercase px-6 py-3 rounded-xl border border-green-500/30">
-                  <Check className="w-4 h-4" /> Order Sent to Kitchen!
-                </div>
-              ) : (
+            <div className="grid grid-cols-3 gap-2 p-3 sm:grid-cols-4">
+              {tables.map((table) => (
                 <button
-                  onClick={handlePlaceOrder}
-                  className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-extrabold text-xs uppercase tracking-wider px-6 py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(249,115,22,0.3)] active:scale-95"
+                  key={table.id}
+                  onClick={() => {
+                    setTableId(table.id === tableId ? "" : table.id);
+                    if (table.status === "available") setTableStatus(table.id, "reserved");
+                    setVersion((v) => v + 1);
+                  }}
+                  className={cn(
+                    "flex flex-col items-start rounded-lg border p-2.5 text-left transition-colors",
+                    tableId === table.id
+                      ? "border-ink bg-ink text-chalk"
+                      : table.status === "occupied"
+                        ? "border-clay/40 bg-clay/[0.07]"
+                        : table.status === "reserved"
+                          ? "border-gold/40 bg-gold/[0.08]"
+                          : "border-line bg-paper-soft hover:border-ink/40"
+                  )}
                 >
-                  <ChefHat className="w-4 h-4" /> Place Lounge Order
+                  <span className="flex w-full items-center justify-between">
+                    <span className="u-mono text-[10px]">{table.label}</span>
+                    <Armchair className="h-3 w-3 opacity-50" />
+                  </span>
+                  <span className="mt-0.5 text-[9.5px] uppercase tracking-[0.1em] opacity-70">
+                    {table.zone} · {table.seats} seats
+                  </span>
+                  <span
+                    className={cn(
+                      "mt-1 text-[9px] uppercase tracking-[0.1em]",
+                      tableId === table.id ? "text-chalk/70" : "text-muted"
+                    )}
+                  >
+                    {tableId === table.id ? "Selected" : table.status}
+                  </span>
                 </button>
-              )}
+              ))}
+            </div>
+            {tableId && (
+              <div className="flex items-center justify-between border-t border-line px-3 py-2 text-[11px]">
+                <span className="text-muted">
+                  Ordering for {tables.find((t) => t.id === tableId)?.label}. The table is marked reserved.
+                </span>
+                <button
+                  className="btn btn-quiet btn-sm"
+                  onClick={() => {
+                    setTableStatus(tableId, "available");
+                    setTableId("");
+                    setVersion((v) => v + 1);
+                  }}
+                >
+                  Clear table
+                </button>
+              </div>
+            )}
+          </Panel>
+        </div>
+
+        <div className="space-y-4 lg:col-span-4">
+          <Panel>
+            <div className="flex items-center justify-between border-b border-line pb-2">
+              <div>
+                <div className="u-eyebrow text-muted">D3 · running tabs</div>
+                <div className="u-display mt-0.5 text-[13px]">Settle before they leave</div>
+              </div>
+              <Wallet className="h-4 w-4 text-muted" />
+            </div>
+            {tabs.length === 0 ? (
+              <EmptyState title="No open tabs" description="Tabs appear when a member orders on account." className="mt-3" />
+            ) : (
+              <ul className="mt-1 divide-y divide-line-soft">
+                {tabs.map((tab) => (
+                  <li key={tab.id} className="flex items-center justify-between gap-2 py-2.5">
+                    <div className="min-w-0">
+                      <div className="truncate text-[12px] font-medium">{tab.memberName}</div>
+                      <div className="u-mono text-[9.5px] text-muted">
+                        {tab.tableId ? tables.find((t) => t.id === tab.tableId)?.label ?? tab.tableId : "Counter"} · opened{" "}
+                        {formatTime(tab.openedAt)}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="u-value text-[12px]">{inr(tab.total)}</span>
+                      <button className="btn btn-ink btn-sm" onClick={() => setSettleTarget(tab)}>
+                        Settle
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-3 border-t border-line-soft pt-2 text-[10px] leading-relaxed text-muted">
+              Member discounts are already applied inside each tab total. Settling records the payment mode
+              and closes the table.
+            </p>
+          </Panel>
+
+          <Panel tone="deep">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="u-eyebrow text-muted">Kitchen</div>
+                <div className="u-display mt-1 text-[13px]">{kitchen.length} tickets live</div>
+              </div>
+              <ChefHat className="h-5 w-5 text-muted" />
+            </div>
+            <p className="mt-1 text-[10.5px] text-muted">
+              Oldest: {kitchen[0] ? `${formatTime(kitchen[0].placedAt)} · ${kitchen[0].memberName}` : "pass is clear"}
+            </p>
+            <Link href="/dashboard/kitchen" className="btn btn-ink btn-sm btn-block mt-3">
+              Open kitchen display
+            </Link>
+          </Panel>
+        </div>
+      </div>
+
+      <Drawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        eyebrow="Bar order"
+        title={cart.length ? `${cart.length} line${cart.length === 1 ? "" : "s"} on the order` : "Start an order"}
+        footer={
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[12px]">
+              <span className="text-muted">Total</span>
+              <span className="u-value text-[18px]">{inr(priced.total)}</span>
+            </div>
+            <button className="btn btn-clay btn-block" disabled={!cart.length} onClick={send}>
+              <Receipt className="h-4 w-4" />
+              Send to kitchen
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="u-label" htmlFor="bar-table">Table</label>
+              <select id="bar-table" className="select" value={tableId} onChange={(e) => setTableId(e.target.value)}>
+                <option value="">Counter</option>
+                {tables.map((table) => (
+                  <option key={table.id} value={table.id}>
+                    {table.label} · {table.zone}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="u-label" htmlFor="bar-member">Member</label>
+              <select id="bar-member" className="select" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
+                <option value="">Guest</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.fullName} · {MEMBERSHIP_PLANS[m.planId].shortName}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
+
+          <div>
+            <span className="u-label">Payment</span>
+            <Segmented
+              value={mode}
+              onChange={setMode}
+              size="sm"
+              options={[
+                { value: "tab", label: "Tab" },
+                { value: "upi", label: "UPI" },
+                { value: "card", label: "Card" },
+                { value: "cash", label: "Cash" },
+              ]}
+            />
+          </div>
+
+          {cart.length === 0 ? (
+            <p className="py-8 text-center text-[11.5px] text-muted">
+              Pick something from the menu. The order goes straight to the kitchen display.
+            </p>
+          ) : (
+            <ul className="divide-y divide-line-soft">
+              {priced.items.map((line) => (
+                <li key={line.refId} className="flex items-center gap-2 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[12px] font-medium">{line.name}</div>
+                    <div className="u-mono text-[9.5px] text-muted">{inr(line.unitPrice)} each</div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button className="rounded-full border border-line p-1 text-muted hover:border-ink hover:text-ink" onClick={() => remove(line.refId)} aria-label={`Remove ${line.name}`}>
+                      {line.qty > 1 ? <Minus className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                    </button>
+                    <span className="u-value w-5 text-center text-[11.5px]">{line.qty}</span>
+                    <button
+                      className="rounded-full border border-line p-1 text-muted hover:border-ink hover:text-ink"
+                      onClick={() => {
+                        const item = BAR_MENU.find((m) => m.id === line.refId);
+                        if (item) add(item);
+                      }}
+                      aria-label={`Add ${line.name}`}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <span className="u-value w-16 text-right text-[11.5px]">{inr(line.unitPrice * line.qty)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {cart.length > 0 && (
+            <div className="space-y-1.5 border-t border-line pt-2 text-[11.5px]">
+              <div className="flex justify-between text-muted">
+                <span>Subtotal</span>
+                <span className="u-value text-ink">{inr(priced.subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-muted">
+                <span>Discount {priced.discountPct ? `(${priced.discountPct}%)` : ""}</span>
+                <span className="u-value text-court">−{inr(priced.discount)}</span>
+              </div>
+              <div className="flex justify-between text-muted">
+                <span>GST</span>
+                <span className="u-value text-ink">{inr(priced.gst)}</span>
+              </div>
+            </div>
+          )}
+
+          {mode === "tab" && !member && (
+            <p className="rounded-lg border border-gold/40 bg-gold/10 px-2.5 py-1.5 text-[10.5px] text-[#7d5d17]">
+              Pick a member to run a tab. Guests settle by cash, card or UPI.
+            </p>
+          )}
+
+          <div className="flex items-center gap-2 border-t border-line pt-2 text-[10px] text-muted">
+            <Coffee className="h-3 w-3" />
+            Orders are timed from the moment you send, not from payment.
+          </div>
         </div>
-      )}
+      </Drawer>
+
+      <SettleTabModal
+        tab={settleTarget}
+        tableLabelText={
+          settleTarget?.tableId ? tables.find((t) => t.id === settleTarget.tableId)?.label : undefined
+        }
+        onClose={() => setSettleTarget(null)}
+        onSettled={() => {
+          setSettleTarget(null);
+          setVersion((v) => v + 1);
+          note("Tab settled and the table released.");
+        }}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4 text-[10.5px] text-muted">
+        <span className="flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5" />
+          Counter and table orders feed one kitchen display.
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Wallet className="h-3.5 w-3.5" />
+          Cash, card and UPI settle through the same ledger.
+        </span>
+      </div>
     </div>
   );
 }
+

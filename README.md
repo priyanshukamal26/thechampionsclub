@@ -55,11 +55,11 @@ npm run dev
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ### 3. Production Verification
-To verify TypeScript typing and static prerendering across all 17 application routes:
+To verify TypeScript typing and static prerendering across all 25 application routes:
 ```bash
 npm run build
 ```
-*Expected result: Compiled successfully in ~2.7s; 17/17 routes generated with 0 errors.*
+*Expected result: Compiled successfully in ~2.7s; 25/25 routes generated with 0 errors.*
 
 ---
 
@@ -73,6 +73,8 @@ To test different permission boundaries and operational workflows without manual
 | 📋 **General Manager** | Simran Kaur | `manager` | Operational oversight, staff shift scheduling, booking overrides |
 | 🖥️ **Front Desk Lead** | Amit Sharma | `front_desk` | Counter member check-in, walk-in registration, DPDP minor verification |
 | ☕ **Bar / Kitchen Chef** | Chef Vikram | `bar_staff` | Kitchen order queue, 12-table floor map, tab clearance, post-match snacks |
+| 🛍️ **Shop Manager** | Neha Kapoor | `shop_manager` | Counter POS, stock levels, online order packing |
+| ☕️ **Café Manager** | Meera Nair | `cafe_manager` | Bar floor, kitchen display, tabs, café stock |
 | 🥇 **Gold Member** | Rohan Mehra | `member` | 100% Free court bookings (₹0), 15% shop & bar discount, SVG QR pass |
 | 🛡️ **Junior Minor** | Aarav Patel (16y) | `member` | **Pending Consent state** (DPDP Act), locked booking access until verified |
 
@@ -80,47 +82,92 @@ To test different permission boundaries and operational workflows without manual
 
 ## 🗺️ Interactive System Map & Route Inventory
 
-All post-login member and staff interactions are consolidated under a responsive unified dashboard shell (`/dashboard/*`) featuring a fixed desktop sidebar and mobile slide-over navigation.
+All post-login member and staff interactions live under one responsive shell (`/dashboard/*`) with an ink sidebar on desktop, a slide-over drawer on mobile, and a route-level role guard that blocks a console from the wrong role.
 
 ```
-c:/Projects/thechampionsclub/
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx                # Root layout with Space Grotesk + Inter fonts & AuthProvider
-│   │   ├── page.tsx                  # Public Landing Page (10 High-Energy Sections)
-│   │   ├── login/page.tsx            # Sign In with One-Click 6-Role Demo Switcher
-│   │   ├── register/page.tsx         # 5-Step Member Registration Wizard with Minor Check
-│   │   ├── reset-password/page.tsx   # Self-service password recovery flow
-│   │   ├── pending-consent/page.tsx  # DPDP Act 2023 minor athlete holding gate
-│   │   ├── member/page.tsx           # Client redirect → /dashboard/pass
-│   │   ├── desk/page.tsx             # Client redirect → /dashboard/desk
-│   │   └── dashboard/                # Unified Member & Staff Application Suite
-│   │       ├── layout.tsx            # Persistent Sidebar Shell + AuthGuard Security
-│   │       ├── page.tsx              # Overview: Metrics, Smart Expiry & Tab Alerts, Quick Actions
-│   │       ├── courts/page.tsx       # 18-Arena Booking Grid (:00/:30 slots, tier pricing, daily cap)
-│   │       ├── shop/page.tsx         # Pro Gear Shop (catalogue, search, tier discounts, GST cart)
-│   │       ├── bar/page.tsx          # Lounge & Cafeteria (menu, 12-table floor plan, open tabs)
-│   │       ├── pass/page.tsx         # Digital Pass (procedural SVG QR, tier entitlements, history)
-│   │       ├── desk/page.tsx         # Front Desk Console (scanner, walk-in register, DPDP queue)
-│   │       └── settings/page.tsx     # Profile attributes, notifications, DPDP data rights
+src/
+├── app/
+│   ├── page.tsx                       # Public landing: hero, courts, live availability, plans, shop, bar, social, trust, enquiry form
+│   ├── login/page.tsx                 # Sign in + one-click demo switcher (8 roles)
+│   ├── register/page.tsx              # 4/5-step registration wizard with automatic minor detection
+│   ├── reset-password/page.tsx        # Password reset request
+│   ├── pending-consent/page.tsx       # DPDP Act 2023 consent-holding gate
+│   ├── offline/page.tsx               # PWA offline fallback
+│   ├── demo/[role]/page.tsx           # Password-free demo entry for every role
+│   ├── share/[token]/page.tsx         # Expiring read-only financial summary
+│   ├── robots.ts / sitemap.ts         # SEO
+│   └── dashboard/
+│       ├── layout.tsx                 # Shell, navigation, role guard, alerts, role switcher
+│       ├── page.tsx                   # Role-aware overview (member vs staff)
+│       ├── courts/page.tsx            # 18-arena scoreboard grid, plan pricing, daily cap
+│       ├── bookings/page.tsx          # Upcoming/past bookings, 12-hour cancellation policy, staff check-in
+│       ├── social/page.tsx            # Friday social roster, guest fee, rotating-doubles draw
+│       ├── shop/page.tsx              # Pro Shop catalogue, cart, discounts, GST, pickup/delivery
+│       ├── bar/page.tsx               # Menu, table map, tabs, settle flow, kitchen hand-off
+│       ├── pass/page.tsx              # Digital pass, QR pattern, entitlements, history
+│       ├── desk/page.tsx              # Lookup, walk-in registration, consent queue, leads pipeline
+│       ├── pos/page.tsx               # Counter POS drawing from the same stock ledger
+│       ├── kitchen/page.tsx           # Three-column kitchen display with ticket actions
+│       ├── owner/page.tsx             # Finance console: overview, Z-report, GST, payables, invoices, payroll, share
+│       └── settings/page.tsx          # Profile, notifications, password, DPDP data rights
+├── components/
+│   ├── ui/                            # kit.tsx + overlay.tsx design primitives
+│   ├── landing/                       # 11 public sections
+│   ├── auth/ register/                # Auth shell and wizard steps
+│   ├── courts/ desk/ commerce/ owner/ # Prepared operational components
+│   └── pwa/PWAProvider.tsx            # Service-worker registration + install prompt
+└── lib/
+    ├── bookings.ts                    # Slots, overlap checks, daily cap, cancellation, Friday social
+    ├── orders.ts                      # Products, stock, orders, tables, tabs, kitchen queue
+    ├── finance.ts                     # Unified ledger, Z-report, GST, payables, payroll, invoices, share links
+    ├── leads.ts                       # Enquiry → trial → quote → member pipeline
+    ├── membership.ts                  # Plans, entitlements, member registry, DPDP consent
+    ├── store.ts                       # INR/IST formatting, deterministic seeds, persistence helpers
+    └── audit.ts                       # Append-only audit trail (X2)
 ```
 
-### Route Index Table (17 Static Routes)
+### Route index (25 routes)
 
-| Route | Type | Primary User | Operational Function |
-|---|---|---|---|
-| `/` | Public | Prospects / Guests | 10-section landing page, live court schedule strip, tier matrix |
-| `/register` | Public | Prospective Members | 5-step onboarding wizard with automatic minor detection (<18y) |
-| `/login` | Public | All Users | Authentication, role switcher (Owner, Manager, Staff, Members) |
-| `/pending-consent` | Restricted | Minor Athletes | DPDP Act holding gate preventing court bookings without parental consent |
-| `/reset-password` | Public | Members | Self-service credential reset |
-| `/dashboard` | Protected | Members / Staff | Central hub: monthly stats, upcoming sessions, alert banners |
-| `/dashboard/courts` | Protected | Members | 18 courts & nets booking engine with calendar offset and tier quotes |
-| `/dashboard/shop` | Protected | Members | Pro Shop: Wilson, Babolat, Yonex gear, cart, 18% GST calculation |
-| `/dashboard/bar` | Protected | Members / Staff | Cafeteria recovery fuel, protein shakes, 12-table status, tabs |
-| `/dashboard/pass` | Protected | Members | Digital cardholder pass with procedural SVG QR code |
-| `/dashboard/desk` | Protected | Front Desk Staff | Counter barcode scanner, walk-in enrollments, claim invite links |
-| `/dashboard/settings`| Protected | Members | Personal data preferences, notification toggles, DPDP rights |
+| Route | Access | Purpose |
+|---|---|---|
+| `/` | Public | 10-section landing page with live availability and trial/enquiry capture |
+| `/login` | Public | Email + password sign-in, 8-role one-click demo switcher |
+| `/register` | Public | Multi-step sign-up with plan selection and guardian consent |
+| `/reset-password` | Public | Password-reset request |
+| `/pending-consent` | Junior account | DPDP consent gate; bookings and payments stay locked |
+| `/demo/[role]` | Public | Password-free role entry (`/demo/owner`, `/demo/front_desk`, …) |
+| `/share/[token]` | Bearer link | Expiring read-only revenue/GST summary for accountants |
+| `/offline` | PWA | Offline fallback while the pass stays available |
+| `/dashboard` | Signed in | Role-aware overview: member bookings/tab vs staff takings/queues |
+| `/dashboard/courts` | Signed in | 18-arena grid, 30-minute starts, plan pricing, no-overlap booking |
+| `/dashboard/bookings` | Signed in | Upcoming/past sessions, cancellation quote, staff check-in |
+| `/dashboard/social` | Signed in | Friday social roster, guest fee, deterministic draw |
+| `/dashboard/shop` | Signed in | Pro Shop storefront with cart, discounts and GST |
+| `/dashboard/bar` | Signed in | Menu, 12-table floor map, tabs and settlement |
+| `/dashboard/pass` | Members | Digital pass with offline QR pattern and entitlements |
+| `/dashboard/desk` | Owner / Manager / Front Desk | Lookup, walk-in registration, consent queue, leads |
+| `/dashboard/pos` | Owner / Manager / Shop / Café | Counter sale from the shared stock ledger |
+| `/dashboard/kitchen` | Owner / Manager / Bar / Café | Kitchen display: start, ready, served |
+| `/dashboard/owner` | Owner / Manager | Z-report, GST, payables, invoices, payroll, share links |
+| `/dashboard/settings` | Signed in | Profile, notifications, password, DPDP data rights |
+| `/robots.txt`, `/sitemap.xml` | Public | Crawler configuration |
+
+### Screens
+
+| | |
+|---|---|
+| ![Landing page](docs/screenshots/01-landing.png) | ![Sign in](docs/screenshots/02-sign-in.png) |
+| **Public landing** — editorial hero, live court sheet | **Sign in** — demo switcher for all eight roles |
+| ![Registration](docs/screenshots/03-registration.png) | ![Member overview](docs/screenshots/04-member-overview.png) |
+| **Registration** — step 1 of 4 (5 for juniors) | **Member overview** — next session, cap, tab, history |
+| ![Court grid](docs/screenshots/05-court-grid.png) | ![Member pass](docs/screenshots/06-member-pass.png) |
+| **Court grid** — 18 arenas, 30-minute starts, plan rates | **Member pass** — offline QR and entitlements |
+| ![Owner console](docs/screenshots/07-owner-console.png) | ![Kitchen display](docs/screenshots/08-kitchen-display.png) |
+| **Owner console** — revenue, payment modes, open items | **Kitchen display** — new, on the pass, ready |
+| ![Bar floor](docs/screenshots/09-bar-floor.png) | ![Counter POS](docs/screenshots/10-counter-pos.png) |
+| **Bar floor** — menu, tables, running tabs | **Counter POS** — shared stock, member discount |
+| ![Friday social](docs/screenshots/11-friday-social.png) | ![Consent gate](docs/screenshots/12-consent-gate.png) |
+| **Friday social** — roster, guest fee, the draw | **Consent gate** — DPDP holding state |
 
 ---
 

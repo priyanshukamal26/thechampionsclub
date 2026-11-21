@@ -1,418 +1,459 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Trophy,
-  Search,
-  UserPlus,
-  ShieldCheck,
-  AlertCircle,
-  CheckCircle2,
-  Phone,
-  Mail,
-  Copy,
+  ArrowRight,
+  BadgeCheck,
   Check,
-  QrCode,
+  ClipboardList,
+  Mail,
+  Phone,
+  ScanLine,
   ShieldAlert,
+  UserPlus,
+  Users,
 } from "lucide-react";
-import {
-  searchMembers,
-  registerMemberAtDesk,
-  verifyJuniorConsent,
-  getPendingConsentQueue,
-  ClubMember,
-  MEMBERSHIP_PLANS,
-} from "@/lib/membership";
-import { recordAuditLog } from "@/lib/audit";
+import { EmptyState, PageHeader, Panel, Stat, StatusPill } from "@/components/ui/kit";
+import { Tabs } from "@/components/ui/overlay";
+import { LookupTab } from "@/components/desk/LookupTab";
+import { RegisterTab } from "@/components/desk/RegisterTab";
+import { LEAD_STATUS_TONE } from "@/components/desk/shared";
 import { useAuth } from "@/lib/auth-context";
+import { getPendingConsentQueue, verifyJuniorConsent } from "@/lib/membership";
+import {
+  LEAD_STATUS_LABEL,
+  addLeadNote,
+  convertLead,
+  getLeads,
+  leadDateLabel,
+  leadStats,
+  sendQuote,
+  updateLeadStatus,
+  type Lead,
+  type LeadStatus,
+} from "@/lib/leads";
+import { recordAuditLog } from "@/lib/audit";
+import { inr } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
-export default function FrontDeskDashboardPage() {
+type DeskTab = "lookup" | "register" | "consent" | "leads";
+
+export default function FrontDeskPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"lookup" | "register" | "consent">("lookup");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMember, setSelectedMember] = useState<ClubMember | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [tab, setTab] = useState<DeskTab>("lookup");
+  const [version, setVersion] = useState(0);
 
-  // Registration Form State
-  const [regFullName, setRegFullName] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPhone, setRegPhone] = useState("");
-  const [regDob, setRegDob] = useState("");
-  const [regPlanId, setRegPlanId] = useState<"gold" | "silver" | "junior">("gold");
-  const [regGuardianName, setRegGuardianName] = useState("");
-  const [regGuardianPhone, setRegGuardianPhone] = useState("");
-  const [regGuardianEmail, setRegGuardianEmail] = useState("");
-  const [regGuardianVerified, setRegGuardianVerified] = useState(false);
-  const [registeredResult, setRegisteredResult] = useState<{ member: ClubMember; claimToken: string } | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  // Consent Queue State
-  const [consentQueue, setConsentQueue] = useState<ClubMember[]>(getPendingConsentQueue());
-  const [verificationSuccessId, setVerificationSuccessId] = useState<string | null>(null);
+  const queue = useMemo(() => (mounted ? getPendingConsentQueue() : []), [mounted, version]);
+  const stats = useMemo(() => (mounted ? leadStats() : null), [mounted, version]);
 
-  if (!user) return null;
+  const refresh = () => setVersion((v) => v + 1);
 
-  const searchResults = searchMembers(searchQuery);
-  const isMinorReg = Boolean(regDob && new Date().getFullYear() - new Date(regDob).getFullYear() < 18);
-
-  const handleRegisterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!regFullName || !regEmail || !regPhone) return;
-
-    const result = registerMemberAtDesk({
-      fullName: regFullName,
-      email: regEmail,
-      phone: regPhone,
-      dob: regDob,
-      planId: isMinorReg ? "junior" : regPlanId,
-      guardianName: regGuardianName,
-      guardianPhone: regGuardianPhone,
-      guardianEmail: regGuardianEmail,
-      guardianVerifiedInPerson: regGuardianVerified,
-    });
-
+  const verify = (memberId: string, name: string) => {
+    verifyJuniorConsent(memberId, `${user?.fullName ?? "Front desk"} (Front Desk)`);
     recordAuditLog({
-      action: "desk_register_member",
+      actor: user?.fullName,
+      role: user?.role,
+      action: "consent.verified",
       entity: "members",
-      entityId: result.member.id,
-      details: { code: result.member.memberCode, plan: result.member.planId, staff: user.fullName },
-    });
-
-    setRegisteredResult(result);
-    setRegFullName("");
-    setRegEmail("");
-    setRegPhone("");
-    setRegDob("");
-    setRegGuardianName("");
-    setRegGuardianPhone("");
-    setRegGuardianEmail("");
-  };
-
-  const handleVerifyConsent = (memberId: string) => {
-    verifyJuniorConsent(memberId, `${user.fullName} (Front Desk)`);
-    recordAuditLog({
-      action: "verify_junior_dpdp_consent",
-      entity: "guardian_consents",
       entityId: memberId,
-      details: { verifiedBy: user.fullName, method: "in_person_desk" },
+      details: { method: "in_person", member: name },
     });
-
-    setVerificationSuccessId(memberId);
-    setTimeout(() => {
-      setConsentQueue(getPendingConsentQueue());
-      setVerificationSuccessId(null);
-    }, 1200);
-  };
-
-  const handleCopyClaimLink = (token: string) => {
-    const url = `${window.location.origin}/login?claim=${token}`;
-    navigator.clipboard.writeText(url);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2000);
+    refresh();
   };
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#CCFF00] block mb-1">
-            Front Desk Console (DSK-3, DSK-4, DSK-5)
-          </span>
-          <h1 className="font-[family-name:var(--font-space-grotesk)] text-3xl font-extrabold uppercase text-white">
-            Staff Counter & Scanner
-          </h1>
-        </div>
+    <div className="mx-auto max-w-[1200px] space-y-6 p-5 sm:p-6 lg:p-8">
+      <PageHeader
+        eyebrow="Front desk · DSK-3 · DSK-4 · DSK-5 · E6–E10"
+        title="The counter, at a glance."
+        description="Recognise a member in seconds, register a walk-in, verify a guardian's consent, and keep every enquiry moving. One screen for the queue that used to live on paper."
+        actions={
+          <>
+            <button className="btn btn-outline btn-sm" onClick={() => setTab("register")}>
+              <UserPlus className="h-3.5 w-3.5" />
+              Register walk-in
+            </button>
+            <Link href="/dashboard/courts" className="btn btn-ink btn-sm">
+              <ScanLine className="h-3.5 w-3.5" />
+              Book for a member
+            </Link>
+          </>
+        }
+        meta={
+          <>
+            <StatusPill tone={queue.length ? "warn" : "success"}>
+              <ShieldAlert className="h-3 w-3" />
+              {queue.length} consent verification{queue.length === 1 ? "" : "s"}
+            </StatusPill>
+            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+              {stats?.byStatus.new ?? 0} new leads · {(stats?.byStatus.contacted ?? 0) + (stats?.byStatus.quoted ?? 0)} in pipeline
+            </span>
+            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+              Shift: {user?.fullName ?? "Front desk"}
+            </span>
+          </>
+        }
+      />
 
-        {/* Tab Selector */}
-        <div className="inline-flex p-1.5 rounded-2xl bg-[#141414] border border-[#222222]">
-          <button
-            onClick={() => setActiveTab("lookup")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-              activeTab === "lookup"
-                ? "bg-[#CCFF00] text-[#0A0A0A] shadow-[0_0_15px_rgba(204,255,0,0.3)]"
-                : "text-[#888888] hover:text-white"
-            }`}
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span>Lookup & Scan (A5)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("register")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-              activeTab === "register"
-                ? "bg-[#CCFF00] text-[#0A0A0A] shadow-[0_0_15px_rgba(204,255,0,0.3)]"
-                : "text-[#888888] hover:text-white"
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Walk-In Registration (A1)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("consent")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 relative ${
-              activeTab === "consent"
-                ? "bg-[#CCFF00] text-[#0A0A0A] shadow-[0_0_15px_rgba(204,255,0,0.3)]"
-                : "text-[#888888] hover:text-white"
-            }`}
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>DPDP Minors ({consentQueue.length})</span>
-          </button>
-        </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="Awaiting consent" value={String(queue.length)} unit="juniors" note="DPDP Act 2023" />
+        <Stat label="New enquiries" value={String(stats?.byStatus.new ?? 0)} unit="leads" note="Not yet contacted" />
+        <Stat label="Follow-ups due" value={String(stats?.dueToday.length ?? 0)} unit="follow-ups" note="Due now" />
+        <Stat label="Pipeline value" value={inr(stats?.pipelineValue ?? 0)} unit="quoted" note={`${stats?.conversion ?? 0}% conversion`} />
       </div>
 
-      {/* TAB 1: LOOKUP */}
-      {activeTab === "lookup" && (
-        <div className="space-y-6">
-          <div className="p-4 rounded-3xl bg-[#141414] border border-[#1F1F1F] shadow-xl">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#666666]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Scan QR pass or search by name, phone (+91), email, or member code (e.g. TCC-2026-GOLD-001)..."
-                className="w-full bg-[#0A0A0A] border border-[#222222] focus:border-[#CCFF00] rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white placeholder-[#555555] outline-none transition-colors"
-              />
-            </div>
-          </div>
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { value: "lookup", label: "Lookup & scan", icon: ScanLine },
+          { value: "register", label: "Walk-in", icon: UserPlus },
+          { value: "consent", label: `Consent queue${queue.length ? ` (${queue.length})` : ""}`, icon: ShieldAlert },
+          { value: "leads", label: "Leads & trials", icon: ClipboardList },
+        ]}
+      />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-5 space-y-2 max-h-[550px] overflow-y-auto pr-1">
-              {searchResults.map((m) => {
-                const plan = MEMBERSHIP_PLANS[m.planId];
-                const isSelected = selectedMember?.id === m.id;
-                return (
-                  <div
-                    key={m.id}
-                    onClick={() => setSelectedMember(m)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-[#1C1C1C] border-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.15)]"
-                        : "bg-[#111111] border-[#1F1F1F] hover:border-[#333333]"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-1">
-                      <div className="font-bold text-white text-sm">{m.fullName}</div>
-                      <span
-                        className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border"
-                        style={{ color: plan.badgeColor, borderColor: `${plan.badgeColor}40`, backgroundColor: `${plan.badgeColor}15` }}
-                      >
-                        {plan.name}
-                      </span>
-                    </div>
-                    <div className="text-xs text-[#888888] flex items-center justify-between font-mono">
-                      <span>{m.memberCode}</span>
-                      <span>{m.phone}</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      {m.duesPending > 0 && (
-                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/30">
-                          Dues: ₹{m.duesPending}
-                        </span>
-                      )}
-                      {m.status === "expiring_soon" && (
-                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                          Expiring Soon
-                        </span>
-                      )}
-                      {m.status === "active" && m.duesPending === 0 && (
-                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-green-500/15 text-green-400 border border-green-500/30">
-                          Good Standing
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+      {tab === "lookup" && <LookupTab onMutate={refresh} onOpenConsent={() => setTab("consent")} />}
+      {tab === "register" && <RegisterTab onMutate={refresh} onOpenConsent={() => setTab("consent")} />}
 
-            <div className="lg:col-span-7">
-              {selectedMember ? (
-                <div className="bg-[#141414] border border-[#222222] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
-                  <div className="flex items-center justify-between pb-4 border-b border-[#222222]">
-                    <div>
-                      <h3 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-extrabold uppercase text-white">
-                        {selectedMember.fullName}
-                      </h3>
-                      <div className="text-xs text-[#888888] font-mono mt-0.5">{selectedMember.memberCode}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] uppercase font-bold text-[#777777]">Valid Thru</div>
-                      <div className="text-xs font-mono font-bold text-white">{selectedMember.membershipEnd}</div>
-                    </div>
-                  </div>
-
-                  {selectedMember.duesPending > 0 && (
-                    <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-between">
-                      <div className="text-xs text-red-300">
-                        <strong>Unpaid Cafeteria Dues:</strong> ₹{selectedMember.duesPending.toFixed(2)}
-                      </div>
-                      <button className="text-xs font-bold uppercase bg-red-500 hover:bg-red-400 text-white px-3 py-1.5 rounded-lg transition-colors">
-                        Collect Cash/UPI
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#1F1F1F]">
-                      <div className="text-[9px] uppercase font-bold text-[#666666]">Court Rate</div>
-                      <div className="text-xs font-extrabold text-[#CCFF00] mt-1">
-                        {MEMBERSHIP_PLANS[selectedMember.planId].courtDiscountText}
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#1F1F1F]">
-                      <div className="text-[9px] uppercase font-bold text-[#666666]">Pro Shop</div>
-                      <div className="text-xs font-extrabold text-purple-400 mt-1">
-                        {MEMBERSHIP_PLANS[selectedMember.planId].shopDiscountPct}% Privilege
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-[#0A0A0A] border border-[#1F1F1F]">
-                      <div className="text-[9px] uppercase font-bold text-[#666666]">Lounge</div>
-                      <div className="text-xs font-extrabold text-orange-400 mt-1">
-                        {MEMBERSHIP_PLANS[selectedMember.planId].barDiscountPct}% Privilege
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#777777] mb-2">Past Activity</div>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                      {selectedMember.history.map((h) => (
-                        <div key={h.id} className="p-2.5 rounded-xl bg-[#0A0A0A] border border-[#1F1F1F] flex items-center justify-between text-xs">
-                          <div>
-                            <div className="font-bold text-white">{h.title}</div>
-                            <div className="text-[10px] text-[#777777]">{h.details}</div>
-                          </div>
-                          <div className="font-mono text-white font-bold">{h.amount === 0 ? "₹0.00" : `₹${h.amount.toFixed(2)}`}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-[#141414] border border-[#222222] rounded-3xl p-12 text-center text-[#666666] text-xs h-full flex flex-col items-center justify-center">
-                  <QrCode className="w-12 h-12 mb-3 text-[#444444]" />
-                  <p>Select a member from the left list to view pass details, scan status, and clear dues.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: REGISTER WALK-IN */}
-      {activeTab === "register" && (
-        <div className="max-w-2xl mx-auto">
-          {registeredResult ? (
-            <div className="bg-[#141414] border border-[#222222] rounded-3xl p-8 text-center space-y-5">
-              <CheckCircle2 className="w-12 h-12 text-[#CCFF00] mx-auto" />
-              <h3 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-extrabold uppercase text-white">
-                Member Registered: {registeredResult.member.fullName}
-              </h3>
-              <div className="text-xs text-[#888888] font-mono">
-                Code: {registeredResult.member.memberCode} · Plan: {registeredResult.member.planId.toUpperCase()}
-              </div>
-              <div className="p-4 rounded-2xl bg-[#0D0D0D] border border-[#222222] text-left text-xs space-y-2">
-                <span className="text-[10px] font-bold text-[#888888] uppercase block">Invite Claim Link:</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={`${window.location.origin}/login?claim=${registeredResult.claimToken}`}
-                    className="w-full bg-[#1A1A1A] border border-[#333333] rounded-xl px-3 py-2 text-xs font-mono text-[#CCFF00]"
-                  />
-                  <button onClick={() => handleCopyClaimLink(registeredResult.claimToken)} className="p-2 rounded-xl bg-[#222222] text-white">
-                    {copiedLink ? <Check className="w-4 h-4 text-[#CCFF00]" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-              <button
-                onClick={() => setRegisteredResult(null)}
-                className="w-full bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl hover:bg-[#a8cc00] transition-all"
-              >
-                Enroll Next Athlete
-              </button>
-            </div>
-          ) : (
-            <div className="bg-[#141414] border border-[#1F1F1F] rounded-3xl p-8 shadow-2xl">
-              <h2 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-extrabold uppercase text-white mb-4">
-                Walk-In Registration
-              </h2>
-              <form onSubmit={handleRegisterSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-[#AAAAAA] mb-1">Full Name</label>
-                  <input type="text" required value={regFullName} onChange={(e) => setRegFullName(e.target.value)} placeholder="Full name" className="w-full bg-[#0D0D0D] border border-[#222222] rounded-xl px-4 py-3 text-sm text-white outline-none" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-[#AAAAAA] mb-1">Email</label>
-                    <input type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} placeholder="email@domain.com" className="w-full bg-[#0D0D0D] border border-[#222222] rounded-xl px-4 py-3 text-sm text-white outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-[#AAAAAA] mb-1">Phone (+91)</label>
-                    <input type="tel" required value={regPhone} onChange={(e) => setRegPhone(e.target.value)} placeholder="+91 98110 00000" className="w-full bg-[#0D0D0D] border border-[#222222] rounded-xl px-4 py-3 text-sm text-white outline-none" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-[#AAAAAA] mb-1">Date of Birth</label>
-                  <input type="date" required value={regDob} onChange={(e) => setRegDob(e.target.value)} className="w-full bg-[#0D0D0D] border border-[#222222] rounded-xl px-4 py-3 text-sm text-white outline-none" />
-                </div>
-                <button type="submit" className="w-full bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase tracking-wider py-4 rounded-xl hover:bg-[#a8cc00] transition-all">
-                  Register & Issue Digital Pass
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 3: DPDP CONSENT */}
-      {activeTab === "consent" && (
-        <div className="bg-[#141414] border border-[#1F1F1F] rounded-3xl p-6 sm:p-8 shadow-2xl">
-          <div className="flex items-center justify-between mb-6">
+      {tab === "consent" && (
+        <Panel>
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3">
             <div>
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-amber-400 block mb-0.5">
-                DPDP Act 2023 Queue (DSK-5)
-              </span>
-              <h3 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-extrabold uppercase text-white">
-                Minor Athletes Awaiting Parental Consent
-              </h3>
+              <div className="u-eyebrow text-clay">DPDP Act 2023 · DSK-5</div>
+              <h2 className="u-display mt-1 text-[15px]">Guardian consent queue</h2>
+              <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-muted">
+                Junior accounts cannot book or pay until consent is verified. Confirm the guardian&apos;s
+                identity in person, then record it here with a timestamp.
+              </p>
             </div>
-            <span className="text-xs text-[#888888] font-bold">{consentQueue.length} pending</span>
+            <StatusPill tone={queue.length ? "warn" : "success"}>{queue.length} pending</StatusPill>
           </div>
 
-          {consentQueue.length === 0 ? (
-            <div className="text-center py-12 text-xs text-[#666666]">
-              All junior member consents verified!
-            </div>
+          {queue.length === 0 ? (
+            <EmptyState
+              title="Every junior account is cleared"
+              description="No guardian verification is waiting at the desk."
+              className="mt-4"
+            />
           ) : (
-            <div className="divide-y divide-[#1F1F1F]">
-              {consentQueue.map((junior) => (
-                <div key={junior.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-bold text-white">{junior.fullName} ({junior.memberCode})</div>
-                    <div className="text-xs text-[#888888]">Guardian: {junior.guardianName || "N/A"} · {junior.guardianPhone || "N/A"}</div>
+            <ul className="mt-3 divide-y divide-line-soft">
+              {queue.map((junior) => (
+                <li
+                  key={junior.id}
+                  className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[12.5px] font-medium">{junior.fullName}</span>
+                      <span className="u-mono text-[9.5px] text-muted">{junior.memberCode}</span>
+                      <StatusPill tone="warn">Pending consent</StatusPill>
+                    </div>
+                    <div className="mt-1 text-[11px] text-muted">
+                      Guardian: {junior.guardianName ?? "not recorded"} · {junior.guardianPhone ?? "—"} ·{" "}
+                      {junior.guardianEmail ?? "—"}
+                    </div>
+                    <div className="mt-0.5 text-[10.5px] text-muted">
+                      Date of birth {junior.dob} · Junior plan
+                    </div>
                   </div>
-                  {verificationSuccessId === junior.id ? (
-                    <div className="text-xs font-bold text-green-400 flex items-center gap-1.5"><Check className="w-4 h-4" /> Verified!</div>
-                  ) : (
-                    <button
-                      onClick={() => handleVerifyConsent(junior.id)}
-                      className="bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase px-5 py-2.5 rounded-xl hover:bg-[#a8cc00] transition-all"
-                    >
-                      Verify In-Person
+                  <div className="flex shrink-0 gap-2">
+                    {junior.guardianPhone && (
+                      <a href={`tel:${junior.guardianPhone.replace(/\s/g, "")}`} className="btn btn-outline btn-sm">
+                        <Phone className="h-3 w-3" />
+                        Call guardian
+                      </a>
+                    )}
+                    <button className="btn btn-court btn-sm" onClick={() => verify(junior.id, junior.fullName)}>
+                      <ShieldAlert className="h-3 w-3" />
+                      Verify in person
                     </button>
-                  )}
-                </div>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </div>
+
+          <p className="mt-4 border-t border-line pt-3 text-[10.5px] leading-relaxed text-muted">
+            Verification records the staff member, the timestamp and the consent-text version. Consent can be
+            withdrawn at any time; invoices are retained for the statutory period.
+          </p>
+        </Panel>
       )}
+
+      {tab === "leads" && <LeadsBoard onMutate={refresh} />}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4 text-[10.5px] text-muted">
+        <span className="flex items-center gap-1.5">
+          <BadgeCheck className="h-3.5 w-3.5" />
+          Member identity is visible to staff only. Nothing here is exposed publicly.
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5" />
+          Every action is written to the audit log.
+        </span>
+      </div>
     </div>
   );
 }
+
+function LeadsBoard({ onMutate }: { onMutate: () => void }) {
+  const { user } = useAuth();
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [filter, setFilter] = useState<LeadStatus | "all">("all");
+  const [quote, setQuote] = useState("");
+  const [note, setNote] = useState("");
+  const [planId, setPlanId] = useState<"gold" | "silver" | "junior">("gold");
+  const [flash, setFlash] = useState<string | null>(null);
+
+  const reload = () => {
+    const next = getLeads();
+    setLeads(next);
+    if (!selectedId && next[0]) setSelectedId(next[0].id);
+    onMutate();
+  };
+
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const selected = leads.find((lead) => lead.id === selectedId);
+  const visible = filter === "all" ? leads : leads.filter((lead) => lead.status === filter);
+
+  const tell = (message: string) => {
+    setFlash(message);
+    window.setTimeout(() => setFlash(null), 3200);
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-12">
+      <div className="lg:col-span-7">
+        <Panel padded={false}>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2.5">
+            <div className="u-eyebrow text-muted">Pipeline · E6–E10</div>
+            <div className="no-scrollbar flex gap-1 overflow-x-auto">
+              {(["all", "new", "contacted", "quoted", "converted", "lost"] as const).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className={cn(
+                    "shrink-0 rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em]",
+                    filter === status ? "border-ink bg-ink text-chalk" : "border-line text-muted hover:text-ink"
+                  )}
+                >
+                  {status === "all" ? "All" : LEAD_STATUS_LABEL[status]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {visible.length === 0 ? (
+            <EmptyState title="No leads in this view" description="New website enquiries land here automatically." className="m-3" />
+          ) : (
+            <ul className="divide-y divide-line-soft">
+              {visible.map((lead) => (
+                <li key={lead.id}>
+                  <button
+                    onClick={() => setSelectedId(lead.id)}
+                    className={cn(
+                      "flex w-full items-center gap-3 px-3 py-3 text-left transition-colors",
+                      selectedId === lead.id ? "bg-paper-deep/60" : "hover:bg-paper-deep/30"
+                    )}
+                  >
+                    <span className="u-mono w-10 shrink-0 text-[9px] text-muted">
+                      {leadDateLabel(lead.createdAt)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="truncate text-[12.5px] font-medium">{lead.name}</span>
+                        <StatusPill tone={LEAD_STATUS_TONE[lead.status]}>{LEAD_STATUS_LABEL[lead.status]}</StatusPill>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[10.5px] text-muted">
+                        {lead.type === "trial" ? "Trial request" : lead.type === "membership" ? "Membership enquiry" : "General enquiry"} ·{" "}
+                        {lead.sport} · {lead.source.replace("_", " ")}
+                      </span>
+                    </span>
+                    {lead.quoteAmount ? (
+                      <span className="u-value shrink-0 text-[11px]">{inr(lead.quoteAmount)}</span>
+                    ) : (
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted" />
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <div className="lg:col-span-5">
+        {!selected ? (
+          <Panel>
+            <EmptyState title="Pick a lead" description="The full conversation, trial and quote sit here." />
+          </Panel>
+        ) : (
+          <Panel>
+            <div className="flex items-start justify-between gap-3 border-b border-line pb-3">
+              <div>
+                <div className="u-eyebrow text-clay">{selected.type === "trial" ? "Trial request" : "Enquiry"}</div>
+                <div className="u-display mt-1 text-[16px]">{selected.name}</div>
+                <div className="mt-1 text-[10.5px] text-muted">
+                  {selected.sport} · created {leadDateLabel(selected.createdAt)}
+                </div>
+              </div>
+              <StatusPill tone={LEAD_STATUS_TONE[selected.status]}>{LEAD_STATUS_LABEL[selected.status]}</StatusPill>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <a href={`tel:${selected.phone.replace(/\s/g, "")}`} className="btn btn-outline btn-sm">
+                <Phone className="h-3 w-3" />
+                {selected.phone}
+              </a>
+              <a href={`mailto:${selected.email}`} className="btn btn-outline btn-sm truncate">
+                <Mail className="h-3 w-3 shrink-0" />
+                <span className="truncate">{selected.email}</span>
+              </a>
+            </div>
+
+            {selected.message && (
+              <p className="mt-3 border-l-2 border-clay/40 bg-paper-soft px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft">
+                “{selected.message}”
+              </p>
+            )}
+
+            {selected.preferredDate && (
+              <div className="mt-3 flex items-center justify-between rounded-lg border border-line bg-paper-soft px-3 py-2 text-[11px]">
+                <span className="text-muted">Preferred trial</span>
+                <span className="u-mono">
+                  {selected.preferredDate} · {selected.preferredTime ?? "—"}
+                </span>
+              </div>
+            )}
+
+            {selected.quoteAmount && (
+              <div className="mt-2 flex items-center justify-between rounded-lg border border-court/30 bg-court/5 px-3 py-2 text-[11px]">
+                <span className="text-muted">Quote sent</span>
+                <span className="u-value">{inr(selected.quoteAmount)}</span>
+              </div>
+            )}
+
+            <div className="mt-4 space-y-2 border-t border-line pt-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={() => {
+                    updateLeadStatus(selected.id, "contacted", user?.fullName);
+                    reload();
+                    tell(`${selected.name} marked contacted.`);
+                  }}
+                >
+                  Mark contacted
+                </button>
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={() => {
+                    updateLeadStatus(selected.id, "lost", user?.fullName);
+                    reload();
+                    tell(`${selected.name} moved to lost.`);
+                  }}
+                >
+                  Mark lost
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  className="input"
+                  placeholder="Quote amount ₹"
+                  inputMode="decimal"
+                  value={quote}
+                  onChange={(event) => setQuote(event.target.value)}
+                  aria-label="Quote amount"
+                />
+                <button
+                  className="btn btn-ink btn-sm shrink-0"
+                  onClick={() => {
+                    const result = sendQuote(selected.id, Number(quote), "Quote sent from the front desk", user?.fullName);
+                    if (result.ok) {
+                      setQuote("");
+                      reload();
+                      tell(`Quote sent to ${selected.name}.`);
+                    } else {
+                      tell(result.error ?? "Could not send the quote.");
+                    }
+                  }}
+                >
+                  Send quote
+                </button>
+              </div>
+
+              <div className="flex gap-2">
+                <select className="select" value={planId} onChange={(event) => setPlanId(event.target.value as typeof planId)}>
+                  <option value="gold">Gold</option>
+                  <option value="silver">Silver</option>
+                  <option value="junior">Junior</option>
+                </select>
+                <button
+                  className="btn btn-clay btn-sm shrink-0"
+                  onClick={() => {
+                    const result = convertLead(selected.id, planId, user?.fullName);
+                    reload();
+                    tell(result.ok ? `Converted to ${result.memberCode}.` : result.error ?? "Could not convert.");
+                  }}
+                >
+                  <UserPlus className="h-3 w-3" />
+                  Convert
+                </button>
+              </div>
+
+              <textarea
+                className="textarea"
+                placeholder="Add a follow-up note…"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                aria-label="Follow-up note"
+              />
+              <button
+                className="btn btn-outline btn-sm btn-block"
+                disabled={!note.trim()}
+                onClick={() => {
+                  addLeadNote(selected.id, note.trim(), user?.fullName);
+                  setNote("");
+                  reload();
+                  tell("Note added to the lead.");
+                }}
+              >
+                Add note
+              </button>
+            </div>
+
+            {selected.notes.length > 0 && (
+              <ul className="mt-4 space-y-2 border-t border-line pt-3">
+                {selected.notes.slice(-3).reverse().map((entry, index) => (
+                  <li key={index} className="text-[10.5px] leading-relaxed text-muted">
+                    <span className="text-ink">{entry.text}</span>
+                    <span className="ml-1">· {entry.by}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )}
+
+        {flash && (
+          <div className="mt-3 rounded-lg border border-court/30 bg-court/10 px-3 py-2 text-[11px] text-court">
+            <Check className="mr-1 inline h-3 w-3" />
+            {flash}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

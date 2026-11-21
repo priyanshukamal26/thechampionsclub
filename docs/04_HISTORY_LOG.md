@@ -446,3 +446,48 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - *Why build local-first workflow engines with DB-shaped invariants?* Building reactive client-side engines that enforce strict relational invariants (slot exclusion, daily caps, stock reservations, ledger reconciliation) allows testing all business rules and complex workflows end-to-end with instant feedback, zero network latency, and seamless offline capability before committing them to PostgreSQL functions.
 
 **Next session task:** Session 7 — Complete the Clubhouse Ledger Unification & Wire Unconnected Modules (finish Registration Wizard steps 3-5; wire court booking & front desk components; implement the 4 placeholder routes for kitchen, owner console, POS, and social play).
+
+
+---
+
+## Session 7 — 2026-11-21 — Completing the Clubhouse Ledger build
+
+**Session goal:** Finish the interrupted redesign and deliver every remaining operational surface from the Session 6 carry-over list, without changing routes or breaking existing workflows.
+
+**What was done (all verified in this workspace):**
+- **Registration wizard finished.** `ChoosePlan.tsx`, `GuardianConsent.tsx` and `Confirmation.tsx` rebuilt on the Clubhouse Ledger primitives. `RegistrationWizard.tsx` now validates each step (identity, password, guardian consent, terms), shows an inline error banner, and writes a real member record through `registerMemberAtDesk` (so desk lookup, pass and DPDP state all see the new athlete). `ClubUser` gained an optional `memberId`.
+- **Court booking wired.** `/dashboard/courts` now uses the prepared `AvailabilityGrid` with `availabilityFor`, `canBook`, `createBooking`, the daily cap and plan pricing; it books for the signed-in member or, for staff, a selected member. Default date rolls to tomorrow after 19:00 and the grid scrolls to the current hour. New `/dashboard/bookings` lists upcoming/past sessions, shows the 12-hour cancellation quote, cancels with policy, and gives staff a check-in action.
+- **Front desk composed.** `/dashboard/desk` now hosts `LookupTab` and `RegisterTab`, the DPDP consent queue (in-person verification) and a new leads board (contacted / quote / convert / notes).
+- **Four operations surfaces implemented:** `/dashboard/kitchen` (three-column KDS with start/ready/served transitions and table rail), `/dashboard/owner` (F1–F9: revenue by source and payment mode, 14-day run rate, Z-report with cash reconciliation and print, GST working papers + CSV, payables, GST invoices with creation and settlement, payroll, leave approval, expiring share links), `/dashboard/pos` (search, member discount, GST, cash/card/UPI, receipt), `/dashboard/social` (three sessions, roster, guest fee collection, deterministic rotating-doubles draw).
+- **Bar rebuilt** on the orders engine: menu with veg markers, 12-table floor map, tabs, settle modal, kitchen hand-off. **Overview** made role-aware (member bookings/tab vs staff takings/queues). **Pass** and **Settings** rebuilt on the new system (offline QR pattern, entitlements, history; profile, notifications, password, DPDP export/withdraw). `pending-consent` and `reset-password` now use `AuthShell`.
+- **RBAC hardened:** the dashboard shell keeps a route-level access matrix (`owner`, `manager`, `front_desk`, `bar_staff`, `shop_manager`, `cafe_manager`, `member`) and renders a “Not your counter” state for direct URL access to another role's console.
+- **Navigation and demo access:** added a Bookings nav entry, `/demo/[role]` password-free entry for every demo role, and `/share/[token]` for the owner's expiring read-only report.
+- **PWA polish:** install prompt suppressed on staff consoles (kept on public pages and the pass), manifest/service worker/offline page retained.
+- **Encoding repair:** a PowerShell text round-trip had double-encoded non-ASCII characters in several edited files; all `src` and markdown files were scanned and repaired (no mojibake markers remain).
+- **Docs:** README route inventory (25 routes), demo personas, architecture map and a 12-screen gallery in `docs/screenshots/`.
+
+**Proofs:**
+- `next build`: PASS — 25/25 routes generated, 0 TypeScript errors.
+- Headless Chrome smoke test: every route returned HTTP 200 and rendered its expected H1 (`/` landing, `/login`, `/register`, `/dashboard/owner`, `/dashboard/kitchen`, `/dashboard/pos`, `/dashboard/social`, `/dashboard/pass`, `/dashboard/bookings`, `/dashboard/settings`, `/dashboard/desk`, `/dashboard/bar`, `/pending-consent`, `/share/[token]`).
+- Member demo shows seeded upcoming bookings (tonight + next four days), daily cap 1/2, paid pass, history.
+- RBAC check: a member visiting `/dashboard/kitchen` or `/dashboard/pos` receives the restricted state; `shop_manager` reaches POS.
+- Screenshots: `docs/screenshots/01-landing.png` … `12-consent-gate.png`.
+
+**Decisions changed/added:**
+- D-040 CONFIRMED: Route-level access matrix in the dashboard shell (not just hidden navigation) so RBAC is demonstrable by direct URL.
+- D-041 CONFIRMED: Registration writes a member record immediately; juniors stay `pending_consent` until guardian verification.
+- D-042 CONFIRMED: Owner console is a single tabbed surface (overview / Z-report / GST / payables / invoices / people / share) instead of separate routes.
+- D-043 CONFIRMED: Share links are bearer tokens stored locally with a 72-hour expiry and a read-only public page.
+
+**Problems hit, causes, fixes:**
+- **Encoding corruption:** bulk `Get-Content`/`Set-Content` round-trips double-encoded UTF-8 characters in five edited pages and `membership.ts`. Fixed with a per-run cp1252→UTF-8 repair and targeted replacements; verified zero mojibake markers across `src`.
+- **Seeded demo bookings could be skipped** by density clashes. Fixed by pruning clashing seeds before inserting Rohan's guaranteed upcoming sessions and bumping the storage key to `champions_bookings_v3`.
+- **Stat component on paper:** `tone="ink"` assumed a dark parent, making owner figures invisible on paper. Fixed the kit to give dark tones solid ink/court/clay surfaces.
+- **Hydration mismatch risk:** auth hydration now happens in an effect; dashboard shell shows a loading state until the session is read.
+
+**Not done / carried over:**
+- Live Supabase project is not connected (no credentials supplied); the app still runs on the local-first runtime.
+- Engine-level automated tests (overlap, cap, stock, ledger) are still SQL-only; a JS test harness is next.
+- Hosted deployment and real-device PWA verification.
+
+**Next session task:** Session 8 — connect Supabase, push the schema, run the concurrency suite against the live database, deploy, and add engine tests.

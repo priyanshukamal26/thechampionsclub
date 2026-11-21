@@ -21,6 +21,7 @@ export interface ClubUser {
   status: AccountStatus;
   planId?: "gold" | "silver" | "junior";
   isMinor?: boolean;
+  memberId?: string;
 }
 
 export const DEMO_USERS: Record<string, ClubUser> = {
@@ -97,20 +98,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<ClubUser | null>(() => {
-    if (typeof window !== "undefined") {
+  const [user, setUser] = useState<ClubUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Read the local session after hydration so server and client markup match.
+  useEffect(() => {
+    try {
       const cached = localStorage.getItem("champions_user");
-      if (cached) {
-        try {
-          return JSON.parse(cached);
-        } catch {
-          localStorage.removeItem("champions_user");
-        }
-      }
+      if (cached) setUser(JSON.parse(cached) as ClubUser);
+    } catch {
+      localStorage.removeItem("champions_user");
     }
-    return null;
-  });
-  const [loading, setLoading] = useState(false);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     // Listen to Supabase Auth state changes if available

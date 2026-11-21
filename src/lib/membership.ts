@@ -7,6 +7,8 @@
 export interface MembershipPlan {
   id: "gold" | "silver" | "junior";
   name: string;
+  shortName?: string;
+  tagline?: string;
   badgeColor: string;
   priceMonthly: number;
   priceAnnual: number;
@@ -23,7 +25,9 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
   gold: {
     id: "gold",
     name: "Gold Champion",
-    badgeColor: "#CCFF00",
+    shortName: "Gold",
+    tagline: "The full club, on your terms.",
+    badgeColor: "#b2872c",
     priceMonthly: 4999.0,
     priceAnnual: 47990.0,
     courtMultiplier: 0.0,
@@ -43,7 +47,9 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
   silver: {
     id: "silver",
     name: "Silver Standard",
-    badgeColor: "#E2E8F0",
+    shortName: "Silver",
+    tagline: "The everyday player's membership.",
+    badgeColor: "#6e6555",
     priceMonthly: 2499.0,
     priceAnnual: 23990.0,
     courtMultiplier: 0.7,
@@ -63,7 +69,9 @@ export const MEMBERSHIP_PLANS: Record<string, MembershipPlan> = {
   junior: {
     id: "junior",
     name: "Junior Prodigy",
-    badgeColor: "#F59E0B",
+    shortName: "Junior",
+    tagline: "For athletes under eighteen.",
+    badgeColor: "#c4502b",
     priceMonthly: 1699.0,
     priceAnnual: 16310.0,
     courtMultiplier: 0.5,
@@ -384,3 +392,5 @@ export function getPendingConsentQueue(): ClubMember[] {
   const members = getLocalMembers();
   return members.filter((m) => m.status === "pending_consent" && m.isMinor);
 }
+
+

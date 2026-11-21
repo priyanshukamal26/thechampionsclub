@@ -642,6 +642,36 @@ export function markInvoicePaid(id: string): void {
   writeStore(INVOICES_KEY, invoices);
 }
 
+/** Raise a GST invoice for a membership or a business client (F4). */
+export function createInvoice(input: {
+  client: string;
+  type: InvoiceType;
+  description: string;
+  net: number;
+  gstin?: string;
+  dueAt?: string;
+}): Invoice {
+  const invoices = getInvoices();
+  const net = round2(input.net);
+  const gst = round2(net * GST_RATE);
+  const invoice: Invoice = {
+    id: makeId("inv"),
+    number: `TCC/26-27/${String(143 + invoices.length).padStart(4, "0")}`,
+    client: input.client.trim(),
+    gstin: input.gstin?.trim() || undefined,
+    type: input.type,
+    description: input.description.trim(),
+    issuedAt: todayISO(),
+    dueAt: input.dueAt ?? addDaysISO(todayISO(), 15),
+    net,
+    gst,
+    gross: round2(net + gst),
+    status: "pending",
+  };
+  writeStore(INVOICES_KEY, [invoice, ...invoices]);
+  return invoice;
+}
+
 export function exportInvoicesCsv() {
   downloadCsv("champions-invoices.csv", [
     ["Number", "Client", "GSTIN", "Type", "Issued", "Due", "Taxable", "GST", "Gross", "Status"],

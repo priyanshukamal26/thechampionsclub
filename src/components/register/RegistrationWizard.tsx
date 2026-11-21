@@ -10,6 +10,7 @@ import ChoosePlan from "./steps/ChoosePlan";
 import GuardianConsent from "./steps/GuardianConsent";
 import Confirmation from "./steps/Confirmation";
 import { useAuth, ClubUser } from "@/lib/auth-context";
+import { registerMemberAtDesk } from "@/lib/membership";
 import { recordAuditLog } from "@/lib/audit";
 import { MEMBERSHIP_PLANS } from "@/lib/membership";
 import { inr } from "@/lib/store";
@@ -51,6 +52,7 @@ export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gol
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [stepError, setStepError] = useState("");
 
   // Helper to determine if user is a minor (<18)
   const isMinor = Boolean(
@@ -77,28 +79,78 @@ export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gol
     setFormData((prev) => ({ ...prev, ...fields }));
   };
 
+  const validateStep = (): string => {
+    if (currentStepIndex === 0) {
+      if (formData.fullName.trim().length < 2) return "Enter the athlete's full name.";
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email.trim())) return "Enter a valid email address.";
+      if (formData.phone.replace(/\D/g, "").length < 10) return "Enter a 10-digit mobile number.";
+      if (!formData.dob) return "Date of birth is required.";
+      const age = new Date().getFullYear() - new Date(formData.dob).getFullYear();
+      if (age < 10 || age > 100) return "Check the date of birth.";
+    }
+    if (currentStepIndex === 1) {
+      if (formData.password.length < 8) return "Use a password of at least 8 characters.";
+      if (formData.password !== formData.confirmPassword) return "The two passwords do not match.";
+    }
+    if (isMinor && currentStepIndex === 3) {
+      if (formData.guardianName.trim().length < 2) return "The guardian's name is required.";
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.guardianEmail.trim()))
+        return "Enter the guardian's email address.";
+      if (formData.guardianPhone.replace(/\D/g, "").length < 10)
+        return "Enter the guardian's mobile number.";
+      if (!formData.guardianConsentGiven)
+        return "Guardian consent is required before a Junior account can be created.";
+    }
+    if (currentStepIndex === steps.length - 1 && !formData.termsAccepted) {
+      return "Please accept the club rules to continue.";
+    }
+    return "";
+  };
+
   const handleNext = () => {
+    const error = validateStep();
+    if (error) {
+      setStepError(error);
+      return;
+    }
+    setStepError("");
+
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex((prev) => prev + 1);
-    } else {
-      const newUser: ClubUser = {
-        id: crypto.randomUUID(),
-        email: formData.email,
-        fullName: formData.fullName,
-        role: "member",
-        status: isMinor ? "pending_consent" : "active_member",
-        planId: formData.planId,
-        isMinor,
-      };
-      setUser(newUser);
-      localStorage.setItem("champions_user", JSON.stringify(newUser));
-      recordAuditLog({
-        action: isMinor ? "register_minor_pending_consent" : "register_member",
-        entity: "profiles",
-        details: { plan: formData.planId, email: formData.email, isMinor },
-      });
-      setSubmitted(true);
+      return;
     }
+
+    const { member } = registerMemberAtDesk({
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      dob: formData.dob,
+      planId: formData.planId,
+      guardianName: isMinor ? formData.guardianName : undefined,
+      guardianEmail: isMinor ? formData.guardianEmail : undefined,
+      guardianPhone: isMinor ? formData.guardianPhone : undefined,
+      guardianVerifiedInPerson: false,
+    });
+
+    const newUser: ClubUser = {
+      id: `user-${member.id}`,
+      email: member.email,
+      fullName: member.fullName,
+      role: "member",
+      status: member.status === "pending_consent" ? "pending_consent" : "active_member",
+      planId: member.planId,
+      isMinor: member.isMinor,
+      memberId: member.id,
+    };
+    setUser(newUser);
+    localStorage.setItem("champions_user", JSON.stringify(newUser));
+    recordAuditLog({
+      action: isMinor ? "register_minor_pending_consent" : "register_member",
+      entity: "members",
+      entityId: member.id,
+      details: { plan: formData.planId, email: formData.email, isMinor, memberCode: member.memberCode },
+    });
+    setSubmitted(true);
   };
 
   const handleBack = () => {
@@ -310,6 +362,15 @@ export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gol
           )}
         </AnimatePresence>
       </div>
+
+      {stepError && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-clay/40 bg-clay/10 px-3 py-2 text-[11px] leading-relaxed text-clay-deep"
+        >
+          {stepError}
+        </p>
+      )}
 
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-line pt-4">
         {currentStepIndex > 0 ? (

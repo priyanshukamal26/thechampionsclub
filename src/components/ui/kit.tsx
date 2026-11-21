@@ -92,7 +92,7 @@ export function PageHeader({
         {eyebrow && <div className="u-eyebrow mb-2 text-clay">{eyebrow}</div>}
         <h1 className="u-display text-[clamp(1.7rem,3.2vw,2.6rem)] text-ink">{title}</h1>
         {description && <p className="mt-2 max-w-2xl text-[12.5px] leading-relaxed text-muted">{description}</p>}
-        {meta && <div className="mt-3">{meta}</div>}
+        {meta && <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">{meta}</div>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -142,11 +142,17 @@ export function Stat({
   className?: string;
 }) {
   const inv = tone !== "paper";
+  const surfaces: Record<string, string> = {
+    paper: "border-line bg-paper-soft",
+    ink: "border-ink bg-ink",
+    court: "border-court bg-court",
+    clay: "border-clay bg-clay",
+  };
   return (
     <div
       className={cn(
         "flex flex-col justify-between gap-3 rounded-xl border p-4",
-        inv ? "border-line-inverse bg-white/[0.03]" : "border-line bg-paper-soft",
+        surfaces[tone],
         className
       )}
     >

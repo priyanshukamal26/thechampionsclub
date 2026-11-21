@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Download, WifiOff, X } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -10,6 +11,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PWAProvider() {
+  const pathname = usePathname();
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(true);
   const [offline, setOffline] = useState(false);
@@ -71,7 +73,7 @@ export default function PWAProvider() {
         </div>
       )}
 
-      {installEvent && !dismissed && (
+      {installEvent && !dismissed && (!pathname.startsWith("/dashboard") || pathname.startsWith("/dashboard/pass")) && (
         <div className="fixed bottom-4 left-4 z-[95] w-[calc(100%-2rem)] max-w-sm rounded-xl border border-ink bg-chalk p-4 shadow-[5px_5px_0_0_var(--color-ink)]">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">

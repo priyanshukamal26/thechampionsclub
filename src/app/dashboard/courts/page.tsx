@@ -1,276 +1,452 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar, Clock, MapPin, ChevronLeft, ChevronRight, Check, Zap, Star, Info, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  Clock,
+  Dices,
+  Info,
+  ShieldCheck,
+  Users,
+  X,
+} from "lucide-react";
+import { PageHeader, Panel, Stat, StatusPill } from "@/components/ui/kit";
+import { Segmented } from "@/components/ui/overlay";
+import AvailabilityGrid from "@/components/courts/AvailabilityGrid";
 import { useAuth } from "@/lib/auth-context";
-import { MEMBERSHIP_PLANS } from "@/lib/membership";
+import {
+  DAILY_BOOKING_CAP,
+  FREE_CANCELLATION_HOURS,
+  OPEN_MINUTES,
+  CLOSE_MINUTES,
+  TIME_SLOTS,
+  activeBookingsForMemberOnDate,
+  availabilityFor,
+  bookingsOnDate,
+  canBook,
+  createBooking,
+  facilitiesBySport,
+  getFacility,
+  getSocialSessions,
+  nextSocialSession,
+  priceFor,
+  planRateLabel,
+  type Sport,
+} from "@/lib/bookings";
+import { getLocalMembers, MEMBERSHIP_PLANS, type ClubMember } from "@/lib/membership";
+import { recordAuditLog } from "@/lib/audit";
+import { formatDate, inr, labelToMinutes, minutesToLabel, offsetDate, todayISO } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
-interface Facility {
-  id: string;
-  name: string;
-  sport: string;
-  surface: string;
-  basePrice: number; // INR per 60 min
-  lighting: boolean;
-}
-
-const FACILITIES: Facility[] = [
-  { id: "tc1", name: "Centre Court 1", sport: "Tennis", surface: "Hard (US Open Blue)", basePrice: 1200, lighting: true },
-  { id: "tc2", name: "Centre Court 2", sport: "Tennis", surface: "Hard (Aus Open Blue)", basePrice: 1200, lighting: true },
-  { id: "tc3", name: "Clay Court 1", sport: "Tennis", surface: "Red Clay", basePrice: 1000, lighting: true },
-  { id: "tc4", name: "Clay Court 2", sport: "Tennis", surface: "Red Clay", basePrice: 1000, lighting: false },
-  { id: "tc5", name: "Grass Court 1", sport: "Tennis", surface: "Natural Grass", basePrice: 1500, lighting: false },
-  { id: "pc1", name: "Padel Court 1", sport: "Padel", surface: "Panoramic Glass", basePrice: 1800, lighting: true },
-  { id: "pc2", name: "Padel Court 2", sport: "Padel", surface: "Standard Enclosure", basePrice: 1400, lighting: true },
-  { id: "bc1", name: "Badminton Court 1", sport: "Badminton", surface: "Synthetic Indoor AC", basePrice: 800, lighting: true },
-  { id: "bc2", name: "Badminton Court 2", sport: "Badminton", surface: "Synthetic Indoor AC", basePrice: 800, lighting: true },
-  { id: "bc3", name: "Badminton Court 3", sport: "Badminton", surface: "Synthetic Indoor AC", basePrice: 800, lighting: true },
-  { id: "cc1", name: "Cricket Net 1 (Pace)", sport: "Cricket", surface: "Astroturf Pitch", basePrice: 600, lighting: true },
-  { id: "cc2", name: "Cricket Net 2 (Spin)", sport: "Cricket", surface: "Astroturf Pitch", basePrice: 600, lighting: true },
-];
-
-const SPORTS = ["All", "Tennis", "Padel", "Badminton", "Cricket"];
-
-const TIME_SLOTS = [
-  "06:00", "07:00", "08:00", "09:00",
-  "10:00", "11:00", "12:00", "13:00",
-  "14:00", "15:00", "16:00", "17:00",
-  "18:00", "19:00", "20:00", "21:00",
-];
-
-function getDateStr(offset: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return d.toISOString().split("T")[0];
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
-}
-
-// Deterministic mock availability
-function isSlotAvailable(courtId: string, dateStr: string, slot: string): boolean {
-  const hash = (courtId + dateStr + slot).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return hash % 5 !== 0; // ~80% available
-}
+const SPORT_TABS: Array<Sport | "All"> = ["All", "Tennis", "Padel", "Badminton", "Cricket"];
 
 export default function CourtsPage() {
   const { user } = useAuth();
-  const [selectedSport, setSelectedSport] = useState("All");
-  const [dateOffset, setDateOffset] = useState(0);
-  const [selectedSlot, setSelectedSlot] = useState<{ courtId: string; slot: string } | null>(null);
-  const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const [bookedSessions, setBookedSessions] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
+  const [version, setVersion] = useState(0);
+  const [date, setDate] = useState(() => (new Date().getHours() >= 19 ? offsetDate(1) : todayISO()));
+  const [sport, setSport] = useState<Sport | "All">("All");
+  const [memberId, setMemberId] = useState("");
+  const [selected, setSelected] = useState<{ facilityId: string; slot: string } | null>(null);
+  const [flash, setFlash] = useState<{ tone: "court" | "clay"; message: string } | null>(null);
 
-  if (!user) return null;
+  useEffect(() => setMounted(true), []);
 
-  const plan = MEMBERSHIP_PLANS[user.planId || "silver"] || MEMBERSHIP_PLANS.silver;
-  const dateStr = getDateStr(dateOffset);
-  const filteredFacilities = selectedSport === "All"
-    ? FACILITIES
-    : FACILITIES.filter((f) => f.sport === selectedSport);
+  const members = useMemo(() => (mounted ? getLocalMembers() : []), [mounted]);
+  const selfMember = useMemo(() => {
+    if (!user) return undefined;
+    return members.find((m) => m.email.toLowerCase() === user.email.toLowerCase());
+  }, [members, user]);
 
-  const selectedFacility = selectedSlot ? FACILITIES.find((f) => f.id === selectedSlot.courtId) : null;
-  const memberPrice = selectedFacility ? Math.round(selectedFacility.basePrice * plan.courtMultiplier) : 0;
+  useEffect(() => {
+    if (memberId) return;
+    setMemberId(selfMember?.id ?? members[0]?.id ?? "");
+  }, [selfMember, members, memberId]);
 
-  const handleBook = () => {
-    if (!selectedSlot || !selectedFacility) return;
-    const sessionKey = `${selectedFacility.name} at ${selectedSlot.slot} (${formatDate(dateStr)})`;
-    setBookedSessions((prev) => [sessionKey, ...prev]);
-    setBookingConfirmed(true);
-    setTimeout(() => {
-      setBookingConfirmed(false);
-      setSelectedSlot(null);
-    }, 2500);
+  const member: ClubMember | undefined = members.find((m) => m.id === memberId) ?? selfMember;
+  const plan = member ? MEMBERSHIP_PLANS[member.planId] : undefined;
+  const isStaff = user ? user.role !== "member" : false;
+
+  const facilities = useMemo(() => (mounted ? facilitiesBySport(sport) : []), [mounted, sport]);
+  const availability = useMemo(
+    () => (mounted ? availabilityFor(date) : {}),
+    [mounted, date, version]
+  );
+  const bookings = useMemo(() => (mounted ? bookingsOnDate(date) : []), [mounted, date, version]);
+
+  const socialBlocks = useMemo(() => {
+    if (!mounted) return {};
+    const blocks: Record<string, string> = {};
+    getSocialSessions()
+      .filter((session) => session.date === date)
+      .forEach((session) => {
+        session.courtIds.forEach((courtId) => {
+          TIME_SLOTS.forEach((slot) => {
+            const start = labelToMinutes(slot);
+            if (start >= labelToMinutes(session.start) && start < labelToMinutes(session.end)) {
+              blocks[`${courtId}|${slot}`] = `${session.title} · shared court`;
+            }
+          });
+        });
+      });
+    return blocks;
+  }, [mounted, date, version]);
+
+  const usedToday = member ? activeBookingsForMemberOnDate(member.id, date).length : 0;
+  const facility = selected ? getFacility(selected.facilityId) : undefined;
+  const price =
+    facility && member ? priceFor(facility, member.planId) : facility ? priceFor(facility, "walk_in") : 0;
+  const quote = selected && member ? canBook(member.id, date, selected.slot, selected.facilityId) : null;
+  const social = mounted ? nextSocialSession() : undefined;
+
+  const select = (facilityId: string, slot: string) => {
+    setSelected({ facilityId, slot });
+    setFlash(null);
   };
 
+  const confirm = () => {
+    if (!selected || !member || !facility) return;
+    const result = createBooking({
+      facilityId: selected.facilityId,
+      date,
+      start: selected.slot,
+      memberId: member.id,
+      memberName: member.fullName,
+      planId: member.planId,
+      source: isStaff ? "front_desk" : "member",
+      paymentMode: price === 0 ? "plan" : "upi",
+    });
+    if (!result.ok) {
+      setFlash({ tone: "clay", message: result.error ?? "Could not complete the booking." });
+      return;
+    }
+    recordAuditLog({
+      actor: user?.fullName,
+      role: user?.role,
+      action: "booking.created",
+      entity: "bookings",
+      entityId: result.booking?.id,
+      details: { facility: facility.name, date, start: selected.slot, price },
+    });
+    setFlash({
+      tone: "court",
+      message: `${facility.name} · ${formatDate(date)} at ${selected.slot} booked for ${member.fullName.split(" ")[0]} (${price === 0 ? "included in plan" : inr(price)}).`,
+    });
+    setSelected(null);
+    setVersion((v) => v + 1);
+  };
+
+  if (!mounted) {
+    return (
+      <div className="mx-auto max-w-[1400px] p-6">
+        <div className="h-[520px] animate-pulse rounded-2xl bg-ink/[0.05]" />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#CCFF00] block mb-1">
-          Court & Facility Reservations (B1–B9)
-        </span>
-        <h1 className="font-[family-name:var(--font-space-grotesk)] text-3xl font-extrabold uppercase text-white">
-          Book Arena Slots
-        </h1>
-        <p className="text-xs text-[#888888] mt-1">
-          {plan.name} privilege: <span className="text-[#CCFF00] font-bold">{plan.courtDiscountText}</span> · Daily Cap: {plan.dailyCap} sessions/day (IST)
-        </p>
-      </div>
+    <div className="mx-auto max-w-[1400px] space-y-6 p-5 sm:p-6 lg:p-8">
+      <PageHeader
+        eyebrow="Court booking · B1–B9"
+        title="Eighteen arenas. One sheet."
+        description="Sessions are sixty minutes and start every half hour. The grid already knows what is taken, so nobody can double-book a court."
+        actions={
+          <Link href="/dashboard/social" className="btn btn-outline btn-sm">
+            <Dices className="h-3.5 w-3.5" />
+            Friday social
+          </Link>
+        }
+        meta={
+          <>
+            <StatusPill tone={usedToday >= DAILY_BOOKING_CAP ? "danger" : "success"}>
+              {usedToday}/{DAILY_BOOKING_CAP} plays used today
+            </StatusPill>
+            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+              {member ? planRateLabel(member.planId) : "Walk-in rate (+15%)"}
+            </span>
+            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+              Open {String(OPEN_MINUTES / 60).padStart(2, "0")}:00–{String(CLOSE_MINUTES / 60).padStart(2, "0")}:00
+            </span>
+          </>
+        }
+      />
 
-      {/* Controls: Sport Filter + Date Selector */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Sport Filter */}
-        <div className="flex gap-2 flex-wrap">
-          {SPORTS.map((sport) => (
-            <button
-              key={sport}
-              onClick={() => setSelectedSport(sport)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
-                selectedSport === sport
-                  ? "bg-[#CCFF00] text-[#0A0A0A] shadow-[0_0_15px_rgba(204,255,0,0.3)]"
-                  : "bg-[#141414] border border-[#222222] text-[#888888] hover:text-white hover:border-[#333333]"
-              }`}
-            >
-              {sport}
-            </button>
-          ))}
-        </div>
-
-        {/* Date Selector */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setDateOffset(Math.max(0, dateOffset - 1))}
-            disabled={dateOffset === 0}
-            className="p-2 rounded-lg bg-[#141414] border border-[#222222] text-[#888888] hover:text-white disabled:opacity-30 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div className="px-4 py-2 rounded-xl bg-[#141414] border border-[#222222] text-sm font-bold text-white min-w-[150px] text-center">
-            <Calendar className="w-3.5 h-3.5 inline mr-2 text-[#CCFF00]" />
-            {formatDate(dateStr)}
-          </div>
-          <button
-            onClick={() => setDateOffset(Math.min(6, dateOffset + 1))}
-            disabled={dateOffset >= 6}
-            className="p-2 rounded-lg bg-[#141414] border border-[#222222] text-[#888888] hover:text-white disabled:opacity-30 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Real-time Confirmation Feedback */}
-      {bookedSessions.length > 0 && (
-        <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/30 flex items-center justify-between">
-          <div className="flex items-center gap-3 text-xs text-green-300">
-            <ShieldCheck className="w-5 h-5 text-green-400 shrink-0" />
-            <div>
-              <span className="font-bold">Latest Reservation Confirmed:</span> {bookedSessions[0]}
-            </div>
-          </div>
-          <span className="text-[10px] font-mono uppercase bg-green-500/20 text-green-300 px-2.5 py-1 rounded-md">
-            Slot Locked
-          </span>
-        </div>
-      )}
-
-      {/* Grid */}
-      <div className="bg-[#141414] border border-[#1F1F1F] rounded-3xl p-6 shadow-xl overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-[#222222]">
-              <th className="text-left py-3 px-3 text-[10px] uppercase tracking-wider text-[#777777] font-bold sticky left-0 bg-[#141414] min-w-[180px]">
-                Court / Surface
-              </th>
-              {TIME_SLOTS.map((slot) => (
-                <th key={slot} className="text-center py-3 px-1 text-[10px] text-[#666666] font-mono font-bold whitespace-nowrap">
-                  {slot}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredFacilities.map((facility) => (
-              <tr key={facility.id} className="border-b border-[#1A1A1A] hover:bg-[#1A1A1A]/50">
-                <td className="py-3 px-3 sticky left-0 bg-[#141414]">
-                  <div className="font-bold text-white text-xs">{facility.name}</div>
-                  <div className="text-[10px] text-[#666666]">{facility.sport} · {facility.surface}</div>
-                  <div className="text-[10px] text-[#CCFF00] font-mono font-bold">
-                    {plan.courtMultiplier === 0 ? "₹0 (Free)" : `₹${Math.round(facility.basePrice * plan.courtMultiplier)}/hr`}
-                  </div>
-                </td>
-                {TIME_SLOTS.map((slot) => {
-                  const available = isSlotAvailable(facility.id, dateStr, slot);
-                  const isSelected = selectedSlot?.courtId === facility.id && selectedSlot?.slot === slot;
-                  return (
-                    <td key={slot} className="text-center py-2 px-1">
-                      <button
-                        onClick={() => available && setSelectedSlot({ courtId: facility.id, slot })}
-                        disabled={!available}
-                        title={available ? `Book ${facility.name} at ${slot}` : "Slot Booked"}
-                        className={`w-8 h-8 rounded-lg text-[10px] font-bold transition-all ${
-                          isSelected
-                            ? "bg-[#CCFF00] text-[#0A0A0A] shadow-[0_0_10px_rgba(204,255,0,0.4)] scale-105"
-                            : available
-                            ? "bg-[#0D0D0D] border border-[#222222] text-[#CCFF00] hover:border-[#CCFF00] hover:bg-[#CCFF00]/10"
-                            : "bg-[#0D0D0D] border border-[#1A1A1A] text-[#333333] cursor-not-allowed"
-                        }`}
-                      >
-                        {isSelected ? <Check className="w-3.5 h-3.5 mx-auto" /> : available ? "○" : "×"}
-                      </button>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Legend & Daily Cap Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#777777] gap-3">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded bg-[#0D0D0D] border border-[#222222] text-[#CCFF00] text-[9px] flex items-center justify-center font-bold">○</span>
-            Available
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded bg-[#0D0D0D] border border-[#1A1A1A] text-[#333333] text-[9px] flex items-center justify-center font-bold">×</span>
-            Booked / Blocked
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded bg-[#CCFF00] text-[#0A0A0A] text-[9px] flex items-center justify-center font-bold">✓</span>
-            Selected
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-[11px]">
-          <Info className="w-3.5 h-3.5 text-[#CCFF00]" />
-          <span>PostgreSQL exclusion constraints prevent double-booking across 18 arenas.</span>
-        </div>
-      </div>
-
-      {/* Floating Booking Action Drawer */}
-      {selectedSlot && selectedFacility && (
-        <div className="fixed bottom-0 inset-x-0 lg:left-64 z-20 bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-[#1F1F1F] p-4 shadow-2xl">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[#CCFF00]/15 text-[#CCFF00] flex items-center justify-center">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-white">{selectedFacility.name}</div>
-                <div className="text-xs text-[#888888]">
-                  {formatDate(dateStr)} at <span className="text-white font-mono font-bold">{selectedSlot.slot}</span> · 60 min
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-[10px] uppercase font-bold text-[#777777]">{plan.name} Rate</div>
-                <div className="text-lg font-extrabold text-[#CCFF00] font-mono">
-                  {memberPrice === 0 ? "₹0 (Privilege)" : `₹${memberPrice}`}
-                </div>
-              </div>
-              {bookingConfirmed ? (
-                <div className="inline-flex items-center gap-2 bg-green-500/15 text-green-400 font-bold text-xs uppercase px-6 py-3 rounded-xl border border-green-500/30">
-                  <Check className="w-4 h-4" /> Booked!
-                </div>
-              ) : (
-                <button
-                  onClick={handleBook}
-                  className="inline-flex items-center gap-2 bg-[#CCFF00] text-[#0A0A0A] font-extrabold text-xs uppercase tracking-wider px-6 py-3 rounded-xl hover:bg-[#a8cc00] transition-all shadow-[0_0_20px_rgba(204,255,0,0.3)] active:scale-95"
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
+          {Array.from({ length: 7 }).map((_, i) => {
+            const day = offsetDate(i);
+            const active = day === date;
+            return (
+              <button
+                key={day}
+                onClick={() => {
+                  setDate(day);
+                  setSelected(null);
+                }}
+                className={cn(
+                  "flex min-w-[78px] shrink-0 flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors",
+                  active ? "border-ink bg-ink text-chalk" : "border-line bg-chalk hover:border-ink/40"
+                )}
+              >
+                <span
+                  className={cn(
+                    "u-mono text-[8.5px] uppercase tracking-[0.12em]",
+                    active ? "text-chalk/60" : "text-muted"
+                  )}
                 >
-                  <Zap className="w-4 h-4" />
-                  Confirm Reservation
-                </button>
-              )}
-            </div>
-          </div>
+                  {i === 0
+                    ? "Today"
+                    : new Date(`${day}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" })}
+                </span>
+                <span className="u-value mt-0.5 text-[12px]">
+                  {new Date(`${day}T00:00:00`).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                  })}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {isStaff && (
+            <select
+              className="select max-w-[240px]"
+              value={member?.id ?? ""}
+              onChange={(event) => {
+                setMemberId(event.target.value);
+                setSelected(null);
+              }}
+              aria-label="Book on behalf of a member"
+            >
+              <option value="">Select a member…</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.fullName} · {MEMBERSHIP_PLANS[m.planId].shortName}
+                </option>
+              ))}
+            </select>
+          )}
+          <Segmented
+            value={sport}
+            onChange={(value) => {
+              setSport(value);
+              setSelected(null);
+            }}
+            size="sm"
+            options={SPORT_TABS.map((item) => ({ value: item, label: item }))}
+          />
+        </div>
+      </div>
+
+      {flash && (
+        <div
+          className={cn(
+            "flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-[12px]",
+            flash.tone === "court"
+              ? "border-court/30 bg-court/10 text-court"
+              : "border-clay/40 bg-clay/10 text-clay-deep"
+          )}
+        >
+          <span className="flex items-center gap-2">
+            {flash.tone === "court" ? (
+              <Check className="h-3.5 w-3.5" />
+            ) : (
+              <AlertTriangle className="h-3.5 w-3.5" />
+            )}
+            {flash.message}
+          </span>
+          <button onClick={() => setFlash(null)} aria-label="Dismiss" className="opacity-70 hover:opacity-100">
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
+
+      <div className="grid gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-9">
+          <Panel padded={false}>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2.5">
+              <div className="u-eyebrow text-muted">
+                {formatDate(date)} · {facilities.length} facilities
+              </div>
+              <div className="flex items-center gap-3 text-[9.5px] uppercase tracking-[0.1em] text-muted">
+                <span className="flex items-center gap-1">
+                  <span className="h-2.5 w-3 border border-court/30 bg-court/10" />
+                  Free
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2.5 w-3 bg-ink/10" />
+                  Booked
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2.5 w-3 bg-gold/25" />
+                  Social
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="h-2.5 w-3 border border-line bg-paper-deep/70" />
+                  Past
+                </span>
+              </div>
+            </div>
+            <div className="p-2 sm:p-3">
+              <AvailabilityGrid
+                facilities={facilities}
+                availability={availability}
+                bookings={bookings}
+                selected={selected}
+                onSelect={select}
+                priceLabel={(f) => {
+                  const p = priceFor(f, member?.planId ?? "walk_in");
+                  return p === 0 ? "Included" : `${inr(p)}/hr`;
+                }}
+                socialBlocks={socialBlocks}
+              />
+            </div>
+          </Panel>
+        </div>
+
+        <div className="space-y-4 xl:col-span-3">
+          <Panel>
+            <div className="u-eyebrow text-muted">{selected ? "Confirm the slot" : "Pick a slot"}</div>
+            {selected && facility ? (
+              <div className="mt-2">
+                <div className="u-display text-[16px] leading-tight">{facility.name}</div>
+                <div className="mt-1 text-[11px] text-muted">
+                  {facility.sport} · {facility.surface}
+                </div>
+                <div className="mt-3 rounded-lg border border-line bg-paper-soft p-2.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-muted">Date</span>
+                    <span className="u-mono">{formatDate(date)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px]">
+                    <span className="text-muted">Session</span>
+                    <span className="u-mono">
+                      {selected.slot}–{minutesToLabel(labelToMinutes(selected.slot) + 60)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px]">
+                    <span className="text-muted">
+                      {member ? MEMBERSHIP_PLANS[member.planId].shortName : "Walk-in"} rate
+                    </span>
+                    <span className="u-value text-[12.5px]">{price === 0 ? "Included" : inr(price)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between text-[11px]">
+                    <span className="text-muted">Daily cap</span>
+                    <span className="u-mono">
+                      {usedToday + 1}/{DAILY_BOOKING_CAP}
+                    </span>
+                  </div>
+                </div>
+
+                {quote && !quote.ok && (
+                  <p className="mt-2 rounded-lg border border-clay/30 bg-clay/10 px-2.5 py-1.5 text-[10.5px] text-clay-deep">
+                    {quote.reason}
+                  </p>
+                )}
+
+                <button
+                  className="btn btn-clay btn-block mt-3"
+                  disabled={!member || (quote ? !quote.ok : true)}
+                  onClick={confirm}
+                >
+                  <Check className="h-4 w-4" />
+                  Confirm booking
+                </button>
+                <button className="btn btn-quiet btn-sm btn-block mt-1" onClick={() => setSelected(null)}>
+                  Clear
+                </button>
+                <p className="mt-2 text-center text-[9.5px] leading-relaxed text-muted">
+                  Free cancellation up to {FREE_CANCELLATION_HOURS} hours before play.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-2">
+                <CalendarDays className="h-6 w-6 text-muted/50" />
+                <p className="mt-2 text-[11px] leading-relaxed text-muted">
+                  Tap any open cell. You will see the exact price and the daily-cap position before
+                  anything is confirmed.
+                </p>
+                <div className="mt-3 border-t border-line pt-3 text-[10.5px] text-muted">
+                  <div className="flex items-center justify-between">
+                    <span>Plan</span>
+                    <span className="text-ink">{plan?.name ?? "Walk-in"}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span>Rate</span>
+                    <span className="text-ink">
+                      {member ? planRateLabel(member.planId) : "Base +15%"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Panel>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Stat label="Arenas" value="18" unit="bookable" />
+            <Stat label="Session" value="60" unit="minutes" />
+          </div>
+
+          <Panel tone="deep">
+            <div className="flex items-start gap-2">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-court" />
+              <div>
+                <div className="u-display text-[12px]">No double bookings</div>
+                <p className="mt-1 text-[10.5px] leading-relaxed text-muted">
+                  Overlap is checked as a time range, not a start time: a 6:30 session cannot sit on
+                  top of a 6:00 booking. The database enforces the same rule in production.
+                </p>
+              </div>
+            </div>
+          </Panel>
+
+          {social && (
+            <Panel>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="u-eyebrow text-clay">Friday social</div>
+                  <div className="u-display mt-1 text-[12px]">{formatDate(social.date)}</div>
+                  <div className="text-[10px] text-muted">
+                    {social.players.length}/{social.capacity} players
+                  </div>
+                </div>
+                <Users className="h-5 w-5 text-muted" />
+              </div>
+              <Link href="/dashboard/social" className="btn btn-ink btn-sm btn-block mt-3">
+                Join the draw
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </Panel>
+          )}
+
+          <div className="flex items-start gap-1.5 text-[10px] leading-relaxed text-muted">
+            <Info className="mt-0.5 h-3 w-3 shrink-0" />
+            Cancellations inside {FREE_CANCELLATION_HOURS} hours release the court but forfeit the fee.
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-4 text-[10.5px] text-muted">
+        <span className="flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" />
+          Slots open every 30 minutes
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5" />
+          {DAILY_BOOKING_CAP} plays per member per day
+        </span>
+        <span className="flex items-center gap-1.5">
+          <CalendarDays className="h-3.5 w-3.5" />
+          Book up to 7 days ahead
+        </span>
+      </div>
     </div>
   );
 }
+
