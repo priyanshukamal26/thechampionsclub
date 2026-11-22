@@ -627,12 +627,24 @@ export function syncMembersWithServer(): void {
     .then((data) => {
       if (data?.success && Array.isArray(data.members)) {
         const local = getLocalMembers();
-        const existingEmails = new Set(local.map((m) => m.email.toLowerCase()));
+        const existingMap = new Map(local.map((m) => [m.email.toLowerCase(), m]));
         let updated = false;
         for (const remote of data.members) {
-          if (!existingEmails.has(remote.email.toLowerCase())) {
+          const email = remote.email.toLowerCase();
+          const match = existingMap.get(email);
+          if (!match) {
             local.unshift(remote);
             updated = true;
+          } else {
+            if (
+              match.planId !== remote.planId ||
+              match.status !== remote.status ||
+              match.duesPending !== remote.duesPending ||
+              match.fullName !== remote.fullName
+            ) {
+              Object.assign(match, remote);
+              updated = true;
+            }
           }
         }
         if (updated) {
@@ -733,6 +745,15 @@ export function ensureLocalMember(user: {
 
   members.unshift(newMember);
   saveLocalMembers(members);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newMember),
+    }).catch(() => {});
+  }
+
   return newMember;
 }
 
@@ -795,6 +816,14 @@ export function registerMemberAtDesk(data: {
   members.unshift(newMember);
   saveLocalMembers(members);
 
+  if (typeof window !== "undefined") {
+    fetch("/api/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newMember),
+    }).catch(() => {});
+  }
+
   const claimToken = `claim_${crypto.randomUUID().slice(0, 12)}`;
   return { member: newMember, claimToken };
 }
@@ -809,6 +838,14 @@ export function verifyJuniorConsent(memberId: string, verifiedBy: string = "Amit
     member.staffNotes = member.staffNotes || [];
     member.staffNotes.push(`DPDP Consent verified in person by ${verifiedBy} on ${new Date().toLocaleDateString("en-IN")}`);
     saveLocalMembers(members);
+
+    if (typeof window !== "undefined") {
+      fetch("/api/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(member),
+      }).catch(() => {});
+    }
   }
 }
 

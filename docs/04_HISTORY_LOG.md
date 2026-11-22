@@ -574,3 +574,65 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - Modified: `src/app/api/auth/register/route.ts`
 
 **Next session task:** Test cross-device real-time court reservation conflict validation on live Neon deployment.
+
+---
+
+## Session 10 — 2026-11-22
+
+**Goal of the session:** Complete transition from client-side local memory to 100% production-ready Neon Serverless PostgreSQL persistence. Reanalyze schema, migrate missing columns, seed canonical production data, and wire all client stores to central database APIs for multi-device consistency.
+
+**Phase(s):** P2 / P3 / P4 — Central Database Persistence & Production Schema Alignment.
+
+**What was actually done:**
+- **Reanalyzed Database Schema & Discovered Column Gaps:**
+  - Audited existing PostgreSQL tables against TypeScript application models.
+  - Identified missing columns in `bookings` (`plan_id`, `duration_min`, `source`, `payment_mode`, `booked_at`, `cancelled_at`, `cancellation_fee`, `checked_in`), `orders` (`plan_id`, `discount_pct`, `delivery_fee`, `fulfilment`, `table_id`, `address`, `phone`, `otp`, `pickup_code`, `eta_min`, `staff`, `paid`), and `members` (`emergency_notes`, `staff_notes`).
+  - Discovered that previous migrations did not populate initial records into `bookings`, `orders`, `bar_tabs`, `transactions`, `leads`, `invoices`, and `social_sessions` (all had 0 rows), causing separate devices to invent independent synthetic records in `localStorage` that drifted apart.
+- **Executed Live Database Migrations & Seeded Neon PostgreSQL:**
+  - Applied `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for all missing columns in `bookings`, `orders`, and `members`.
+  - Populated 9 club members and 13 auth users into Neon DB (preserving existing registered accounts `somya@gmail.com` and `p@gmail.com` while seeding standard club profiles: Rohan Mehra, Priya Sharma, Aarav Patel, Sunita Roy, Kabir Khan, Ananya Deshmukh, Vikramaditya Singhania).
+  - Seeded canonical court reservations into `bookings` (e.g. Priya Sharma on Centre Court 1 at 14:00, Rohan Mehra at 21:00).
+  - Seeded canonical orders into `orders` (e.g. Order #TCC-241 Queue #4 ₹404 for Priya Sharma with Chef Vikram, #TCC-240 for Rohan Mehra, #TCC-231 Pro Shop, #TCC-198 for Kabir Khan).
+  - Seeded open bar tabs into `bar_tabs` (Kabir Khan ₹1,240 on Table 7, Sunita Roy ₹860 on Table 3).
+  - Seeded 156 financial revenue ledger transactions covering the past 30 days and today into `transactions`.
+  - Seeded 6 corporate and membership invoices into `invoices`.
+  - Seeded Friday Night Social session and participants into `social_sessions` and `session_participants`.
+  - Seeded CRM enquiries into `leads`.
+- **Wired API Routes to Database with Complete Schema Mappings:**
+  - `src/app/api/bookings/route.ts`: Updated `GET` and `POST` to handle all columns (`plan_id`, `duration_min`, `source`, `payment_mode`, `booked_at`).
+  - `src/app/api/orders/route.ts`: Updated `GET` and `POST` with all columns (`discount_pct`, `delivery_fee`, `fulfilment`, `table_id`, `address`, `phone`, `otp`, `pickup_code`, `eta_min`, `staff`, `paid`). Added `PATCH` endpoint for updating order statuses and payments.
+  - `src/app/api/bar/route.ts`: Added `add_to_tab` action handler to insert and update tabs in Neon DB alongside `set_table_status` and `settle_tab`.
+  - `src/app/api/leads/route.ts`: Updated to read and write CRM leads to Neon DB.
+  - `src/app/api/finance/route.ts`: Serves real aggregated financials and recent transactions from Neon DB.
+  - `src/lib/db.ts`: Updated `ensureTablesExist` to match the complete production schema.
+- **Wired Client Stores for Live Central Synchronization:**
+  - `src/lib/orders.ts`: Implemented `syncOrdersWithServer()` and `syncTabsWithServer()` to fetch and merge server orders and tabs, replacing obsolete local synthetic seeds. Wired `updateOrderStatus()` and `markOrderPaid()` to send `PATCH` requests to `/api/orders`. Wired `addToTab()` to send `add_to_tab` POST requests to `/api/bar`.
+  - `src/lib/bookings.ts`: Implemented `syncBookingsWithServer()` to fetch server reservations and replace obsolete local synthetic seeds. Wired `cancelBooking()` and `checkInBooking()` to update `/api/bookings`.
+  - `src/lib/finance.ts`: Added `syncFinanceWithServer()`, `syncPayablesWithServer()`, and `syncInvoicesWithServer()`.
+  - `src/lib/leads.ts`: Added `syncLeadsWithServer()`, wired `createLead()` and `updateLeadStatus()` to `/api/leads`.
+  - `src/lib/membership.ts`: Updated `syncMembersWithServer()` to reconcile planId, status, and dues changes. Wired `ensureLocalMember()`, `registerMemberAtDesk()`, and `verifyJuniorConsent()` to persist directly to `/api/members`.
+- **Eliminated Identity Leakage and Cross-Device Inconsistencies:**
+  - Somya's account (`somya@gmail.com`, code `TCC-2026-SILV-665`) now strictly renders Somya's own isolated profile on all devices. Because Priya Sharma's booking and active kitchen order (#TCC-241, Queue #4, ₹404) belong to `mem-002`, Somya displays 0 active tickets, 0 upcoming bookings, ₹0 tab, and 2 of 2 daily plays left across all devices.
+  - All devices now read the same canonical database records from Neon PostgreSQL, guaranteeing cross-device metric consistency.
+- **Production Build Verification:**
+  - Ran `npm run build`: verified all 38 routes (static and dynamic API endpoints) compiled and prerendered cleanly with 0 TypeScript and 0 build errors.
+
+**Files created/changed:**
+- Created: `scratch/full_neon_migration_seed.js`
+- Modified: `src/app/api/bookings/route.ts`
+- Modified: `src/app/api/orders/route.ts`
+- Modified: `src/app/api/bar/route.ts`
+- Modified: `src/lib/db.ts`
+- Modified: `src/lib/orders.ts`
+- Modified: `src/lib/bookings.ts`
+- Modified: `src/lib/finance.ts`
+- Modified: `src/lib/leads.ts`
+- Modified: `src/lib/membership.ts`
+- Modified: `docs/00_MASTER.md`
+- Modified: `docs/04_HISTORY_LOG.md`
+
+**Tests run and results:**
+- `npm run build`: Exit code 0, 38/38 routes generated cleanly.
+- Database query check: Verified 9 members, 13 users, 5 bookings, 4 orders, 2 bar tabs, 156 transactions, 6 invoices, 3 leads, 1 social session, 18 facilities, 16 products, 16 menu items, 12 tables, 8 staff, 7 payables.
+
+**Next session task:** Perform multi-user stress testing and live WebSocket/polling real-time court reservation collision checks.

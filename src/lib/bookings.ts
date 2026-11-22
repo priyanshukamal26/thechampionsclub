@@ -245,21 +245,14 @@ export function syncBookingsWithServer(): void {
   fetch("/api/bookings")
     .then((res) => res.json())
     .then((data) => {
-      if (data?.success && Array.isArray(data.bookings) && data.bookings.length > 0) {
+      if (data?.success && Array.isArray(data.bookings)) {
         const local = getBookings();
-        const existingIds = new Set(local.map((b) => b.id));
-        let updated = false;
-        for (const remote of data.bookings) {
-          if (!existingIds.has(remote.id)) {
-            local.push(remote);
-            updated = true;
-          }
-        }
-        if (updated) {
-          saveBookings(local);
-          if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("tcc_bookings_updated"));
-          }
+        const remoteIds = new Set(data.bookings.map((b: any) => b.id));
+        const customLocal = local.filter((b) => !b.id.startsWith("seed-") && !b.id.startsWith("demo-") && !remoteIds.has(b.id));
+        const merged = [...data.bookings, ...customLocal];
+        saveBookings(merged);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("tcc_bookings_updated"));
         }
       }
     })
@@ -467,6 +460,14 @@ export function cancelBooking(
   booking.cancellationFee = quote.fee;
   saveBookings(bookings);
 
+  if (typeof window !== "undefined") {
+    fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(booking),
+    }).catch(() => {});
+  }
+
   if (quote.fee > 0) {
     recordTransaction({
       source: "court",
@@ -489,6 +490,15 @@ export function checkInBooking(bookingId: string): boolean {
   if (!booking) return false;
   booking.checkedIn = true;
   saveBookings(bookings);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(booking),
+    }).catch(() => {});
+  }
+
   return true;
 }
 

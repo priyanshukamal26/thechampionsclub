@@ -22,9 +22,9 @@ export async function GET(request: Request) {
       rows = await sql`
         SELECT 
           id, facility_id as "facilityId", member_id as "memberId",
-          member_name as "memberName", date, start_time as "start",
-          60 as "durationMin", price, status, 'member' as source,
-          'plan' as "paymentMode", created_at as "bookedAt"
+          member_name as "memberName", plan_id as "planId", date, start_time as "start",
+          duration_min as "durationMin", price, status, source,
+          payment_mode as "paymentMode", booked_at as "bookedAt"
         FROM bookings
         WHERE date = ${date} AND member_id = ${memberId}
         ORDER BY start_time ASC;
@@ -33,9 +33,9 @@ export async function GET(request: Request) {
       rows = await sql`
         SELECT 
           id, facility_id as "facilityId", member_id as "memberId",
-          member_name as "memberName", date, start_time as "start",
-          60 as "durationMin", price, status, 'member' as source,
-          'plan' as "paymentMode", created_at as "bookedAt"
+          member_name as "memberName", plan_id as "planId", date, start_time as "start",
+          duration_min as "durationMin", price, status, source,
+          payment_mode as "paymentMode", booked_at as "bookedAt"
         FROM bookings
         WHERE date = ${date}
         ORDER BY start_time ASC;
@@ -44,12 +44,12 @@ export async function GET(request: Request) {
       rows = await sql`
         SELECT 
           id, facility_id as "facilityId", member_id as "memberId",
-          member_name as "memberName", date, start_time as "start",
-          60 as "durationMin", price, status, 'member' as source,
-          'plan' as "paymentMode", created_at as "bookedAt"
+          member_name as "memberName", plan_id as "planId", date, start_time as "start",
+          duration_min as "durationMin", price, status, source,
+          payment_mode as "paymentMode", booked_at as "bookedAt"
         FROM bookings
         ORDER BY date DESC, start_time ASC
-        LIMIT 100;
+        LIMIT 200;
       `;
     }
 
@@ -79,18 +79,23 @@ export async function POST(request: Request) {
 
     await sql`
       INSERT INTO bookings (
-        id, facility_id, member_id, member_name, date, start_time, end_time, price, status
+        id, facility_id, member_id, member_name, plan_id, date, start_time, end_time,
+        duration_min, price, status, source, payment_mode
       )
       VALUES (
         ${id},
         ${data.facilityId},
         ${data.memberId},
         ${data.memberName},
+        ${data.planId || null},
         ${data.date},
         ${startTime},
         ${endTime},
+        ${Number(data.durationMin || 60)},
         ${Number(data.price || 0)},
-        ${data.status || "confirmed"}
+        ${data.status || "confirmed"},
+        ${data.source || "member"},
+        ${data.paymentMode || "plan"}
       )
       ON CONFLICT (id) DO UPDATE SET
         status = ${data.status || "confirmed"};

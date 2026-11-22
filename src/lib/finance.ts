@@ -198,7 +198,32 @@ function seedLedger(): Transaction[] {
   return ledger.sort((a, b) => a.at.localeCompare(b.at));
 }
 
+let hasSyncedFinanceWithServer = false;
+
+export function syncFinanceWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedFinanceWithServer) return;
+  hasSyncedFinanceWithServer = true;
+  fetch("/api/finance")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.transactions) && data.transactions.length > 0) {
+        const local = getLedger();
+        const remoteIds = new Set(data.transactions.map((t: any) => t.id));
+        const customLocal = local.filter((t) => !t.id.startsWith("seed-") && !remoteIds.has(t.id));
+        const merged = [...data.transactions, ...customLocal].sort((a, b) => a.at.localeCompare(b.at));
+        writeStore(LEDGER_KEY, merged);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("tcc_finance_synced"));
+        }
+      }
+    })
+    .catch(() => {});
+}
+
 export function getLedger(): Transaction[] {
+  if (typeof window !== "undefined" && !hasSyncedFinanceWithServer) {
+    setTimeout(syncFinanceWithServer, 100);
+  }
   const stored = readStore<Transaction[] | null>(LEDGER_KEY, null);
   if (stored && stored.length) {
     const today = todayISO();
@@ -247,6 +272,13 @@ export function recordTransaction(input: {
   const ledger = getLedger();
   ledger.push(tx);
   writeStore(LEDGER_KEY, ledger);
+  if (typeof window !== "undefined") {
+    fetch("/api/finance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "record_transaction", tx }),
+    }).catch(() => {});
+  }
   return tx;
 }
 
@@ -467,7 +499,25 @@ function seedPayables(): Payable[] {
   ];
 }
 
+let hasSyncedPayablesWithServer = false;
+
+export function syncPayablesWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedPayablesWithServer) return;
+  hasSyncedPayablesWithServer = true;
+  fetch("/api/finance?view=payables")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.payables) && data.payables.length > 0) {
+        writeStore(PAYABLES_KEY, data.payables);
+      }
+    })
+    .catch(() => {});
+}
+
 export function getPayables(): Payable[] {
+  if (typeof window !== "undefined" && !hasSyncedPayablesWithServer) {
+    setTimeout(syncPayablesWithServer, 100);
+  }
   const stored = readStore<Payable[] | null>(PAYABLES_KEY, null);
   if (stored) return stored;
   const seeded = seedPayables();
@@ -478,6 +528,13 @@ export function getPayables(): Payable[] {
 export function markPayablePaid(id: string): void {
   const payables = getPayables().map((p) => (p.id === id ? { ...p, status: "paid" as PayableStatus } : p));
   writeStore(PAYABLES_KEY, payables);
+  if (typeof window !== "undefined") {
+    fetch("/api/finance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "pay_payable", payableId: id }),
+    }).catch(() => {});
+  }
 }
 
 export function totalDue(): number {
@@ -648,7 +705,25 @@ function seedInvoices(): Invoice[] {
   });
 }
 
+let hasSyncedInvoicesWithServer = false;
+
+export function syncInvoicesWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedInvoicesWithServer) return;
+  hasSyncedInvoicesWithServer = true;
+  fetch("/api/finance?view=invoices")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.invoices) && data.invoices.length > 0) {
+        writeStore(INVOICES_KEY, data.invoices);
+      }
+    })
+    .catch(() => {});
+}
+
 export function getInvoices(): Invoice[] {
+  if (typeof window !== "undefined" && !hasSyncedInvoicesWithServer) {
+    setTimeout(syncInvoicesWithServer, 100);
+  }
   const stored = readStore<Invoice[] | null>(INVOICES_KEY, null);
   if (stored) return stored;
   const seeded = seedInvoices();
@@ -659,6 +734,13 @@ export function getInvoices(): Invoice[] {
 export function markInvoicePaid(id: string): void {
   const invoices = getInvoices().map((i) => (i.id === id ? { ...i, status: "paid" as InvoiceStatus } : i));
   writeStore(INVOICES_KEY, invoices);
+  if (typeof window !== "undefined") {
+    fetch("/api/finance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "pay_invoice", invoiceId: id }),
+    }).catch(() => {});
+  }
 }
 
 /** Raise a GST invoice for a membership or a business client (F4). */

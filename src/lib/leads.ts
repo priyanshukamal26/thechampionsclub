@@ -158,7 +158,29 @@ function seedLeads(): Lead[] {
   }));
 }
 
+let hasSyncedLeadsWithServer = false;
+
+export function syncLeadsWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedLeadsWithServer) return;
+  hasSyncedLeadsWithServer = true;
+  fetch("/api/leads")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.leads)) {
+        const local = getLeads();
+        const remoteIds = new Set(data.leads.map((l: any) => l.id));
+        const customLocal = local.filter((l) => !l.id.startsWith("lead-") && !remoteIds.has(l.id));
+        const merged = [...data.leads, ...customLocal];
+        saveLeads(merged);
+      }
+    })
+    .catch(() => {});
+}
+
 export function getLeads(): Lead[] {
+  if (typeof window !== "undefined" && !hasSyncedLeadsWithServer) {
+    setTimeout(syncLeadsWithServer, 100);
+  }
   const stored = readStore<Lead[] | null>(LEADS_KEY, null);
   if (stored && stored.length) return stored;
   const seeded = seedLeads();
@@ -223,6 +245,25 @@ export function createLead(input: CreateLeadInput): { ok: boolean; lead?: Lead; 
   };
   leads.unshift(lead);
   saveLeads(leads);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: lead.id,
+        name: lead.name,
+        phone: lead.phone,
+        email: lead.email,
+        sport: lead.sport,
+        source: lead.source,
+        status: lead.status,
+        notes: lead.message || null,
+        followUpDate: lead.followUpAt || null,
+      }),
+    }).catch(() => {});
+  }
+
   return { ok: true, lead };
 }
 
@@ -237,6 +278,17 @@ export function updateLeadStatus(id: string, status: LeadStatus, by = "Front Des
     text: "Status moved to " + LEAD_STATUS_LABEL[status] + ".",
   });
   saveLeads(leads);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: lead.id,
+        status: lead.status,
+      }),
+    }).catch(() => {});
+  }
 }
 
 export function addLeadNote(id: string, text: string, by = "Front Desk"): void {

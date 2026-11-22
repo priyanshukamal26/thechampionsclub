@@ -79,6 +79,13 @@ export function lowStockProducts(): Product[] {
 export function restockProduct(id: string, qty: number): void {
   const products = getProducts().map((p) => (p.id === id ? { ...p, stock: p.stock + qty } : p));
   writeStore(PRODUCTS_KEY, products);
+  if (typeof window !== "undefined") {
+    fetch("/api/shop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "restock", productId: id, qty }),
+    }).catch(() => {});
+  }
 }
 
 function deductStock(lines: { productId: string; qty: number }[]): string | null {
@@ -179,6 +186,13 @@ export function setTableStatus(id: string, status: TableStatus): void {
     t.id === id ? { ...t, status, seatedAt: status === "occupied" ? nowISO() : undefined } : t
   );
   writeStore(TABLES_KEY, tables);
+  if (typeof window !== "undefined") {
+    fetch("/api/bar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set_table_status", tableId: id, status }),
+    }).catch(() => {});
+  }
 }
 
 /* ─────────────────────────── orders ─────────────────────────── */
@@ -349,19 +363,28 @@ export function syncOrdersWithServer(): void {
   fetch("/api/orders")
     .then((res) => res.json())
     .then((data) => {
-      if (data?.success && Array.isArray(data.orders) && data.orders.length > 0) {
+      if (data?.success && Array.isArray(data.orders)) {
         const local = getOrders();
-        const existingIds = new Set(local.map((o) => o.id));
-        let updated = false;
-        for (const remote of data.orders) {
-          if (!existingIds.has(remote.id)) {
-            local.unshift(remote);
-            updated = true;
-          }
-        }
-        if (updated) {
-          saveOrders(local);
-        }
+        const remoteIds = new Set(data.orders.map((o: any) => o.id));
+        const customLocal = local.filter((o) => !o.id.startsWith("seed-") && !remoteIds.has(o.id));
+        const merged = [...data.orders, ...customLocal];
+        saveOrders(merged);
+      }
+    })
+    .catch(() => {});
+}
+
+let hasSyncedTabsWithServer = false;
+
+export function syncTabsWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedTabsWithServer) return;
+  hasSyncedTabsWithServer = true;
+  fetch("/api/bar?view=tabs")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.tabs)) {
+        writeStore(TABS_KEY, data.tabs);
+        broadcastOrdersUpdated();
       }
     })
     .catch(() => {});
@@ -589,6 +612,14 @@ export function updateOrderStatus(id: string, status: OrderStatus): void {
   saveOrders(orders);
   const order = orders.find((o) => o.id === id);
   if (order && status === "completed" && order.tableId) setTableStatus(order.tableId, "available");
+
+  if (typeof window !== "undefined") {
+    fetch("/api/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status, paid: order?.paid }),
+    }).catch(() => {});
+  }
 }
 
 export function markOrderPaid(id: string, mode: PaymentMode): void {
@@ -609,6 +640,14 @@ export function markOrderPaid(id: string, mode: PaymentMode): void {
     ref: order.id,
   });
   if (order.tableId) setTableStatus(order.tableId, "available");
+
+  if (typeof window !== "undefined") {
+    fetch("/api/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: order.status, paid: true }),
+    }).catch(() => {});
+  }
 }
 
 /* ─────────────────────────── tabs ─────────────────────────── */
@@ -625,6 +664,9 @@ export interface MemberTab {
 }
 
 export function getTabs(): MemberTab[] {
+  if (typeof window !== "undefined" && !hasSyncedTabsWithServer) {
+    setTimeout(syncTabsWithServer, 100);
+  }
   const stored = readStore<MemberTab[] | null>(TABS_KEY, null);
   if (stored && stored.length) return stored;
   const seeded: MemberTab[] = [
@@ -642,12 +684,14 @@ export function getOpenTabs(): MemberTab[] {
 function addToTab(order: Order): void {
   const tabs = getTabs();
   const existing = tabs.find((t) => t.status === "open" && t.memberName === order.memberName);
+  let activeTab: MemberTab;
   if (existing) {
     existing.orderCodes.push(order.code);
     existing.total = round2(existing.total + order.total);
     if (order.tableId) existing.tableId = order.tableId;
+    activeTab = existing;
   } else {
-    tabs.push({
+    activeTab = {
       id: makeId("tab"),
       memberName: order.memberName,
       memberId: order.memberId,
@@ -656,10 +700,19 @@ function addToTab(order: Order): void {
       total: order.total,
       openedAt: nowISO(),
       status: "open",
-    });
+    };
+    tabs.push(activeTab);
   }
   writeStore(TABS_KEY, tabs);
   broadcastOrdersUpdated();
+
+  if (typeof window !== "undefined") {
+    fetch("/api/bar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "add_to_tab", tab: activeTab }),
+    }).catch(() => {});
+  }
 }
 
 export function settleTab(id: string, mode: PaymentMode = "upi"): { ok: boolean; total?: number } {
@@ -680,6 +733,13 @@ export function settleTab(id: string, mode: PaymentMode = "upi"): { ok: boolean;
       memberName: tab.memberName,
       ref: tab.id,
     });
+  }
+  if (typeof window !== "undefined") {
+    fetch("/api/bar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "settle_tab", tabId: id, paymentMode: mode }),
+    }).catch(() => {});
   }
   return { ok: true, total: tab.total };
 }

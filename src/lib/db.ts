@@ -94,26 +94,14 @@ export async function ensureTablesExist(): Promise<boolean> {
         membership_start text NOT NULL,
         membership_end text NOT NULL,
         dues_pending numeric(12, 2) DEFAULT 0.0,
+        emergency_notes text,
         is_minor boolean DEFAULT false,
         guardian_name text,
         guardian_phone text,
         guardian_email text,
         consent_verified_at text,
         consent_verified_by text,
-        created_at timestamptz DEFAULT now()
-      );
-    `;
-
-    await sql`
-      CREATE TABLE IF NOT EXISTS audit_log (
-        id text PRIMARY KEY DEFAULT gen_random_uuid(),
-        actor_id text,
-        actor text,
-        role text,
-        action text NOT NULL,
-        entity text NOT NULL,
-        entity_id text,
-        details jsonb,
+        staff_notes text[],
         created_at timestamptz DEFAULT now()
       );
     `;
@@ -124,11 +112,19 @@ export async function ensureTablesExist(): Promise<boolean> {
         facility_id text NOT NULL,
         member_id text NOT NULL,
         member_name text NOT NULL,
+        plan_id text,
         date text NOT NULL,
         start_time text NOT NULL,
         end_time text NOT NULL,
+        duration_min integer DEFAULT 60,
         price numeric(12, 2) DEFAULT 0.0,
         status text NOT NULL DEFAULT 'confirmed',
+        source text NOT NULL DEFAULT 'member',
+        payment_mode text NOT NULL DEFAULT 'plan',
+        booked_at timestamptz DEFAULT now(),
+        cancelled_at timestamptz,
+        cancellation_fee numeric(12, 2) DEFAULT 0.0,
+        checked_in boolean DEFAULT false,
         created_at timestamptz DEFAULT now()
       );
     `;
@@ -137,17 +133,42 @@ export async function ensureTablesExist(): Promise<boolean> {
       CREATE TABLE IF NOT EXISTS orders (
         id text PRIMARY KEY,
         order_code text UNIQUE NOT NULL,
-        member_id text,
-        member_name text NOT NULL,
         channel text NOT NULL,
         items jsonb NOT NULL,
+        member_id text,
+        member_name text NOT NULL,
+        plan_id text,
         subtotal numeric(12, 2) NOT NULL,
+        discount_pct numeric(4, 2) DEFAULT 0.0,
         discount numeric(12, 2) DEFAULT 0.0,
+        delivery_fee numeric(12, 2) DEFAULT 0.0,
         tax numeric(12, 2) DEFAULT 0.0,
         total numeric(12, 2) NOT NULL,
         payment_method text NOT NULL,
-        status text NOT NULL DEFAULT 'completed',
+        status text NOT NULL DEFAULT 'placed',
+        fulfilment text,
+        table_id text,
+        address text,
+        phone text,
+        otp text,
+        pickup_code text,
+        eta_min integer,
+        staff text,
+        paid boolean DEFAULT false,
         created_at timestamptz DEFAULT now()
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS bar_tabs (
+        id text PRIMARY KEY,
+        member_name text NOT NULL,
+        member_id text,
+        table_id text,
+        order_codes text[] NOT NULL DEFAULT '{}',
+        total numeric(12, 2) NOT NULL DEFAULT 0.0,
+        opened_at timestamptz NOT NULL DEFAULT now(),
+        status text NOT NULL DEFAULT 'open'
       );
     `;
 
