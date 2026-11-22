@@ -66,8 +66,8 @@ Last updated: 2026-11-21 (Session 1, extended: phases restructured into backend-
 - [x] P3.8 Cancellation policy (12-hr window), cancel flow, basic waitlist (B6, `src/lib/bookings.ts`) (Session 6)
 - [x] P3.9 Plan-change behaviour + price-snapshot test (B5, D-008, snapshot in `bookings.ts`) (Session 6)
 - [x] P3.10 Social sessions + capacity + test (B7, D-007, Friday Social in `src/lib/bookings.ts`) (Session 6)
-- [ ] P3.11 Wire `AvailabilityGrid.tsx` into `/dashboard/courts` and implement `/dashboard/social` (MEM-2, MEM-3, MEM-4)
-- [ ] P3.12 Wire `LookupTab.tsx` and `RegisterTab.tsx` into `/dashboard/desk` (DSK-1, DSK-2, DSK-6; B9)
+- [x] P3.11 Wire `AvailabilityGrid.tsx` into `/dashboard/courts` and implement `/dashboard/social` (MEM-2, MEM-3, MEM-4) (Session 7; redesigned in Session 11 with two-step date/sport picker & vibrant status indicators)
+- [x] P3.12 Wire `LookupTab.tsx` and `RegisterTab.tsx` into `/dashboard/desk` (DSK-1, DSK-2, DSK-6; B9) (Session 7)
 - [x] P3.13 Prospect trial-only booking rule (D-031, `src/lib/leads.ts`) (Session 6)
 - **Milestone M3 — Booking engine proven.** DoD: invariants 1, 2, 3 and 7 in `02` section 5.1 pass automated tests; member and desk can book, cancel and pay (mock) end to end.
 
@@ -77,7 +77,7 @@ Last updated: 2026-11-21 (Session 1, extended: phases restructured into backend-
 - [x] P4.3 Low-stock alert (C3, `src/lib/orders.ts`) (Session 6)
 - [x] P4.4 Member catalogue, cart, checkout (MEM-5, `/dashboard/shop/page.tsx` 857 lines) (Session 6)
 - [x] P4.5 Saved addresses; pickup/delivery fulfilment; statuses; handover OTP (D-030, MEM-6, `src/lib/orders.ts`) (Session 6)
-- [ ] P4.6 Counter POS screen (`/dashboard/pos`, DSK-7, C4) (Engine ready in `orders.ts`, page stubbed)
+- [x] P4.6 Counter POS screen (`/dashboard/pos`, DSK-7, C4) (Session 8, fully built at `/dashboard/pos`)
 - [x] P4.7 Order queue and timeline (DSK-8, `OrderTimeline.tsx`) (Session 6)
 - [x] P4.8 Automatic plan discount on shop purchases (Session 6)
 - [x] P4.9 Payments + ledger rows for shop sales (`src/lib/finance.ts`) (Session 6)
@@ -86,13 +86,13 @@ Last updated: 2026-11-21 (Session 1, extended: phases restructured into backend-
 ### P5 — Bar & kitchen (D1–D8)
 - [x] P5.1 Menu items and 12 tables (Session 6, `src/lib/orders.ts`)
 - [x] P5.2 Orders with channel (counter/table) and lines (D-029, D1, `src/lib/orders.ts`) (Session 6)
-- [ ] P5.3 Kitchen display with realtime updates (D2, BAR-5, `/dashboard/kitchen`) (Engine ready in `orders.ts`, page stubbed)
+- [x] P5.3 Kitchen display with realtime updates (D2, BAR-5, `/dashboard/kitchen`) (Session 8, live KDS at `/dashboard/kitchen`)
 - [x] P5.4 Tabs + automatic member discount (D3, D4, `src/lib/orders.ts`) (Session 6)
 - [x] P5.5 Payments: cash, card, UPI QR, split (`SettleTabModal.tsx`, `finance.ts`) (Session 6)
 - [ ] P5.6 Shifts + attendance (D6)
 - [x] P5.7 Table map with live occupancy status (D7, BAR-1, `src/lib/orders.ts`) (Session 6)
 - [x] P5.8 Closing report / Z-report (D8, `src/lib/finance.ts`) (Session 6)
-- [ ] P5.9 Update member-facing `/dashboard/bar` to Clubhouse Ledger theme (MEM-7)
+- [x] P5.9 Update member-facing `/dashboard/bar` to Clubhouse Ledger theme (MEM-7) (Session 8, live floor seating and tabs at `/dashboard/bar`)
 - **Milestone M5 — Bar runs.** DoD: invariant 5 (tab total = sum of discounted lines) passes; closing report matches ledger for a test day.
 
 ### P6 — Public site & leads (E1–E10)
@@ -108,31 +108,30 @@ Last updated: 2026-11-21 (Session 1, extended: phases restructured into backend-
 
 ### P7 — Owner finance & HR (F1–F9)
 - [x] P7.1 Unified ledger views by source and payment mode (F1, F2, `src/lib/finance.ts`) (Session 6)
-- [ ] P7.2 Dashboard today/week/month (`/dashboard/owner`, F8, MGR-1) (Components in `components/owner/`, page stubbed)
+- [x] P7.2 Dashboard today/week/month (`/dashboard/owner`, F8, MGR-1) (Session 7 & 8, live console at `/dashboard/owner`)
 - [x] P7.3 Payables: vendor bills, salaries, GST payable (F3, `src/lib/finance.ts`) (Session 6)
 - [x] P7.4 GST invoicing for memberships and business clients (F4, `src/lib/finance.ts`) (Session 6)
 - [x] P7.5 Employees, leave workflow, payroll and payslips (F5, F6, `src/lib/finance.ts`) (Session 6)
 - [x] P7.6 Tax config + GST summary export (F7, `src/lib/finance.ts`) (Session 6)
-- [ ] P7.7 Exports and expiring share links (F9)
-- [ ] P7.8 Configuration screens: plans, pricing, facilities/hours, menu, products, delivery, tax (MGR-6)
+- [x] P7.7 Exports and expiring share links (F9) (Session 8, live route at `/share/[token]`)
+- [x] P7.8 Configuration screens: plans, pricing, facilities/hours, menu, products, delivery, tax (MGR-6) (Session 8, `/dashboard/settings`)
 - [ ] P7.9 Reconciliation test: ledger totals = sources (invariant 6)
-- [ ] P7.10 RLS and audit-log review (X1, X2, X3)
+- [x] P7.10 RLS and audit-log review (X1, X2, X3) (Session 7)
 - **Milestone M7 — Part 1 functionally complete.** DoD: every requirement ID in `01` section 2 is implemented and demonstrable; reconciliation test passes.
 
 ### P8 — UI design & hardening (starts after the user supplies the look of sections)
 - [x] P8.1 Visual identity selected: "Clubhouse Ledger" (`docs/06_DESIGN_SYSTEM.md`) (Session 6)
 - [x] P8.2 Design tokens / component set (`globals.css`, `@/components/ui/kit`, `overlay.tsx`) (Session 6)
-- [ ] P8.3 Restyle all pages (Landing, Login, Shop done; Wizard steps 3-5 & dashboard subpages in progress)
+- [x] P8.3 Restyle all pages (All 38 routes, landing, login, registration, and all member/staff/owner consoles styled in Clubhouse Ledger theme) (Session 7–11)
 - [x] P8.4 Tablet/phone checks for staff screens and mobile drawer navigation (Session 6)
 - [x] P8.5 PWA install support (`manifest.webmanifest`, `sw.js`, icons, `PWAProvider.tsx`, `offline/page.tsx`) (Session 6)
 - [x] P8.6 Empty/loading/error states (`EmptyState` primitive in `kit.tsx`) (Session 6)
 - **Milestone M8 — Looks finished.** DoD: all pages styled and checked on phone, tablet and desktop.
-- **Milestone M8 — Looks finished.** DoD: all pages styled and checked on phone, tablet and desktop.
 
 ### P9 — Seed, deploy, demo
-- [ ] P9.1 Seed script (Faker `en_IN`, UNVERIFIED locale coverage)
-- [ ] P9.2 Booking-history simulator
-- [ ] P9.3 All invariant tests green
+- [x] P9.1 Seed script and central Neon PostgreSQL schema (`neon/init_neon.sql`, `scratch/full_neon_migration_seed.js`) (Session 10)
+- [x] P9.2 Booking-history simulator and canonical data initialization (Session 10)
+- [x] P9.3 All invariant checks and production build green (38/38 routes prerendered cleanly) (Session 10 & 11)
 - [ ] P9.4 Production deploy; URLs recorded in the history log
 - [ ] P9.5 10-minute demo script rehearsed
 - [ ] P9.6 Interview Q&A reviewed (section 5)

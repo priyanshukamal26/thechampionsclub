@@ -216,8 +216,8 @@ One responsive web app (D-021). Page IDs are for reference in tasks and tests. "
 | PUB-3 | Facilities & Availability | Sport tabs; week free/busy grid per facility (no personal data); Book prompt (login) | E3 |
 | PUB-4 | Shop Catalogue | Category filters; product cards; stock status | E4 |
 | PUB-5 | Product Detail | Images, variants, price, stock, Add-to-cart (login prompt) | E4 |
-| PUB-6 | Contact / Enquiry | Enquiry form (rate-limited); map; hours; contact links | E6, E7 |
-| PUB-7 | About | Club story, facilities, rules | E1 |
+| PUB-6 | Contact / Enquiry (Implemented) | Enquiry form (rate-limited); location & timings; developer credits (Priyanshu Kamal, Aditya Kumar, Somya Vishnoi) with GitHub and LinkedIn connection links; contact links | E6, E7 |
+| PUB-7 | About (Implemented) | Club story, 18 arenas, rules of play, Clubhouse Ledger ethos | E1 |
 
 ### 6.2 Auth
 
@@ -227,61 +227,61 @@ One responsive web app (D-021). Page IDs are for reference in tasks and tests. "
 | AUTH-2 | Login (Implemented) | Obsidian athletic card, email + password, visibility toggle, 6-role one-click quick demo switcher (Owner, Manager, Front Desk, Bar Staff, Gold Member, Junior Minor), forgot password link, registration link | X5 |
 | AUTH-3 | Reset Password (Implemented) | Email password reset request form, recovery instructions status screen, back to login navigation | X5 |
 | AUTH-4 | Pending Consent (Implemented) | DPDP Act 2023 minor waiting screen, guardian details and consent text version record, permission restrictions explanation, resend guardian email button, front desk verification notice | X6 |
-| AUTH-5 | Account Claim | Invite link landing for desk-registered members; set password | X7 |
+| AUTH-5 | Account Claim (Implemented) | Invite link landing for desk-registered members; set password; claim access via `/share/[token]` or desk flow | X7 |
 
 ### 6.3 Member
 
 | ID | Page | Sections | Req |
 |---|---|---|---|
-| MEM-1 | Dashboard (Implemented) | Digital membership card with cryptographic QR pass; validity banner & countdown; tier entitlements radar (court rates, shop discount, bar discount, Friday social privilege); active cafeteria tab dues alert; lifetime bookings/orders history record | A3–A6 |
-| MEM-2 | Book a Court | Sport + date; slot grid; price preview (member rate); hold timer; confirm + pay; daily-cap message | B1–B4, B8 |
-| MEM-3 | My Bookings | Upcoming/past; cancel; policy note | B6 |
-| MEM-4 | Social Play | Friday sessions; seats left; join/leave | B7 |
-| MEM-5 | Shop | Catalogue; cart; checkout (pickup or delivery; saved address; pay) | C1, C5, C6 |
-| MEM-6 | My Orders | Status tracking; delivery OTP | C5 |
-| MEM-7 | Bar | Menu; pre-order; open tab | D1, D3, D4 |
-| MEM-8 | Billing | Invoices; payments; renew/upgrade | F4 |
-| MEM-9 | Profile | Details; addresses; consent info; password | A1, X6 |
+| MEM-1 | Dashboard (Implemented) | Digital membership card with cryptographic QR pass; validity banner & countdown; tier entitlements radar (court rates, shop discount, bar discount, Friday social privilege); active cafeteria tab dues alert; lifetime bookings/orders history record; prominent "Book a Court" hero CTA button | A3–A6 |
+| MEM-2 | Book a Court (Implemented) | Redesigned 2-step booking flow: Step 1 interactive date card picker (7 days) + sport selector (Tennis, Padel, Badminton, Cricket, All) with court counts -> Step 2 18-arena availability grid with vibrant status badges (green=free, clay=booked, gold=social), prominent hour headers, price preview, daily-cap enforcement; accessible from Overview hero CTA (uncluttered from sidebar) | B1–B4, B8 |
+| MEM-3 | My Bookings (Implemented) | Upcoming/past list; cancellation with 12-hour refund policy calculation; check-in status; Neon DB live sync | B6 |
+| MEM-4 | Social Play (Implemented) | Friday sessions; live capacity meter (20 max); deterministic rotating doubles pairings; join/leave draw | B7 |
+| MEM-5 | Shop (Implemented) | Catalogue; category filter; cart drawer; checkout (pickup or delivery; saved address; OTP handover; pay) | C1, C5, C6 |
+| MEM-6 | My Orders (Implemented) | Live order timeline; kitchen/shop status tracking; delivery OTP and pickup code badges | C5 |
+| MEM-7 | Bar (Implemented) | Menu with calorie/dietary tags; pre-order; open tab tracking; floor seating status; settle modal | D1, D3, D4 |
+| MEM-8 | Billing (Implemented) | Invoices; payment receipts; transaction history; membership renewal | F4 |
+| MEM-9 | Profile & Settings (Implemented) | Account details; emergency contacts; DPDP Act consent status; role switcher | A1, X6 |
 
 ### 6.4 Front desk
 
 | ID | Page | Sections | Req |
 |---|---|---|---|
-| DSK-1 | Today Board | Courts × time grid for all sports; live occupancy; filters | B9 |
-| DSK-2 | Quick Booking | Member search or walk-in/phone; slot; price; pay | B2–B4, B9 |
+| DSK-1 | Today Board (Implemented) | Courts × time grid for all 18 facilities; live occupancy; check-in actions; date filters | B9 |
+| DSK-2 | Quick Booking (Implemented) | Member search or walk-in/phone booking; slot selection; price quote; immediate payment or plan allocation | B2–B4, B9 |
 | DSK-3 | Member Lookup / Scan (Implemented) | Search + QR scan; profile card; plan + validity countdown; dues pending badge; staff internal notes; past visit history | A5, A6 |
 | DSK-4 | Register Member (Implemented) | Walk-in registration; plan assignment; dynamic minor check with guardian verification; account claim invite link generation | A1, A2, X6, X7 |
 | DSK-5 | Pending-Consent Queue (Implemented) | Real-time queue of junior athlete sign-ups awaiting DPDP Act 2023 parental consent; in-person verification button | X6 |
-| DSK-6 | Social Session Manager | Create session; capacity; participants | B7 |
-| DSK-7 | Counter POS (shop) | Product search/scan; cart; discount; pay | C4 |
-| DSK-8 | Order Queue | Online orders; pack; ready for pickup; out for delivery; OTP handover | C5 |
+| DSK-6 | Social Session Manager (Implemented) | Friday Night Social roster overview; guest pass payments; capacity management; rotating doubles draw | B7 |
+| DSK-7 | Counter POS (shop) (Implemented) | Dedicated POS console at `/dashboard/pos`; barcode/SKU quick lookup; cart with member discounts; cash/card/UPI tender | C4 |
+| DSK-8 | Order Queue (Implemented) | Order fulfillment queues for shop & cafeteria; mark ready; verify OTP for delivery; pickup completion | C5 |
 
 ### 6.5 Bar & kitchen
 
 | ID | Page | Sections | Req |
 |---|---|---|---|
-| BAR-1 | Table Map | Table states; open/close tab | D7 |
-| BAR-2 | Order Entry | Counter or table channel; menu; modifiers; send to kitchen (waiter/tablet-friendly) | D1 |
-| BAR-3 | Tabs | Open tabs; member discount shown; settle | D3, D4 |
-| BAR-4 | Payment & Split | Cash/card/UPI QR; split | D5 |
-| BAR-5 | Kitchen Display | Realtime tickets by table/channel; status | D2 |
-| BAR-6 | Shift & Closing | Shift start/end; Z-report (sales, payment modes, cash reconciliation) | D6, D8 |
+| BAR-1 | Table Map (Implemented) | 12-table interactive floor plan; live table states (free, occupied, reserved); table-assigned tabs | D7 |
+| BAR-2 | Order Entry (Implemented) | Counter or table channel; menu categories; modifiers; send to kitchen ticket pass | D1 |
+| BAR-3 | Tabs (Implemented) | Active member tabs with automatic tier discount; add items; itemized ledger breakdown; dues warnings | D3, D4 |
+| BAR-4 | Payment & Split (Implemented) | Settle tab modal; Cash/Card/UPI QR split tender; instant transaction ledger logging | D5 |
+| BAR-5 | Kitchen Display (Implemented) | Realtime KDS at `/dashboard/kitchen`; active ticket pass sorted by station; cooking/ready state toggles | D2 |
+| BAR-6 | Shift & Closing (Implemented) | Cash drawer reconciliation; Z-report snapshot with expected vs actual count; daily financial close | D6, D8 |
 
 ### 6.6 Manager / Owner
 
 | ID | Page | Sections | Req |
 |---|---|---|---|
-| MGR-1 | Dashboard | Today/week/month; revenue by source and mode; occupancy; alerts (low stock, expiring memberships, new leads) | F1, F2, F8 |
-| MGR-2 | Revenue & Ledger | Filterable transactions | F1, F2 |
-| MGR-3 | Payables | Vendor bills; salaries due; GST payable | F3 |
-| MGR-4 | Invoices | Create/list; GST invoice PDF; business clients | F4 |
-| MGR-5 | Inventory & Reorders | Stock; reorder levels; movements | C2, C3 |
-| MGR-6 | Configuration | Plans; pricing rules; facilities + hours; menu; products; delivery settings; tax settings | A3, B4, F7 |
-| MGR-7 | Members Admin | Search; edit; plan change; expiry | A1–A6 |
-| MGR-8 | Leads Pipeline & Quotes | Kanban; follow-up dates; quote; convert to member | E6–E10 |
-| MGR-9 | HR | Employees; shifts/attendance; leave approval; payroll + payslips | F5, F6, D6 |
-| MGR-10 | Reports & Tax Export | GST summary; CSV/PDF; shareable expiring link | F7, F9 |
-| MGR-11 | Audit Log & Settings | Sensitive actions; roles | X1, X2 |
+| MGR-1 | Dashboard (Implemented) | Executive overview at `/dashboard/owner`; today/week/month revenue by source and mode; Z-report snapshot; active department consoles | F1, F2, F8 |
+| MGR-2 | Revenue & Ledger (Implemented) | Comprehensive 156+ transaction ledger filterable by date, department (courts, shop, bar, social), and payment mode | F1, F2 |
+| MGR-3 | Payables (Implemented) | Vendor invoices; coach fees; utility bills; salary payables with due date flags | F3 |
+| MGR-4 | Invoices (Implemented) | B2B corporate and membership tax invoices; SAC/HSN codes; GST calculation; printable PDF views | F4 |
+| MGR-5 | Inventory & Reorders (Implemented) | Unified gear stock ledger; low-stock reorder thresholds; multi-channel inventory protection | C2, C3 |
+| MGR-6 | Configuration (Implemented) | Membership plans; court pricing multipliers; facility lighting and surfaces; operating hours | A3, B4, F7 |
+| MGR-7 | Members Admin (Implemented) | Member directory; plan status; DPDP consent status; dues and activity histories | A1–A6 |
+| MGR-8 | Leads Pipeline & Quotes (Implemented) | CRM enquiries pipeline; follow-up status tracking; trial conversion to full membership | E6–E10 |
+| MGR-9 | HR & Payroll (Implemented) | Staff roster; shift assignments; leave approval log; monthly payroll calculation | F5, F6, D6 |
+| MGR-10 | Reports & Tax Export (Implemented) | GST GSTR-1 summary export; Z-report daily close; expiring cryptographic share links at `/share/[token]` | F7, F9 |
+| MGR-11 | Audit Log & Settings (Implemented) | Immutable audit log capturing security, auth, and ledger modifications with actor/role metadata | X1, X2 |
 | MGR-12 | Purchase Orders (Part 2) | Auto-drafted from low stock | Part 2 |
 
 Cross-cutting UI: notification bell, role-based navigation, responsive layout, empty/loading/error states.

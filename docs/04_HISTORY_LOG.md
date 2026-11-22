@@ -636,3 +636,57 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - Database query check: Verified 9 members, 13 users, 5 bookings, 4 orders, 2 bar tabs, 156 transactions, 6 invoices, 3 leads, 1 social session, 18 facilities, 16 products, 16 menu items, 12 tables, 8 staff, 7 payables.
 
 **Next session task:** Perform multi-user stress testing and live WebSocket/polling real-time court reservation collision checks.
+
+---
+
+## Session 11 — 2026-11-22
+
+**Goal of the session:** Redesign the Court Booking flow to eliminate user confusion from cluttered button grids, streamline dashboard sidebar navigation, increase slot timing prominence and status color vibrancy matching the brand palette, credit the development team in the landing footer, and verify production build integrity.
+
+**Phase(s):** P3 (Court Booking Engine & UI), P8 (Clubhouse Ledger Hardening & UX), P9 (Production Build Validation).
+
+**What was actually done:**
+- **Redesigned Court Booking Experience (`/dashboard/courts/page.tsx`):**
+  - Replaced the overwhelming initial 18-arena matrix with an intuitive, guided two-step booking wizard:
+    - **Step 1 (Date & Sport Selection):** Large, readable date selector cards for the upcoming 7 days with day of week and date labels; sport selection cards with sports iconography and live court counts (Tennis 🎾 6 courts, Padel 🏓 4 courts, Badminton 🏸 6 courts, Cricket 🏏 2 courts, All Sports 🏟️ 18 arenas); interactive summary bar with selection details and a prominent "View Available Slots →" action.
+    - **Step 2 (Day Status Booking Access):** Displays the 18-arena availability grid filtered to the selected sport and date, with a quick "← Change selection" return button and status chips for active date, sport, court count, and member daily-cap allowance.
+- **Streamlined Dashboard Sidebar & Overview CTA (`src/app/dashboard/layout.tsx`, `src/app/dashboard/page.tsx`):**
+  - Removed the "Book Courts" link from `CLUB_NAV` in the dashboard hamburger/sidebar menu, preserving the route and URL permissions.
+  - Redesigned the "Book a Court" action on the Member Overview page (`/dashboard`), giving it an enlarged, high-contrast clay pill treatment with soft glow drop-shadow (`shadow-clay/25`) and hover scaling (`hover:scale-[1.03]`), ensuring clear direction for members looking to book.
+- **Vibrant Status Colors & Prominent Timings (`src/components/courts/AvailabilityGrid.tsx`):**
+  - Upgraded slot status indicators to high-contrast, theme-matching vibrant styles:
+    - **Free Slots:** Rich court-green border and backdrop (`border-court bg-court/25 text-court`), transforming to solid court green with shadow on hover.
+    - **Booked Slots:** Clay-terracotta tint (`border-clay/50 bg-clay/20 text-clay-deep/70`) indicating reserved slots without muddy grayscale.
+    - **Social Slots:** Warm gold border and backdrop (`border-gold bg-gold/25 text-[#7d5d17]`).
+    - **Past Slots:** Subdued paper tone (`bg-paper-deep/60 text-muted/40`).
+    - **Selected Slot:** High-visibility clay highlight with ring glow (`ring-2 ring-clay/30 shadow-lg shadow-clay/30`).
+  - Strengthened time slot headers with bolder monospace typography (`text-[11px] font-bold text-ink`) so session start hours stand out immediately on desktop and mobile.
+- **Added Developer Connect Section in Footer (`src/components/landing/Footer.tsx`):**
+  - Added a dedicated "Built with ♥ by" team section honoring:
+    1. **Priyanshu Kamal** (GitHub: `https://github.com/priyanshukamal26`, LinkedIn: `https://www.linkedin.com/in/priyanshukamal/`)
+    2. **Aditya Kumar** (GitHub: `https://github.com/kumaradi9508`, LinkedIn: `https://www.linkedin.com/in/aditya958/`)
+    3. **Somya Vishnoi** (GitHub: `https://github.com/Somya-Vishnoi`, LinkedIn: `https://www.linkedin.com/in/somya-vishnoi/`)
+  - Styled with circular outline buttons housing clean inline SVG icons for GitHub and LinkedIn, without corporate titles/designations, and added an encouraging connect message: *"We'd love to connect — feel free to reach out on GitHub or LinkedIn!"*.
+- **Package Dependency & Build Verification:**
+  - Resolved missing `@neondatabase/serverless` package dependency by installing the package.
+  - Ran `npm run typecheck` (`tsc --noEmit`): passed with 0 errors.
+  - Ran `npm run build` (`next build` with Turbopack): passed with exit code 0; all 38 static and dynamic routes compiled and generated cleanly.
+
+**Files created/changed:**
+- Modified: `src/app/dashboard/courts/page.tsx`
+- Modified: `src/app/dashboard/layout.tsx`
+- Modified: `src/app/dashboard/page.tsx`
+- Modified: `src/components/courts/AvailabilityGrid.tsx`
+- Modified: `src/components/landing/Footer.tsx`
+- Modified: `docs/00_MASTER.md`
+- Modified: `docs/01_PROJECT_SPEC.md`
+- Modified: `docs/02_ARCHITECTURE_AND_STACK.md`
+- Modified: `docs/03_ROADMAP_AND_FEATURES.md`
+- Modified: `docs/04_HISTORY_LOG.md`
+
+**Tests run and results:**
+- `npm run typecheck`: Exit code 0, 0 TypeScript errors.
+- `npm run build`: Exit code 0, 38/38 routes generated cleanly in 1.8s.
+- HTTP status verification: `/dashboard/courts` (200 OK), `/` (200 OK), `/dashboard` (200 OK).
+
+**Next session task:** Perform multi-user stress testing and live WebSocket/polling real-time court reservation collision checks.
