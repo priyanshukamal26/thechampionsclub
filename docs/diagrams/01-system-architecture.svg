@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" style="background:#0e0d0b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141310" />
+      <stop offset="100%" stop-color="#0a0a08" />
+    </linearGradient>
+    <linearGradient id="clayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c4502b" />
+      <stop offset="100%" stop-color="#963c1e" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e5b842" />
+      <stop offset="100%" stop-color="#ab8216" />
+    </linearGradient>
+    <linearGradient id="courtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d6a4f" />
+      <stop offset="100%" stop-color="#1b4332" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="900" fill="url(#bgGrad)" />
+
+  <!-- Grid decoration lines -->
+  <line x1="80" y1="120" x2="1520" y2="120" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1" />
+  <line x1="80" y1="820" x2="1520" y2="820" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1" />
+
+  <!-- Header -->
+  <text x="80" y="70" font-size="12" font-weight="700" fill="#c4502b" letter-spacing="3">SYSTEM ARCHITECTURE · THE CHAMPIONS CLUB</text>
+  <text x="80" y="102" font-size="28" font-weight="800" fill="#f8f6f0" letter-spacing="-0.5">Production Architecture &amp; Multi-Device Consistency</text>
+  <rect x="1330" y="60" width="190" height="34" rx="17" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12" />
+  <circle cx="1348" cy="77" r="5" fill="#2d6a4f" />
+  <text x="1362" y="82" font-size="11" font-weight="600" fill="#2d6a4f" letter-spacing="1">NEON DB ACTIVE</text>
+
+  <!-- LAYER 1: CLIENTS & SURFACES -->
+  <g transform="translate(80, 150)" filter="url(#shadow)">
+    <rect width="440" height="630" rx="16" fill="#181714" stroke="#ffffff" stroke-opacity="0.1" />
+    <rect x="24" y="24" width="8" height="24" rx="4" fill="url(#clayGrad)" />
+    <text x="42" y="38" font-size="11" font-weight="700" fill="#c4502b" letter-spacing="2">LAYER 01 · CLIENT SURFACES</text>
+    <text x="42" y="62" font-size="18" font-weight="700" fill="#f8f6f0">Multi-Device Client Layer</text>
+    <text x="24" y="90" font-size="12" fill="#a09d95" width="390">Local-first Progressive Web App with zero layout shift.</text>
+
+    <!-- Client Box 1 -->
+    <rect x="24" y="116" width="392" height="96" rx="10" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="40" y="142" font-size="14" font-weight="700" fill="#f8f6f0">Member Mobile &amp; Desktop Hub</text>
+    <text x="40" y="162" font-size="11" fill="#8f8c82">PWA · Digital QR Pass · 18-Arena Booking Grid</text>
+    <text x="40" y="180" font-size="11" fill="#8f8c82">Live Kitchen Queue Tracking · Bar Table Orders</text>
+    <rect x="330" y="132" width="70" height="20" rx="4" fill="#c4502b" fill-opacity="0.2" />
+    <text x="342" y="146" font-size="9" font-weight="700" fill="#c4502b">MEMBER</text>
+
+    <!-- Client Box 2 -->
+    <rect x="24" y="224" width="392" height="96" rx="10" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="40" y="250" font-size="14" font-weight="700" fill="#f8f6f0">Staff Counter POS &amp; Front Desk</text>
+    <text x="40" y="270" font-size="11" fill="#8f8c82">Quick Check-in · 1-Click Desk Registration</text>
+    <text x="40" y="288" font-size="11" fill="#8f8c82">Cash / Card / UPI Payments · Pro Shop Scanner</text>
+    <rect x="330" y="240" width="70" height="20" rx="4" fill="#e5b842" fill-opacity="0.2" />
+    <text x="342" y="254" font-size="9" font-weight="700" fill="#e5b842">STAFF POS</text>
+
+    <!-- Client Box 3 -->
+    <rect x="24" y="332" width="392" height="96" rx="10" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="40" y="358" font-size="14" font-weight="700" fill="#f8f6f0">Kitchen Display System (KDS)</text>
+    <text x="40" y="378" font-size="11" fill="#8f8c82">Chef Vikram Real-Time Ticket Pass</text>
+    <text x="40" y="396" font-size="11" fill="#8f8c82">Placed → Preparing → Ready Status Workflow</text>
+    <rect x="330" y="348" width="70" height="20" rx="4" fill="#2d6a4f" fill-opacity="0.2" />
+    <text x="342" y="362" font-size="9" font-weight="700" fill="#2d6a4f">KITCHEN</text>
+
+    <!-- Client Box 4 -->
+    <rect x="24" y="440" width="392" height="96" rx="10" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="40" y="466" font-size="14" font-weight="700" fill="#f8f6f0">Owner &amp; Manager Executive Console</text>
+    <text x="40" y="486" font-size="11" fill="#8f8c82">Z-Report · Real-Time GST Split (SAC/HSN)</text>
+    <text x="40" y="504" font-size="11" fill="#8f8c82">Payables, Invoices, Staff Shifts &amp; Share Links</text>
+    <rect x="330" y="456" width="70" height="20" rx="4" fill="#ffffff" fill-opacity="0.1" />
+    <text x="344" y="470" font-size="9" font-weight="700" fill="#f8f6f0">OWNER</text>
+
+    <!-- Client Sync Footer -->
+    <rect x="24" y="552" width="392" height="54" rx="8" fill="#141310" stroke="#ffffff" stroke-opacity="0.08" />
+    <text x="40" y="574" font-size="11" font-weight="600" fill="#f8f6f0">Synchronizer: Local Cache + Auto-Revalidation</text>
+    <text x="40" y="592" font-size="10" fill="#8f8c82">Instant UI load via localStorage, background revalidation every 8s</text>
+  </g>
+
+  <!-- LAYER 2: API & SERVERLESS ENGINE -->
+  <g transform="translate(580, 150)" filter="url(#shadow)">
+    <rect width="440" height="630" rx="16" fill="#181714" stroke="#ffffff" stroke-opacity="0.1" />
+    <rect x="24" y="24" width="8" height="24" rx="4" fill="url(#goldGrad)" />
+    <text x="42" y="38" font-size="11" font-weight="700" fill="#e5b842" letter-spacing="2">LAYER 02 · SERVERLESS ENGINE</text>
+    <text x="42" y="62" font-size="18" font-weight="700" fill="#f8f6f0">Next.js 16 API &amp; Invariants</text>
+    <text x="24" y="90" font-size="12" fill="#a09d95">Edge runtime route handlers executing business logic.</text>
+
+    <!-- API Route List -->
+    <g transform="translate(24, 116)">
+      <rect width="392" height="62" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="28" font-family="monospace" font-size="12" font-weight="700" fill="#c4502b">/api/bookings</text>
+      <text x="16" y="46" font-size="10.5" fill="#8f8c82">Invariant 1 non-collision &amp; Invariant 2 daily cap (2/day)</text>
+    </g>
+
+    <g transform="translate(24, 190)">
+      <rect width="392" height="62" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="28" font-family="monospace" font-size="12" font-weight="700" fill="#e5b842">/api/orders &amp; /api/bar</text>
+      <text x="16" y="46" font-size="10.5" fill="#8f8c82">FIFO kitchen queue ranking, floor map &amp; tab settlement</text>
+    </g>
+
+    <g transform="translate(24, 264)">
+      <rect width="392" height="62" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="28" font-family="monospace" font-size="12" font-weight="700" fill="#2d6a4f">/api/shop</text>
+      <text x="16" y="46" font-size="10.5" fill="#8f8c82">Atomic inventory decrements &amp; unified dual-channel stock</text>
+    </g>
+
+    <g transform="translate(24, 338)">
+      <rect width="392" height="62" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="28" font-family="monospace" font-size="12" font-weight="700" fill="#f8f6f0">/api/finance</text>
+      <text x="16" y="46" font-size="10.5" fill="#8f8c82">18% GST calculation (SAC 998413, SAC 996331, HSN 9506)</text>
+    </g>
+
+    <g transform="translate(24, 412)">
+      <rect width="392" height="62" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="28" font-family="monospace" font-size="12" font-weight="700" fill="#c4502b">/api/members &amp; /api/auth</text>
+      <text x="16" y="46" font-size="10.5" fill="#8f8c82">Identity binding, DPDP Act minor consent &amp; role credentials</text>
+    </g>
+
+    <!-- Security & RBAC Box -->
+    <rect x="24" y="488" width="392" height="118" rx="10" fill="#141310" stroke="#e5b842" stroke-opacity="0.3" />
+    <text x="40" y="512" font-size="12" font-weight="700" fill="#e5b842">Strict Role-Based Access Control (RBAC)</text>
+    <text x="40" y="534" font-size="10.5" fill="#8f8c82">8 Distinct Roles: Owner, Club Manager, Front Desk, Head Chef,</text>
+    <text x="40" y="552" font-size="10.5" fill="#8f8c82">Cafe Manager, Shop Manager, Adult Member, Minor Junior</text>
+    <text x="40" y="572" font-size="10" font-weight="600" fill="#2d6a4f">✓ Zero cross-device session pollution</text>
+    <text x="40" y="590" font-size="10" font-weight="600" fill="#2d6a4f">✓ Identity verified against PostgreSQL unique constraints</text>
+  </g>
+
+  <!-- LAYER 3: PERSISTENCE & DATABASE -->
+  <g transform="translate(1080, 150)" filter="url(#shadow)">
+    <rect width="440" height="630" rx="16" fill="#181714" stroke="#ffffff" stroke-opacity="0.1" />
+    <rect x="24" y="24" width="8" height="24" rx="4" fill="url(#courtGrad)" />
+    <text x="42" y="38" font-size="11" font-weight="700" fill="#2d6a4f" letter-spacing="2">LAYER 03 · PRODUCTION DATABASE</text>
+    <text x="42" y="62" font-size="18" font-weight="700" fill="#f8f6f0">Neon Serverless PostgreSQL</text>
+    <text x="24" y="90" font-size="12" fill="#a09d95">22 normalized relational tables with connection pooling.</text>
+
+    <!-- Schema Groups -->
+    <g transform="translate(24, 116)">
+      <rect width="392" height="84" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="26" font-size="12" font-weight="700" fill="#f8f6f0">Court Booking Engine (Invariants 1 &amp; 2)</text>
+      <text x="16" y="44" font-family="monospace" font-size="10" fill="#2d6a4f">facilities (18) · bookings (confirmed, completed)</text>
+      <text x="16" y="62" font-size="10" fill="#8f8c82">Temporal range protection: 60-min slot overlap prevention</text>
+    </g>
+
+    <g transform="translate(24, 212)">
+      <rect width="392" height="84" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="26" font-size="12" font-weight="700" fill="#f8f6f0">Orders, Kitchen &amp; Bar Tab Ledgers</text>
+      <text x="16" y="44" font-family="monospace" font-size="10" fill="#e5b842">orders · bar_tables (12) · bar_tabs · menu_items (16)</text>
+      <text x="16" y="62" font-size="10" fill="#8f8c82">Global ticket sequence, floor status &amp; tab settlement</text>
+    </g>
+
+    <g transform="translate(24, 308)">
+      <rect width="392" height="84" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="26" font-size="12" font-weight="700" fill="#f8f6f0">Pro Shop Unified Inventory (Invariant 3)</text>
+      <text x="16" y="44" font-family="monospace" font-size="10" fill="#c4502b">products (16) · stock_movements (audit log)</text>
+      <text x="16" y="62" font-size="10" fill="#8f8c82">Single inventory pool across desk counter and online store</text>
+    </g>
+
+    <g transform="translate(24, 404)">
+      <rect width="392" height="84" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+      <text x="16" y="26" font-size="12" font-weight="700" fill="#f8f6f0">Financial Double-Entry Revenue Ledger</text>
+      <text x="16" y="44" font-family="monospace" font-size="10" fill="#f8f6f0">transactions (156+) · payables (7) · invoices (6)</text>
+      <text x="16" y="62" font-size="10" fill="#8f8c82">Net, GST &amp; Gross split by UPI, Card, Cash, and Tab</text>
+    </g>
+
+    <g transform="translate(24, 500)">
+      <rect width="392" height="106" rx="8" fill="#141310" stroke="#2d6a4f" stroke-opacity="0.4" />
+      <text x="16" y="26" font-size="12" font-weight="700" fill="#2d6a4f">DPDP Act 2023 &amp; Identity Roster</text>
+      <text x="16" y="44" font-family="monospace" font-size="10" fill="#e5b842">members · users · profiles · guardian_consents</text>
+      <text x="16" y="62" font-size="10" fill="#8f8c82">Parental consent tracking for minors under 18</text>
+      <text x="16" y="80" font-size="10" fill="#8f8c82">Immutable audit_log tracking every state mutation</text>
+    </g>
+  </g>
+
+  <!-- Connectors / Data Flow Arrows -->
+  <g stroke="#ffffff" stroke-opacity="0.25" stroke-width="2" stroke-dasharray="6,4">
+    <line x1="520" y1="210" x2="580" y2="210" />
+    <line x1="520" y1="310" x2="580" y2="310" />
+    <line x1="520" y1="410" x2="580" y2="410" />
+    <line x1="520" y1="510" x2="580" y2="510" />
+
+    <line x1="1020" y1="210" x2="1080" y2="210" />
+    <line x1="1020" y1="310" x2="1080" y2="310" />
+    <line x1="1020" y1="410" x2="1080" y2="410" />
+    <line x1="1020" y1="510" x2="1080" y2="510" />
+  </g>
+</svg>

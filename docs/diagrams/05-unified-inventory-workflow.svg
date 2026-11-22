@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" style="background:#0e0d0b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141310" />
+      <stop offset="100%" stop-color="#0a0a08" />
+    </linearGradient>
+    <linearGradient id="clayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c4502b" />
+      <stop offset="100%" stop-color="#963c1e" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e5b842" />
+      <stop offset="100%" stop-color="#ab8216" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7209b7" />
+      <stop offset="100%" stop-color="#3f37c9" />
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d6a4f" />
+      <stop offset="100%" stop-color="#1b4332" />
+    </linearGradient>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.45" />
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7209b7" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="900" fill="url(#bgGrad)" />
+
+  <!-- Grid decoration lines -->
+  <line x1="80" y1="110" x2="1520" y2="110" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1" />
+  <line x1="80" y1="830" x2="1520" y2="830" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1" />
+
+  <!-- Header -->
+  <text x="80" y="65" font-size="12" font-weight="700" fill="#7209b7" letter-spacing="3">WORKFLOW 04 · PRO SHOP &amp; RETAIL ENGINE</text>
+  <text x="80" y="96" font-size="28" font-weight="800" fill="#f8f6f0" letter-spacing="-0.5">Dual-Channel Pro Shop &amp; Real-Time Inventory Sync</text>
+  <rect x="1300" y="55" width="220" height="34" rx="17" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.12" />
+  <circle cx="1318" cy="72" r="5" fill="#7209b7" />
+  <text x="1332" y="77" font-size="11" font-weight="600" fill="#7209b7" letter-spacing="1">SINGLE POOL INVARIANT</text>
+
+  <!-- 5-STEP HORIZONTAL PIPELINE -->
+
+  <!-- STEP 1 -->
+  <g transform="translate(80, 140)" filter="url(#cardShadow)">
+    <rect width="265" height="470" rx="14" fill="#181714" stroke="#ffffff" stroke-opacity="0.1" />
+    <rect x="20" y="20" width="36" height="36" rx="8" fill="url(#purpleGrad)" />
+    <text x="32" y="44" font-size="16" font-weight="800" fill="#ffffff">01</text>
+    <text x="68" y="34" font-size="11" font-weight="700" fill="#7209b7" letter-spacing="1">SALES CHANNELS</text>
+    <text x="68" y="52" font-size="16" font-weight="700" fill="#f8f6f0">Dual Touchpoints</text>
+
+    <!-- Content -->
+    <rect x="20" y="75" width="225" height="110" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="98" font-size="12" font-weight="700" fill="#f8f6f0">Channel A: Online Shop</text>
+    <text x="32" y="118" font-size="11" fill="#8f8c82">Member mobile app</text>
+    <text x="32" y="136" font-size="11" fill="#8f8c82">Locker delivery / Pro counter pick</text>
+    <text x="32" y="156" font-size="11" fill="#8f8c82">Member privilege discount (5-10%)</text>
+    <text x="32" y="174" font-size="10" font-weight="600" fill="#7209b7">Pre-order before match</text>
+
+    <rect x="20" y="200" width="225" height="150" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="224" font-size="12" font-weight="700" fill="#f8f6f0">Channel B: Counter POS</text>
+    <text x="32" y="248" font-size="11" fill="#8f8c82">Desk Barcode scanner scan</text>
+    <text x="32" y="270" font-size="11" fill="#8f8c82">Quick add to member tab</text>
+    <text x="32" y="292" font-size="11" fill="#8f8c82">Walk-in instant checkout</text>
+    <text x="32" y="312" font-size="11" fill="#8f8c82">Racket restringing drop-off</text>
+    <text x="32" y="334" font-size="10.5" fill="#2d6a4f">✓ Same underlying stock catalog</text>
+
+    <rect x="20" y="365" width="225" height="85" rx="8" fill="#141310" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="390" font-size="10" font-weight="700" fill="#7209b7" letter-spacing="1">CONCURRENT DEMAND</text>
+    <text x="32" y="410" font-size="11" fill="#f8f6f0">Simultaneous transactions</text>
+    <text x="32" y="430" font-size="10" fill="#8f8c82">Targeting same inventory item</text>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <line x1="345" y1="375" x2="365" y2="375" stroke="#7209b7" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- STEP 2 -->
+  <g transform="translate(370, 140)" filter="url(#cardShadow)">
+    <rect width="265" height="470" rx="14" fill="#181714" stroke="#ffffff" stroke-opacity="0.1" />
+    <rect x="20" y="20" width="36" height="36" rx="8" fill="url(#purpleGrad)" />
+    <text x="32" y="44" font-size="16" font-weight="800" fill="#ffffff">02</text>
+    <text x="68" y="34" font-size="11" font-weight="700" fill="#7209b7" letter-spacing="1">CENTRAL INVENTORY</text>
+    <text x="68" y="52" font-size="16" font-weight="700" fill="#f8f6f0">Neon DB Single Pool</text>
+
+    <rect x="20" y="75" width="225" height="110" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="98" font-size="12" font-weight="700" fill="#f8f6f0">Authoritative Pool</text>
+    <text x="32" y="118" font-size="11" fill="#8f8c82">Database table: products</text>
+    <text x="32" y="136" font-size="11" fill="#8f8c82">Single source of truth</text>
+    <text x="32" y="156" font-size="11" fill="#8f8c82">Zero isolated offline silos</text>
+    <text x="32" y="174" font-size="10" font-weight="600" fill="#2d6a4f">✓ Central consistency guaranteed</text>
+
+    <rect x="20" y="200" width="225" height="150" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="224" font-size="12" font-weight="700" fill="#f8f6f0">Catalog Attributes</text>
+    <text x="32" y="248" font-size="11" fill="#8f8c82">SKU &amp; Barcode mapping</text>
+    <text x="32" y="270" font-size="11" fill="#8f8c82">Current Stock Count</text>
+    <text x="32" y="292" font-size="11" fill="#8f8c82">Reorder Threshold (min 5)</text>
+    <text x="32" y="312" font-size="11" fill="#8f8c82">HSN Code 9506 (Sport Goods)</text>
+    <text x="32" y="334" font-size="10.5" fill="#f8f6f0">Wholesale cost vs Member price</text>
+
+    <rect x="20" y="365" width="225" height="85" rx="8" fill="#141310" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="390" font-size="10" font-weight="700" fill="#7209b7" letter-spacing="1">QUERY DISPATCH</text>
+    <text x="32" y="410" font-size="11" fill="#f8f6f0">POST /api/shop (deduct)</text>
+    <text x="32" y="430" font-size="10" fill="#8f8c82">Atomic inventory validation</text>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <line x1="635" y1="375" x2="655" y2="375" stroke="#7209b7" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- STEP 3 -->
+  <g transform="translate(660, 140)" filter="url(#cardShadow)">
+    <rect width="265" height="470" rx="14" fill="#181714" stroke="#7209b7" stroke-width="1.5" />
+    <rect x="20" y="20" width="36" height="36" rx="8" fill="url(#purpleGrad)" />
+    <text x="32" y="44" font-size="16" font-weight="800" fill="#ffffff">03</text>
+    <text x="68" y="34" font-size="11" font-weight="700" fill="#7209b7" letter-spacing="1">ATOMIC EXECUTION</text>
+    <text x="68" y="52" font-size="16" font-weight="700" fill="#f8f6f0">Concurrency Lock</text>
+
+    <rect x="20" y="75" width="225" height="110" rx="8" fill="#21201c" stroke="#7209b7" stroke-opacity="0.3" />
+    <text x="32" y="98" font-size="12" font-weight="700" fill="#7209b7">Atomic Decrement</text>
+    <text x="32" y="118" font-size="10.5" font-family="monospace" fill="#f8f6f0">UPDATE products</text>
+    <text x="32" y="136" font-size="10.5" font-family="monospace" fill="#f8f6f0">SET stock = stock - :qty</text>
+    <text x="32" y="154" font-size="10.5" font-family="monospace" fill="#f8f6f0">WHERE id = :id AND</text>
+    <text x="32" y="172" font-size="10.5" font-family="monospace" fill="#f8f6f0">stock &gt;= :qty RETURNING *;</text>
+
+    <rect x="20" y="200" width="225" height="150" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="224" font-size="12" font-weight="700" fill="#f8f6f0">Zero-Oversell Guarantee</text>
+    <text x="32" y="248" font-size="11" fill="#8f8c82">Row-level lock in Neon DB</text>
+    <text x="32" y="270" font-size="11" fill="#8f8c82">Even if 1 unit remains:</text>
+    <text x="32" y="292" font-size="10.5" fill="#2d6a4f">1st request completes (stock=0)</text>
+    <text x="32" y="312" font-size="10.5" fill="#c4502b">2nd request fails (Out of Stock)</text>
+    <text x="32" y="334" font-size="10.5" fill="#8f8c82">Zero negative inventory states</text>
+
+    <rect x="20" y="365" width="225" height="85" rx="8" fill="#141310" stroke="#7209b7" stroke-opacity="0.2" />
+    <text x="32" y="390" font-size="10" font-weight="700" fill="#7209b7" letter-spacing="1">INTEGRITY LOCK</text>
+    <text x="32" y="410" font-size="11" fill="#f8f6f0">Deterministic stock audit</text>
+    <text x="32" y="430" font-size="10" fill="#8f8c82">No phantom item sales</text>
+  </g>
+
+  <!-- Arrow 3 -> 4 -->
+  <line x1="925" y1="375" x2="945" y2="375" stroke="#7209b7" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- STEP 4 -->
+  <g transform="translate(950, 140)" filter="url(#cardShadow)">
+    <rect width="265" height="470" rx="14" fill="#181714" stroke="#ffffff" stroke-opacity="0.1" />
+    <rect x="20" y="20" width="36" height="36" rx="8" fill="url(#goldGrad)" />
+    <text x="32" y="44" font-size="16" font-weight="800" fill="#ffffff">04</text>
+    <text x="68" y="34" font-size="11" font-weight="700" fill="#e5b842" letter-spacing="1">MULTI-DEVICE SYNC</text>
+    <text x="68" y="52" font-size="16" font-weight="700" fill="#f8f6f0">Instant Revalidation</text>
+
+    <rect x="20" y="75" width="225" height="110" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="98" font-size="12" font-weight="700" fill="#f8f6f0">Real-Time Event Bus</text>
+    <text x="32" y="118" font-size="11" fill="#8f8c82">BroadcastChannel: tcc_products_updated</text>
+    <text x="32" y="136" font-size="11" fill="#8f8c82">Sub-second local tab relay</text>
+    <text x="32" y="156" font-size="11" fill="#8f8c82">Cross-device revalidation (8s)</text>
+    <text x="32" y="174" font-size="10" font-weight="600" fill="#2d6a4f">✓ Zero stale stock badges</text>
+
+    <rect x="20" y="200" width="225" height="150" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="224" font-size="12" font-weight="700" fill="#f8f6f0">Live UI Feedback</text>
+    <text x="32" y="248" font-size="11" fill="#8f8c82">Member shop badge updates</text>
+    <text x="32" y="270" font-size="11" fill="#8f8c82">Desk POS counter updates</text>
+    <text x="32" y="292" font-size="11" fill="#8f8c82">"Only 2 left" urgency badge</text>
+    <text x="32" y="312" font-size="11" fill="#8f8c82">Buttons auto-disable if 0</text>
+    <text x="32" y="334" font-size="10.5" fill="#e5b842">Smooth transition animations</text>
+
+    <rect x="20" y="365" width="225" height="85" rx="8" fill="#141310" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="390" font-size="10" font-weight="700" fill="#e5b842" letter-spacing="1">OMNICHANNEL SYNC</text>
+    <text x="32" y="410" font-size="11" fill="#f8f6f0">Both screens show identical count</text>
+    <text x="32" y="430" font-size="10" fill="#8f8c82">No discrepancy between staff &amp; member</text>
+  </g>
+
+  <!-- Arrow 4 -> 5 -->
+  <line x1="1215" y1="375" x2="1235" y2="375" stroke="#7209b7" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- STEP 5 -->
+  <g transform="translate(1240, 140)" filter="url(#cardShadow)">
+    <rect width="280" height="470" rx="14" fill="#181714" stroke="#ffffff" stroke-opacity="0.1" />
+    <rect x="20" y="20" width="36" height="36" rx="8" fill="url(#greenGrad)" />
+    <text x="32" y="44" font-size="16" font-weight="800" fill="#ffffff">05</text>
+    <text x="68" y="34" font-size="11" font-weight="700" fill="#2d6a4f" letter-spacing="1">SETTLEMENT &amp; AUDIT</text>
+    <text x="68" y="52" font-size="16" font-weight="700" fill="#f8f6f0">GST HSN 9506 Ledger</text>
+
+    <rect x="20" y="75" width="240" height="110" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="98" font-size="12" font-weight="700" fill="#f8f6f0">Low-Stock Trigger</text>
+    <text x="32" y="118" font-size="11" fill="#8f8c82">Trigger when stock &lt; threshold</text>
+    <text x="32" y="136" font-size="11" fill="#8f8c82">Auto PO draft to Babolat / Wilson</text>
+    <text x="32" y="156" font-size="11" fill="#8f8c82">Manager notification badge</text>
+    <text x="32" y="174" font-size="10" font-weight="600" fill="#c4502b">Zero out-of-stock downtime</text>
+
+    <rect x="20" y="200" width="240" height="150" rx="8" fill="#21201c" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="224" font-size="12" font-weight="700" fill="#f8f6f0">HSN &amp; Double-Entry Audit</text>
+    <text x="32" y="248" font-size="11" fill="#8f8c82">HSN 9506 (Rackets &amp; Equipment)</text>
+    <text x="32" y="270" font-size="11" fill="#8f8c82">12% / 18% GST automatic split</text>
+    <text x="32" y="292" font-size="11" fill="#8f8c82">Double-entry revenue entry:</text>
+    <text x="32" y="312" font-size="11" fill="#8f8c82">• Inventory Asset Cr.</text>
+    <text x="32" y="334" font-size="10.5" fill="#2d6a4f">• Pro Shop Sales Dr. + GST</text>
+
+    <rect x="20" y="365" width="240" height="85" rx="8" fill="#141310" stroke="#ffffff" stroke-opacity="0.06" />
+    <text x="32" y="390" font-size="10" font-weight="700" fill="#2d6a4f" letter-spacing="1">EXECUTIVE Z-REPORT</text>
+    <text x="32" y="410" font-size="11" fill="#f8f6f0">Appended to Daily Club Ledger</text>
+    <text x="32" y="430" font-size="10" fill="#8f8c82">Complete cash/card reconcilation</text>
+  </g>
+
+  <!-- BOTTOM SUMMARY CARD -->
+  <g transform="translate(80, 640)" filter="url(#cardShadow)">
+    <rect width="1440" height="160" rx="14" fill="#181714" stroke="#ffffff" stroke-opacity="0.1" />
+    <rect x="28" y="24" width="6" height="112" rx="3" fill="url(#purpleGrad)" />
+    
+    <text x="50" y="48" font-size="11" font-weight="700" fill="#7209b7" letter-spacing="2">KEY SLIDE TAKEAWAYS</text>
+    <text x="50" y="74" font-size="18" font-weight="700" fill="#f8f6f0">Unified Dual-Channel Retail: Atomic Stock Decrement, Real-Time Sync &amp; Flawless GST Accounting</text>
+    
+    <g transform="translate(50, 95)">
+      <circle cx="6" cy="6" r="4" fill="#7209b7" />
+      <text x="20" y="10" font-size="12" font-weight="600" fill="#f8f6f0">Single Authoritative Pool:</text>
+      <text x="260" y="10" font-size="12" fill="#a09d95">Member online app and front desk POS draw from the exact same Neon DB inventory, eliminating conflicting stock numbers across devices.</text>
+      
+      <circle cx="6" cy="30" r="4" fill="#c4502b" />
+      <text x="20" y="34" font-size="12" font-weight="600" fill="#f8f6f0">Concurrency-Safe Atomic Deduction:</text>
+      <text x="260" y="34" font-size="12" fill="#a09d95">Database-level conditional SQL decrements guarantee zero overselling, even if two members attempt to buy the last Babolat racket at the exact same millisecond.</text>
+      
+      <circle cx="6" cy="54" r="4" fill="#2d6a4f" />
+      <text x="20" y="58" font-size="12" font-weight="600" fill="#f8f6f0">Automated Reorders &amp; GST Compliance:</text>
+      <text x="260" y="58" font-size="12" fill="#a09d95">Automated threshold triggers (min 5) prevent out-of-stock scenarios while HSN 9506 tax breakdowns stream straight into the daily Z-report.</text>
+    </g>
+  </g>
+</svg>
