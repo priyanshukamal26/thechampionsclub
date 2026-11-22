@@ -130,9 +130,13 @@ export default function DashboardOverviewPage() {
         description="Your courts, your tab, your pass. Everything here reads from the same booking and order ledgers the desk uses."
         actions={
           <>
-            <Link href="/dashboard/courts" className="btn btn-clay btn-sm">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Book a court
+            <Link
+              href="/dashboard/courts"
+              className="btn btn-clay group relative overflow-hidden shadow-lg shadow-clay/25 transition-all hover:shadow-xl hover:shadow-clay/30 hover:scale-[1.03]"
+              style={{ padding: "0.9rem 1.8rem", fontSize: "12px" }}
+            >
+              <CalendarDays className="h-4.5 w-4.5" />
+              Book a Court
             </Link>
             <Link href="/dashboard/pass" className="btn btn-outline btn-sm">
               <CreditCard className="h-3.5 w-3.5" />

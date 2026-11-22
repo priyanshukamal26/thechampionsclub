@@ -6,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
-  CalendarDays,
   CalendarCheck,
   ShoppingBag,
   Coffee,
@@ -37,7 +36,6 @@ type NavItem = {
 
 const CLUB_NAV: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, short: "Overview" },
-  { href: "/dashboard/courts", label: "Book Courts", icon: CalendarDays, short: "Courts", roles: ["owner", "manager", "front_desk", "member"] },
   { href: "/dashboard/bookings", label: "Bookings", icon: CalendarCheck, short: "Bookings", roles: ["owner", "manager", "front_desk", "cafe_manager", "member"] },
   { href: "/dashboard/social", label: "Friday Social", icon: Users2, short: "Social", roles: ["owner", "manager", "front_desk", "member"] },
   { href: "/dashboard/shop", label: "Pro Shop", icon: ShoppingBag, short: "Shop", roles: ["owner", "manager", "shop_manager", "member"] },

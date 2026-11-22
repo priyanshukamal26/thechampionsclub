@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   CalendarDays,
   Check,
@@ -45,15 +46,23 @@ import { cn } from "@/lib/utils";
 
 const SPORT_TABS: Array<Sport | "All"> = ["All", "Tennis", "Padel", "Badminton", "Cricket"];
 
+const SPORT_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
+  Tennis: { bg: "bg-court/15", border: "border-court/40", text: "text-court", icon: "🎾" },
+  Padel: { bg: "bg-clay/15", border: "border-clay/40", text: "text-clay-deep", icon: "🏓" },
+  Badminton: { bg: "bg-gold/15", border: "border-gold/40", text: "text-[#7d5d17]", icon: "🏸" },
+  Cricket: { bg: "bg-sage/30", border: "border-sage/50", text: "text-court", icon: "🏏" },
+};
+
 export default function CourtsPage() {
   const { user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [version, setVersion] = useState(0);
   const [date, setDate] = useState(() => (new Date().getHours() >= 19 ? offsetDate(1) : todayISO()));
-  const [sport, setSport] = useState<Sport | "All">("All");
+  const [sport, setSport] = useState<Sport | "All" | null>(null);
   const [memberId, setMemberId] = useState("");
   const [selected, setSelected] = useState<{ facilityId: string; slot: string } | null>(null);
   const [flash, setFlash] = useState<{ tone: "court" | "clay"; message: string } | null>(null);
+  const [showGrid, setShowGrid] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -73,7 +82,8 @@ export default function CourtsPage() {
   const isStaff = user ? user.role !== "member" : false;
   const isPendingConsent = Boolean(member && member.status === "pending_consent");
 
-  const facilities = useMemo(() => (mounted ? facilitiesBySport(sport) : []), [mounted, sport]);
+  const activeSport = sport ?? "All";
+  const facilities = useMemo(() => (mounted ? facilitiesBySport(activeSport) : []), [mounted, activeSport]);
   const availability = useMemo(
     () => (mounted ? availabilityFor(date) : {}),
     [mounted, date, version]
@@ -146,6 +156,18 @@ export default function CourtsPage() {
     setVersion((v) => v + 1);
   };
 
+  const handleProceed = () => {
+    setShowGrid(true);
+    setSelected(null);
+    setFlash(null);
+  };
+
+  const handleBack = () => {
+    setShowGrid(false);
+    setSelected(null);
+    setFlash(null);
+  };
+
   if (!mounted) {
     return (
       <div className="mx-auto max-w-[1400px] p-6">
@@ -154,75 +176,38 @@ export default function CourtsPage() {
     );
   }
 
-  return (
-    <div className="mx-auto max-w-[1400px] space-y-6 p-5 sm:p-6 lg:p-8">
-      <PageHeader
-        eyebrow="Court booking · B1–B9"
-        title="Eighteen arenas. One sheet."
-        description="Sessions are sixty minutes and start every half hour. The grid already knows what is taken, so nobody can double-book a court."
-        actions={
-          <Link href="/dashboard/social" className="btn btn-outline btn-sm">
-            <Dices className="h-3.5 w-3.5" />
-            Friday social
-          </Link>
-        }
-        meta={
-          <>
-            <StatusPill tone={usedToday >= DAILY_BOOKING_CAP ? "danger" : "success"}>
-              {usedToday}/{DAILY_BOOKING_CAP} plays used today
-            </StatusPill>
-            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-              {member ? planRateLabel(member.planId) : "Walk-in rate (+15%)"}
-            </span>
-            <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-              Open {String(OPEN_MINUTES / 60).padStart(2, "0")}:00–{String(CLOSE_MINUTES / 60).padStart(2, "0")}:00
-            </span>
-          </>
-        }
-      />
+  /* ━━━━━━━━━━━━ Step 1: Date & Sport Selection ━━━━━━━━━━━━ */
+  if (!showGrid) {
+    return (
+      <div className="mx-auto max-w-[900px] space-y-8 p-5 sm:p-6 lg:p-8">
+        <PageHeader
+          eyebrow="Court booking · B1–B9"
+          title="Eighteen arenas. One sheet."
+          description="Pick your date and sport, then we'll show you what's open."
+          actions={
+            <Link href="/dashboard/social" className="btn btn-outline btn-sm">
+              <Dices className="h-3.5 w-3.5" />
+              Friday social
+            </Link>
+          }
+          meta={
+            <>
+              <StatusPill tone={usedToday >= DAILY_BOOKING_CAP ? "danger" : "success"}>
+                {usedToday}/{DAILY_BOOKING_CAP} plays used today
+              </StatusPill>
+              <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+                {member ? planRateLabel(member.planId) : "Walk-in rate (+15%)"}
+              </span>
+            </>
+          }
+        />
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
-          {Array.from({ length: 7 }).map((_, i) => {
-            const day = offsetDate(i);
-            const active = day === date;
-            return (
-              <button
-                key={day}
-                onClick={() => {
-                  setDate(day);
-                  setSelected(null);
-                }}
-                className={cn(
-                  "flex min-w-[78px] shrink-0 flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors",
-                  active ? "border-ink bg-ink text-chalk" : "border-line bg-chalk hover:border-ink/40"
-                )}
-              >
-                <span
-                  className={cn(
-                    "u-mono text-[8.5px] uppercase tracking-[0.12em]",
-                    active ? "text-chalk/60" : "text-muted"
-                  )}
-                >
-                  {i === 0
-                    ? "Today"
-                    : new Date(`${day}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" })}
-                </span>
-                <span className="u-value mt-0.5 text-[12px]">
-                  {new Date(`${day}T00:00:00`).toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                  })}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {isStaff && (
+        {/* Staff member selector */}
+        {isStaff && (
+          <div>
+            <label className="u-label">Booking on behalf of</label>
             <select
-              className="select max-w-[240px]"
+              className="select max-w-[320px]"
               value={member?.id ?? ""}
               onChange={(event) => {
                 setMemberId(event.target.value);
@@ -237,18 +222,186 @@ export default function CourtsPage() {
                 </option>
               ))}
             </select>
-          )}
-          <Segmented
-            value={sport}
-            onChange={(value) => {
-              setSport(value);
-              setSelected(null);
-            }}
-            size="sm"
-            options={SPORT_TABS.map((item) => ({ value: item, label: item }))}
-          />
+          </div>
+        )}
+
+        {/* Step 1: Date Picker */}
+        <Panel>
+          <div className="u-eyebrow text-clay mb-3">Step 1 · Choose your date</div>
+          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-7">
+            {Array.from({ length: 7 }).map((_, i) => {
+              const day = offsetDate(i);
+              const active = day === date;
+              const dayLabel = i === 0
+                ? "Today"
+                : new Date(`${day}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short" });
+              const dateLabel = new Date(`${day}T00:00:00`).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+              });
+              return (
+                <button
+                  key={day}
+                  onClick={() => {
+                    setDate(day);
+                    setSelected(null);
+                  }}
+                  className={cn(
+                    "flex flex-col items-center rounded-xl border-2 px-3 py-3.5 transition-all",
+                    active
+                      ? "border-clay bg-clay text-chalk shadow-lg shadow-clay/20 scale-[1.03]"
+                      : "border-line bg-chalk hover:border-clay/40 hover:bg-clay/5"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "u-mono text-[9px] uppercase tracking-[0.12em]",
+                      active ? "text-chalk/80" : "text-muted"
+                    )}
+                  >
+                    {dayLabel}
+                  </span>
+                  <span className={cn("u-value mt-1 text-[14px]", active ? "text-chalk" : "text-ink")}>
+                    {dateLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Panel>
+
+        {/* Step 2: Sport Picker */}
+        <Panel>
+          <div className="u-eyebrow text-clay mb-3">Step 2 · Choose your sport</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-5">
+            <button
+              onClick={() => setSport("All")}
+              className={cn(
+                "flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-5 transition-all",
+                sport === "All"
+                  ? "border-ink bg-ink text-chalk shadow-lg shadow-ink/20 scale-[1.03]"
+                  : "border-line bg-chalk hover:border-ink/40 hover:bg-ink/5"
+              )}
+            >
+              <span className="text-[22px]">🏟️</span>
+              <span className={cn("u-display text-[12px]", sport === "All" ? "text-chalk" : "text-ink")}>
+                All Sports
+              </span>
+              <span className={cn("u-mono text-[9px] tracking-wider", sport === "All" ? "text-chalk/60" : "text-muted")}>
+                18 courts
+              </span>
+            </button>
+            {(["Tennis", "Padel", "Badminton", "Cricket"] as Sport[]).map((s) => {
+              const colors = SPORT_COLORS[s];
+              const count = facilitiesBySport(s).length;
+              const isActive = sport === s;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setSport(s)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-5 transition-all",
+                    isActive
+                      ? `${colors.border} ${colors.bg} shadow-lg scale-[1.03]`
+                      : "border-line bg-chalk hover:border-ink/20"
+                  )}
+                >
+                  <span className="text-[22px]">{colors.icon}</span>
+                  <span className={cn("u-display text-[12px]", isActive ? colors.text : "text-ink")}>
+                    {s}
+                  </span>
+                  <span className={cn("u-mono text-[9px] tracking-wider", isActive ? colors.text : "text-muted")}>
+                    {count} {count === 1 ? "court" : "courts"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Panel>
+
+        {/* Summary + Proceed */}
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-line bg-chalk p-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[12px]">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-clay" />
+              <span className="text-muted">Date:</span>
+              <span className="u-value text-ink">{formatDate(date)}</span>
+            </div>
+            <span className="text-line">|</span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted">Sport:</span>
+              <span className="u-value text-ink">{sport ?? "All Sports"}</span>
+            </div>
+            <span className="text-line">|</span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted">Courts:</span>
+              <span className="u-value text-ink">{facilities.length}</span>
+            </div>
+          </div>
+          <button
+            onClick={handleProceed}
+            className="btn btn-clay group shadow-lg shadow-clay/25 transition-all hover:shadow-xl hover:shadow-clay/30 hover:scale-[1.02]"
+            style={{ padding: "0.95rem 2.5rem", fontSize: "12px" }}
+          >
+            View Available Slots
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </button>
         </div>
       </div>
+    );
+  }
+
+  /* ━━━━━━━━━━━━ Step 2: Availability Grid ━━━━━━━━━━━━ */
+  return (
+    <div className="mx-auto max-w-[1400px] space-y-5 p-5 sm:p-6 lg:p-8">
+      {/* Back + summary bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          onClick={handleBack}
+          className="btn btn-outline btn-sm"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Change selection
+        </button>
+        <div className="flex flex-wrap items-center gap-3 text-[11px]">
+          <span className="chip chip-clay">
+            <CalendarDays className="h-3 w-3" />
+            {formatDate(date)}
+          </span>
+          <span className="chip chip-court">
+            {sport ? SPORT_COLORS[sport]?.icon ?? "🏟️" : "🏟️"} {activeSport}
+          </span>
+          <span className="chip chip-ink">
+            {facilities.length} courts
+          </span>
+          <StatusPill tone={usedToday >= DAILY_BOOKING_CAP ? "danger" : "success"}>
+            {usedToday}/{DAILY_BOOKING_CAP} plays used today
+          </StatusPill>
+          <span className="u-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+            {member ? planRateLabel(member.planId) : "Walk-in rate (+15%)"}
+          </span>
+        </div>
+      </div>
+
+      {/* Staff member picker - compact in grid view */}
+      {isStaff && (
+        <select
+          className="select max-w-[280px]"
+          value={member?.id ?? ""}
+          onChange={(event) => {
+            setMemberId(event.target.value);
+            setSelected(null);
+          }}
+          aria-label="Book on behalf of a member"
+        >
+          <option value="">Select a member…</option>
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.fullName} · {MEMBERSHIP_PLANS[m.planId].shortName}
+            </option>
+          ))}
+        </select>
+      )}
 
       {flash && (
         <div
@@ -281,20 +434,20 @@ export default function CourtsPage() {
                 {formatDate(date)} · {facilities.length} facilities
               </div>
               <div className="flex items-center gap-3 text-[9.5px] uppercase tracking-[0.1em] text-muted">
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-3 border border-court/30 bg-court/10" />
+                <span className="flex items-center gap-1.5">
+                  <span className="h-3 w-4 rounded-sm border-2 border-court bg-court/20" />
                   Free
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-3 bg-ink/10" />
+                <span className="flex items-center gap-1.5">
+                  <span className="h-3 w-4 rounded-sm bg-clay/30 border border-clay/40" />
                   Booked
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-3 bg-gold/25" />
+                <span className="flex items-center gap-1.5">
+                  <span className="h-3 w-4 rounded-sm bg-gold/30 border border-gold/40" />
                   Social
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-2.5 w-3 border border-line bg-paper-deep/70" />
+                <span className="flex items-center gap-1.5">
+                  <span className="h-3 w-4 rounded-sm border border-line bg-paper-deep/70" />
                   Past
                 </span>
               </div>
@@ -462,4 +615,3 @@ export default function CourtsPage() {
     </div>
   );
 }
-

@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
  * Free / booked / past / social states carry an icon and a title, never colour alone.
  * Desktop renders the full scoreboard table (horizontal scroll inside a wrapper);
  * mobile renders a per-facility slot list so nothing overflows at 360px.
+ *
+ * Updated: More vibrant, theme-matching colors for slot states.
  */
 
 type CellState = SlotState | "social";
@@ -41,11 +43,12 @@ const CELL_LABEL: Record<CellState, string> = {
   social: "Social",
 };
 
+/* ── Vibrant, theme-matching cell styles ──────────────────────── */
 const CELL_STYLES: Record<CellState, string> = {
-  free: "border-court/40 bg-court/15 text-court hover:border-court hover:bg-court hover:text-chalk",
-  booked: "border-transparent bg-ink/[0.10] text-muted/60",
-  past: "border-transparent bg-paper-deep/70 text-line",
-  social: "border-gold/40 bg-gold/15 text-[#7d5d17]",
+  free: "border-court bg-court/25 text-court hover:bg-court hover:text-chalk hover:border-court hover:shadow-md hover:shadow-court/20",
+  booked: "border-clay/50 bg-clay/20 text-clay-deep/70",
+  past: "border-transparent bg-paper-deep/60 text-muted/40",
+  social: "border-gold bg-gold/25 text-[#7d5d17]",
 };
 
 function slotEnd(slot: string): string {
@@ -135,7 +138,7 @@ export default function AvailabilityGrid({
                   key={group.hour}
                   scope="colgroup"
                   colSpan={group.count}
-                  className="border-b border-line-soft px-1 pt-2 text-center u-mono text-[10px] font-medium text-muted"
+                  className="border-b border-line-soft px-1 pt-2 text-center u-mono text-[11px] font-bold text-ink"
                 >
                   {group.hour}
                 </th>
@@ -146,7 +149,7 @@ export default function AvailabilityGrid({
                 <th
                   key={slot}
                   scope="col"
-                  className="w-7 border-b border-line px-0.5 pb-1.5 text-center u-mono text-[8.5px] font-normal text-muted/80"
+                  className="w-7 border-b border-line px-0.5 pb-1.5 text-center u-mono text-[9px] font-medium text-muted"
                 >
                   {slot.slice(3)}
                 </th>
@@ -190,8 +193,8 @@ export default function AvailabilityGrid({
                         aria-label={title}
                         title={title}
                         className={cn(
-                          "mx-auto flex h-6 w-6 items-center justify-center rounded-md border transition-colors",
-                          isSelected ? "border-clay bg-clay text-chalk" : CELL_STYLES[state],
+                          "mx-auto flex h-6 w-6 items-center justify-center rounded-md border transition-all",
+                          isSelected ? "border-clay bg-clay text-chalk ring-2 ring-clay/30 ring-offset-1 shadow-lg shadow-clay/30" : CELL_STYLES[state],
                           disabled ? "cursor-not-allowed" : "cursor-pointer"
                         )}
                       >
@@ -255,12 +258,12 @@ export default function AvailabilityGrid({
                     aria-label={title}
                     title={title}
                     className={cn(
-                      "flex w-full items-center justify-between gap-1 rounded-lg border px-2.5 py-2 text-left transition-colors",
-                      isSelected ? "border-clay bg-clay text-chalk" : CELL_STYLES[state],
+                      "flex w-full items-center justify-between gap-1 rounded-lg border-2 px-2.5 py-2.5 text-left transition-all",
+                      isSelected ? "border-clay bg-clay text-chalk shadow-lg shadow-clay/30" : CELL_STYLES[state],
                       disabled ? "cursor-not-allowed" : "cursor-pointer"
                     )}
                   >
-                    <span className="u-value text-[12px]">{slot}</span>
+                    <span className="u-value text-[13px]">{slot}</span>
                     <span className="flex items-center gap-1 u-mono text-[9px] uppercase tracking-[0.08em]">
                       <Icon className="h-3 w-3" aria-hidden="true" />
                       {CELL_LABEL[state]}
