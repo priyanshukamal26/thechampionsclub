@@ -18,6 +18,7 @@ import { PageHeader, Panel, Stat, StatusPill } from "@/components/ui/kit";
 import { Segmented } from "@/components/ui/overlay";
 import AvailabilityGrid from "@/components/courts/AvailabilityGrid";
 import { useAuth } from "@/lib/auth-context";
+import { resolveMemberForUser } from "@/components/dashboard/member";
 import {
   DAILY_BOOKING_CAP,
   FREE_CANCELLATION_HOURS,
@@ -59,8 +60,8 @@ export default function CourtsPage() {
   const members = useMemo(() => (mounted ? getLocalMembers() : []), [mounted]);
   const selfMember = useMemo(() => {
     if (!user) return undefined;
-    return members.find((m) => m.email.toLowerCase() === user.email.toLowerCase());
-  }, [members, user]);
+    return resolveMemberForUser(user);
+  }, [user]);
 
   useEffect(() => {
     if (memberId) return;

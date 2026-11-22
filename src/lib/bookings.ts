@@ -237,7 +237,39 @@ function seedBookings(): Booking[] {
   return seeded;
 }
 
+let hasSyncedBookingsWithServer = false;
+
+export function syncBookingsWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedBookingsWithServer) return;
+  hasSyncedBookingsWithServer = true;
+  fetch("/api/bookings")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.bookings) && data.bookings.length > 0) {
+        const local = getBookings();
+        const existingIds = new Set(local.map((b) => b.id));
+        let updated = false;
+        for (const remote of data.bookings) {
+          if (!existingIds.has(remote.id)) {
+            local.push(remote);
+            updated = true;
+          }
+        }
+        if (updated) {
+          saveBookings(local);
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("tcc_bookings_updated"));
+          }
+        }
+      }
+    })
+    .catch(() => {});
+}
+
 export function getBookings(): Booking[] {
+  if (typeof window !== "undefined" && !hasSyncedBookingsWithServer) {
+    setTimeout(syncBookingsWithServer, 100);
+  }
   const stored = readStore<Booking[] | null>(BOOKINGS_KEY, null);
   if (stored && stored.length) return stored;
   const seeded = seedBookings();
@@ -383,6 +415,15 @@ export function createBooking(input: CreateBookingInput): { ok: boolean; booking
   const bookings = getBookings();
   bookings.push(booking);
   saveBookings(bookings);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(booking),
+    }).catch(() => {});
+  }
+
   return { ok: true, booking };
 }
 

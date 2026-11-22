@@ -43,11 +43,11 @@ import {
 import { getTodayWeekMonth, getZReport } from "@/lib/finance";
 import {
   MEMBERSHIP_PLANS,
-  SEED_MEMBERS,
   getLocalMembers,
   getMemberById,
   type ClubMember,
 } from "@/lib/membership";
+import { resolveMemberForUser } from "@/components/dashboard/member";
 import { formatDate, formatTime, inr, labelToMinutes, minutesToLabel, offsetDate, todayISO } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -71,11 +71,7 @@ export default function DashboardOverviewPage() {
 
   const data = useMemo(() => {
     if (!mounted || !user) return null;
-    const member: ClubMember | undefined =
-      (user.email && getMemberById(user.email)) ||
-      getLocalMembers().find((m) => m.email.toLowerCase() === user.email.toLowerCase()) ||
-      (user.planId ? SEED_MEMBERS.find((m) => m.planId === user.planId) : undefined) ||
-      SEED_MEMBERS[0];
+    const member: ClubMember = resolveMemberForUser(user);
 
     const upcoming = upcomingBookingsForMember(member.id).slice(0, 4);
     const tabs = getOpenTabs();
@@ -603,13 +599,12 @@ function BarCafeOverview({ user }: { user: { fullName: string; role: string } })
               {tables.map((t) => (
                 <div
                   key={t.id}
-                  className={`rounded border p-1.5 ${
-                    t.status === "occupied"
-                      ? "border-clay bg-clay/10 text-clay-deep"
-                      : t.status === "reserved"
+                  className={`rounded border p-1.5 ${t.status === "occupied"
+                    ? "border-clay bg-clay/10 text-clay-deep"
+                    : t.status === "reserved"
                       ? "border-gold bg-gold/10 text-[#7d5d17]"
                       : "border-court/30 bg-court/10 text-court"
-                  }`}
+                    }`}
                 >
                   <div className="font-bold">{t.label}</div>
                   <div className="text-[8px] uppercase">{t.status.slice(0, 3)}</div>

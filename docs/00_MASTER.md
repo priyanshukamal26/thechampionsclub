@@ -9,11 +9,11 @@
 | Root folder | `D:\Projects\thechampionsclub` |
 | Docs folder | `D:\Projects\thechampionsclub\docs\` |
 | Docs created | 2026-11-21 (Session 1) |
-| Last updated | 2026-11-22 (Session 8: transitioned database backend to Neon Serverless Postgres with `@neondatabase/serverless`; created serverless route handlers for authentication (`/api/auth/login`, `/api/auth/register`), audit logging (`/api/audit`), and database initialization (`/api/db/init`); authored `neon/init_neon.sql`; fixed React error #418 hydration mismatches; verified `next build` passes 30/30 routes with 0 TypeScript errors) |
-| Sessions completed | 8 |
-| Current phase | **P9 – Part 1 functionally complete (30 routes live); Neon serverless Postgres integrated** |
-| Code written so far | **Next.js 16 App Router, React 19, Tailwind v4, Neon Serverless Postgres, PWA**: Clubhouse Ledger design system and UI kit; 11-section public landing with live availability and enquiry/trial capture; 8-role auth with demo switcher; serverless auth & audit routes (`/api/auth/login`, `/api/auth/register`, `/api/audit`); 4/5-step registration wizard that writes a real member record; role-aware dashboard shell with a route-level access matrix; member overview, bookings, 18-arena court grid, Friday social, Pro Shop, bar floor, digital pass and DPDP settings; staff desk (lookup, walk-in, consent queue, leads), counter POS, kitchen display, and owner console (Z-report, GST, payables, invoices, payroll/leave, share links); local-first engines for bookings, orders, finance and leads; PWA manifest/service worker/offline fallback; 30 routes prerendered in `next build` with 0 errors |
-| Next session starts at | Verify Neon connection with live database URL and test user registration/login flow on hosted deployment. |
+| Last updated | 2026-11-22 (Session 9: Resolved cross-device member identity leakage where Somya resolved to Priya Sharma; implemented `ensureLocalMember` and `resolveMemberForUser` across all dashboard views; created centralized `/api/members`, `/api/bookings`, and `/api/orders` endpoints connecting to Neon Postgres; verified live DB sync and 33/33 routes passing in `next build` with 0 errors) |
+| Sessions completed | 9 |
+| Current phase | **P9 – Part 1 complete (33 routes live); Central Neon database synchronization active** |
+| Code written so far | **Next.js 16 App Router, React 19, Tailwind v4, Neon Serverless Postgres, PWA**: Clubhouse Ledger design system and UI kit; 11-section public landing with live availability and enquiry/trial capture; 8-role auth with demo switcher; serverless auth, members, bookings, orders, and audit routes (`/api/auth/login`, `/api/auth/register`, `/api/members`, `/api/bookings`, `/api/orders`, `/api/audit`); 4/5-step registration wizard writing central member records; role-aware dashboard shell with route-level access matrix; member overview, bookings, 18-arena court grid, Friday social, Pro Shop, bar floor, digital pass and DPDP settings; staff desk, counter POS, kitchen display, and owner console; cross-device invariant engines; 33 routes prerendered in `next build` with 0 errors |
+| Next session starts at | Test cross-device real-time court reservation conflict validation on live Neon deployment. |
 
 ---
 

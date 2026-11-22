@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { PageHeader, Panel, StatusPill } from "@/components/ui/kit";
 import { useAuth } from "@/lib/auth-context";
+import { resolveMemberForUser } from "@/components/dashboard/member";
 import {
   getLocalMembers,
   getMemberById,
@@ -63,7 +64,7 @@ export default function SettingsPage() {
 
   const member: ClubMember | undefined = useMemo(() => {
     if (!mounted || !user) return undefined;
-    return getMemberById(user.email) ?? getLocalMembers().find((m) => m.email === user.email);
+    return resolveMemberForUser(user);
   }, [mounted, user]);
 
   useEffect(() => {

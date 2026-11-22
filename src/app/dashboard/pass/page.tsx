@@ -16,11 +16,9 @@ import {
 import { EmptyState, Meter, PageHeader, Panel, Stat, StatusPill } from "@/components/ui/kit";
 import QRCode from "@/components/common/QRCode";
 import { useAuth } from "@/lib/auth-context";
+import { resolveMemberForUser } from "@/components/dashboard/member";
 import {
   MEMBERSHIP_PLANS,
-  SEED_MEMBERS,
-  getMemberById,
-  getLocalMembers,
   type ClubMember,
 } from "@/lib/membership";
 import { getOpenTabs } from "@/lib/orders";
@@ -33,12 +31,7 @@ export default function MemberPassPage() {
 
   const member: ClubMember | undefined = useMemo(() => {
     if (!mounted || !user) return undefined;
-    return (
-      (user.email && getMemberById(user.email)) ||
-      getLocalMembers().find((m) => m.email.toLowerCase() === user.email.toLowerCase()) ||
-      (user.planId ? SEED_MEMBERS.find((m) => m.planId === user.planId) : undefined) ||
-      SEED_MEMBERS[0]
-    );
+    return resolveMemberForUser(user);
   }, [mounted, user]);
 
   const tab = useMemo(

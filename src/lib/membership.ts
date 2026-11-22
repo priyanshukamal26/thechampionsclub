@@ -617,9 +617,43 @@ export const SEED_MEMBERS: ClubMember[] = [
 
 // In-memory runtime registry with local persistence
 let localMembers: ClubMember[] = [...SEED_MEMBERS];
+let hasSyncedWithServer = false;
+
+export function syncMembersWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedWithServer) return;
+  hasSyncedWithServer = true;
+  fetch("/api/members")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.members)) {
+        const local = getLocalMembers();
+        const existingEmails = new Set(local.map((m) => m.email.toLowerCase()));
+        let updated = false;
+        for (const remote of data.members) {
+          if (!existingEmails.has(remote.email.toLowerCase())) {
+            local.unshift(remote);
+            updated = true;
+          }
+        }
+        if (updated) {
+          saveLocalMembers(local);
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("tcc_members_synced"));
+          }
+        }
+      }
+    })
+    .catch(() => {
+      // Offline / network failure fallback
+    });
+}
 
 export function getLocalMembers(): ClubMember[] {
   if (typeof window !== "undefined") {
+    // Initiate background sync on client
+    if (!hasSyncedWithServer) {
+      setTimeout(syncMembersWithServer, 100);
+    }
     const cached = localStorage.getItem("champions_members");
     if (cached) {
       try {
@@ -642,6 +676,64 @@ export function saveLocalMembers(members: ClubMember[]) {
 export function getMemberById(id: string): ClubMember | undefined {
   const members = getLocalMembers();
   return members.find((m) => m.id === id || m.memberCode === id || m.email.toLowerCase() === id.toLowerCase());
+}
+
+/**
+ * Ensures an authenticated user is guaranteed to have a corresponding ClubMember
+ * record in the local store. Prevents stale identity fallbacks across different devices.
+ */
+export function ensureLocalMember(user: {
+  id: string;
+  email: string;
+  fullName: string;
+  role?: string;
+  planId?: "gold" | "silver" | "junior";
+  isMinor?: boolean;
+  memberId?: string;
+}): ClubMember {
+  const members = getLocalMembers();
+  const cleanEmail = (user.email || "").toLowerCase().trim();
+  const existing = members.find(
+    (m) =>
+      (cleanEmail && m.email.toLowerCase() === cleanEmail) ||
+      (user.memberId && m.id === user.memberId) ||
+      m.id === user.id
+  );
+  if (existing) {
+    if (user.fullName && existing.fullName !== user.fullName) {
+      existing.fullName = user.fullName;
+      saveLocalMembers(members);
+    }
+    return existing;
+  }
+
+  const planId = user.planId || "silver";
+  const serial = String(members.length + 1).padStart(3, "0");
+  const code = `TCC-2026-${planId.toUpperCase().slice(0, 4)}-${serial}`;
+  const today = new Date().toISOString().split("T")[0];
+  const nextYear = new Date();
+  nextYear.setFullYear(nextYear.getFullYear() + 1);
+
+  const newMember: ClubMember = {
+    id: user.memberId || (user.id ? `user-${user.id}` : `mem-${crypto.randomUUID().slice(0, 8)}`),
+    memberCode: code,
+    fullName: user.fullName || cleanEmail.split("@")[0] || "Athlete",
+    email: cleanEmail,
+    phone: "",
+    dob: "",
+    planId,
+    status: user.isMinor ? "pending_consent" : "active",
+    membershipStart: today,
+    membershipEnd: nextYear.toISOString().split("T")[0],
+    duesPending: 0.0,
+    isMinor: Boolean(user.isMinor),
+    history: [],
+    staffNotes: ["Central profile synchronized."],
+  };
+
+  members.unshift(newMember);
+  saveLocalMembers(members);
+  return newMember;
 }
 
 export function searchMembers(query: string): ClubMember[] {

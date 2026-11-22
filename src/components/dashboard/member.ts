@@ -5,7 +5,6 @@
 import type { ClubUser } from "@/lib/auth-context";
 import {
   MEMBERSHIP_PLANS,
-  SEED_MEMBERS,
   getLocalMembers,
   getMemberById,
   type ClubMember,
@@ -16,7 +15,10 @@ import type { PillTone } from "@/components/ui/kit";
 
 const DAY_MS = 86_400_000;
 
-/** Resolve the signed-in account to a club member record (email first, then name, then plan). */
+/** Resolve the signed-in account to a club member record.
+ *  Priority: exact email → exact full name → synthesized stub.
+ *  We NEVER fall back to a random seed member by planId or SEED_MEMBERS[0]
+ *  because that caused the stale-identity leak (Priya shown for Somya). */
 export function resolveMemberForUser(user: ClubUser): ClubMember {
   const byEmail = user.email ? getMemberById(user.email) : undefined;
   if (byEmail) return byEmail;
@@ -25,8 +27,26 @@ export function resolveMemberForUser(user: ClubUser): ClubMember {
   const byName = members.find((m) => m.fullName.toLowerCase() === user.fullName.toLowerCase());
   if (byName) return byName;
 
-  const byPlan = user.planId ? members.find((m) => m.planId === user.planId) : undefined;
-  return byPlan ?? SEED_MEMBERS[0];
+  // Synthesize a stub record bound to this user's identity — never leak
+  // another member's data.
+  const today = new Date().toISOString().split("T")[0];
+  const nextYear = new Date();
+  nextYear.setFullYear(nextYear.getFullYear() + 1);
+  return {
+    id: user.memberId ?? user.id,
+    memberCode: `TCC-2026-${(user.planId ?? "silv").toUpperCase().slice(0, 4)}-NEW`,
+    fullName: user.fullName,
+    email: user.email,
+    phone: "",
+    dob: "",
+    planId: user.planId ?? "silver",
+    status: user.status === "pending_consent" ? "pending_consent" : "active",
+    membershipStart: today,
+    membershipEnd: nextYear.toISOString().split("T")[0],
+    duesPending: 0,
+    isMinor: user.isMinor ?? false,
+    history: [],
+  };
 }
 
 export function planForMember(member: ClubMember): MembershipPlan {

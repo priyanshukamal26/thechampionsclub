@@ -164,6 +164,23 @@ export async function ensureTablesExist(): Promise<boolean> {
       ON CONFLICT (email) DO NOTHING;
     `;
 
+    // Ensure member records in central members table match all member accounts
+    await sql`
+      INSERT INTO members (id, member_code, full_name, email, plan_id, status, membership_start, membership_end)
+      SELECT 
+        COALESCE(member_id, 'mem-' || substr(id, 1, 8)),
+        'TCC-2026-' || UPPER(substr(COALESCE(plan_id, 'SILV'), 1, 4)) || '-' || lpad(abs(('x' || substr(md5(email), 1, 4))::bit(16)::int % 900 + 100)::text, 3, '0'),
+        full_name,
+        email,
+        COALESCE(plan_id, 'silver'),
+        CASE WHEN status = 'pending_consent' THEN 'pending_consent' ELSE 'active' END,
+        to_char(CURRENT_DATE, 'YYYY-MM-DD'),
+        to_char(CURRENT_DATE + interval '1 year', 'YYYY-MM-DD')
+      FROM users
+      WHERE role = 'member'
+      ON CONFLICT (email) DO NOTHING;
+    `;
+
     tablesInitialized = true;
     return true;
   } catch (err) {

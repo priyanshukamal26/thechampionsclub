@@ -29,6 +29,7 @@ import {
   type SocialSession,
 } from "@/lib/bookings";
 import { getLocalMembers, MEMBERSHIP_PLANS } from "@/lib/membership";
+import { resolveMemberForUser } from "@/components/dashboard/member";
 import { recordAuditLog } from "@/lib/audit";
 import { inr } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -49,7 +50,7 @@ export default function FridaySocialPage() {
 
   const member = useMemo(() => {
     if (!mounted || !user) return undefined;
-    return getLocalMembers().find((m) => m.email.toLowerCase() === user.email.toLowerCase());
+    return resolveMemberForUser(user);
   }, [mounted, user]);
 
   const plan = member ? MEMBERSHIP_PLANS[member.planId] : undefined;

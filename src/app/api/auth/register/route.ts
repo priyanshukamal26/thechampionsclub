@@ -82,7 +82,44 @@ export async function POST(request: Request) {
             plan_id = ${planId};
         `;
 
-        // 3. Record audit entry
+        // 3. Insert or update members table in central DB
+        const memberCode = `TCC-2026-${planId.toUpperCase().slice(0, 4)}-${Math.floor(100 + Math.random() * 900)}`;
+        const todayStr = new Date().toISOString().split("T")[0];
+        const nextYearDate = new Date();
+        nextYearDate.setFullYear(nextYearDate.getFullYear() + 1);
+        const expiryStr = nextYearDate.toISOString().split("T")[0];
+
+        await sql`
+          INSERT INTO members (
+            id, member_code, full_name, email, phone, dob, plan_id, status,
+            membership_start, membership_end, dues_pending, is_minor,
+            guardian_name, guardian_phone, guardian_email
+          )
+          VALUES (
+            ${memberId},
+            ${memberCode},
+            ${fullName},
+            ${cleanEmail},
+            ${phone},
+            ${dob},
+            ${planId},
+            ${isMinor ? "pending_consent" : "active"},
+            ${todayStr},
+            ${expiryStr},
+            0.0,
+            ${isMinor},
+            ${data.guardianName || null},
+            ${data.guardianPhone || null},
+            ${data.guardianEmail || null}
+          )
+          ON CONFLICT (email) DO UPDATE SET
+            full_name = ${fullName},
+            phone = ${phone},
+            dob = ${dob},
+            plan_id = ${planId};
+        `;
+
+        // 4. Record audit entry
         await sql`
           INSERT INTO audit_log (actor_id, actor, role, action, entity, entity_id, details)
           VALUES (

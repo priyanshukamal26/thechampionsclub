@@ -341,7 +341,36 @@ function seedOrders(): Order[] {
   return seeded;
 }
 
+let hasSyncedOrdersWithServer = false;
+
+export function syncOrdersWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedOrdersWithServer) return;
+  hasSyncedOrdersWithServer = true;
+  fetch("/api/orders")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.orders) && data.orders.length > 0) {
+        const local = getOrders();
+        const existingIds = new Set(local.map((o) => o.id));
+        let updated = false;
+        for (const remote of data.orders) {
+          if (!existingIds.has(remote.id)) {
+            local.unshift(remote);
+            updated = true;
+          }
+        }
+        if (updated) {
+          saveOrders(local);
+        }
+      }
+    })
+    .catch(() => {});
+}
+
 export function getOrders(): Order[] {
+  if (typeof window !== "undefined" && !hasSyncedOrdersWithServer) {
+    setTimeout(syncOrdersWithServer, 100);
+  }
   const stored = readStore<Order[] | null>(ORDERS_KEY, null);
   if (stored && stored.length) return stored;
   const seeded = seedOrders();
@@ -523,6 +552,14 @@ export function createOrder(input: CreateOrderInput): { ok: boolean; order?: Ord
   };
   orders.push(order);
   saveOrders(orders);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(order),
+    }).catch(() => {});
+  }
 
   if (input.tableId) setTableStatus(input.tableId, "occupied");
 

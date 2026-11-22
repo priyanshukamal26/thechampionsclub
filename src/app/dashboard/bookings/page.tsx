@@ -14,6 +14,7 @@ import {
 import { EmptyState, PageHeader, Panel, Stat, StatusPill } from "@/components/ui/kit";
 import { Modal, Segmented } from "@/components/ui/overlay";
 import { useAuth } from "@/lib/auth-context";
+import { resolveMemberForUser } from "@/components/dashboard/member";
 import {
   DAILY_BOOKING_CAP,
   FREE_CANCELLATION_HOURS,
@@ -45,7 +46,7 @@ export default function MyBookingsPage() {
 
   const member: ClubMember | undefined = useMemo(() => {
     if (!mounted || !user) return undefined;
-    return getLocalMembers().find((m) => m.email.toLowerCase() === user.email.toLowerCase());
+    return resolveMemberForUser(user);
   }, [mounted, user]);
 
   const isStaff = user ? user.role !== "member" : false;

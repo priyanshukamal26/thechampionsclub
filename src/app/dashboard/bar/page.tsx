@@ -24,6 +24,7 @@ import { Drawer, Segmented } from "@/components/ui/overlay";
 import { SettleTabModal } from "@/components/commerce/SettleTabModal";
 import { PaymentMethodDetails } from "@/components/commerce/PaymentMethodDetails";
 import { useAuth } from "@/lib/auth-context";
+import { resolveMemberForUser } from "@/components/dashboard/member";
 import {
   BAR_MENU,
   createOrder,
@@ -86,8 +87,8 @@ export default function BarPage() {
 
   const selfMember = useMemo(() => {
     if (!mounted || !user) return undefined;
-    return members.find((m) => m.email.toLowerCase() === user.email.toLowerCase());
-  }, [mounted, user, members]);
+    return resolveMemberForUser(user);
+  }, [mounted, user]);
 
   useEffect(() => {
     if (user && user.role === "member" && selfMember) {

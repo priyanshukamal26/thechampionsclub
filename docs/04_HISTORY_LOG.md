@@ -526,3 +526,51 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 
 **Next session task:** Verify Neon connection with live database URL and test user registration/login flow on hosted deployment.
 
+---
+
+## Session 9 — 2026-11-22
+
+**Goal of the session:** Fix cross-device identity leakage (Somya showing Priya Sharma's details/pass/reservations) and eliminate cross-device metric discrepancies by introducing central database synchronization for members, bookings, and orders.
+
+**Phase(s):** P2 / P3 / P4 — Cross-Device Data Consistency & Member Identity Synchronization.
+
+**What was actually done:**
+- **Tracked root cause of Priya's name showing on Somya's login:**
+  1. Member records were previously written exclusively to `localStorage` on the registration device.
+  2. When logging in from another device via `/api/auth/login`, Somya's account record did not exist in that device's local member store (`getLocalMembers()`).
+  3. The dashboard overview, pass, bookings, courts, and social pages fell back to `user.planId ? SEED_MEMBERS.find(m => m.planId === user.planId) : SEED_MEMBERS[0]`. Because Somya holds a Silver plan, this returned Priya Sharma (`SEED_MEMBERS[1]`), leaking Priya's member code, pass QR, upcoming court reservations, and active kitchen ticket.
+  4. Cross-device metric values diverged because Device 1 displayed Somya's real state (0 bookings, ₹0 tab) while Device 2 displayed Priya's seeded state (1 court booking, Queue #4 ₹404 kitchen order).
+- **Hardened member resolution and identity binding:**
+  - Implemented `ensureLocalMember` in `src/lib/membership.ts`: automatically syncs and upserts the authenticated user into local persistence immediately upon hydration, sign-in, sign-up, or demo switch.
+  - Refactored `resolveMemberForUser` in `src/components/dashboard/member.ts`: strictly matches by authenticated email, member ID, or synthesized user stub; completely eliminated fallbacks to arbitrary seed members.
+  - Rewired `src/app/dashboard/page.tsx`, `pass/page.tsx`, `settings/page.tsx`, `courts/page.tsx`, `bookings/page.tsx`, `bar/page.tsx`, and `social/page.tsx` to uniformly resolve the current member via `resolveMemberForUser(user)`.
+- **Created centralized database API routes and cross-device syncing:**
+  - Authored `/api/members`: queries members from Neon PostgreSQL and merges with local store so all devices share member records.
+  - Authored `/api/bookings`: centralizes court reservations across devices with database persistence and synchronization.
+  - Authored `/api/orders`: centralizes kitchen tickets and POS orders across devices with database persistence.
+  - Updated `src/app/api/auth/register/route.ts` to write new member records directly into Neon PostgreSQL's `members` table alongside `users`, `profiles`, and `audit_log`.
+  - Added session cleanup on `signOut()` in `src/lib/auth-context.tsx` to clear per-user cached store keys and avoid session residue when switching accounts.
+- **Verification:**
+  - Executed database sync query against live Neon PostgreSQL: verified 4 member records (`rohan@championsclub.in`, `aarav@championsclub.in`, `p@gmail.com`, and `somya@gmail.com` with code `TCC-2026-SILV-665`).
+  - Ran `next build`: verified all 33/33 routes compiled and prerendered successfully with 0 TypeScript errors.
+
+**Files created/changed:**
+- Created: `src/app/api/members/route.ts`
+- Created: `src/app/api/bookings/route.ts`
+- Created: `src/app/api/orders/route.ts`
+- Modified: `src/lib/membership.ts`
+- Modified: `src/lib/auth-context.tsx`
+- Modified: `src/lib/bookings.ts`
+- Modified: `src/lib/orders.ts`
+- Modified: `src/lib/db.ts`
+- Modified: `src/components/dashboard/member.ts`
+- Modified: `src/app/dashboard/page.tsx`
+- Modified: `src/app/dashboard/pass/page.tsx`
+- Modified: `src/app/dashboard/settings/page.tsx`
+- Modified: `src/app/dashboard/courts/page.tsx`
+- Modified: `src/app/dashboard/bookings/page.tsx`
+- Modified: `src/app/dashboard/bar/page.tsx`
+- Modified: `src/app/dashboard/social/page.tsx`
+- Modified: `src/app/api/auth/register/route.ts`
+
+**Next session task:** Test cross-device real-time court reservation conflict validation on live Neon deployment.

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase, isSupabaseConfigured } from "./supabase";
-import { getLocalMembers } from "./membership";
+import { getLocalMembers, ensureLocalMember } from "./membership";
 
 export type AppRole =
   | "owner"
@@ -129,7 +129,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const cached = localStorage.getItem("champions_user");
-      if (cached) setUser(JSON.parse(cached) as ClubUser);
+      if (cached) {
+        const u = JSON.parse(cached) as ClubUser;
+        setUser(u);
+        ensureLocalMember(u);
+      }
     } catch {
       localStorage.removeItem("champions_user");
     }
@@ -237,6 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setUser(newUser);
+    ensureLocalMember(newUser);
     localStorage.setItem("champions_user", JSON.stringify(newUser));
     return { success: true, user: newUser };
   };
@@ -263,6 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const demoUser = DEMO_USERS[matchedKey];
       setUser(demoUser);
+      ensureLocalMember(demoUser);
       localStorage.setItem("champions_user", JSON.stringify(demoUser));
       return { success: true };
     }
@@ -275,6 +281,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: "Invalid password. Please check your credentials." };
       }
       setUser(record.user);
+      ensureLocalMember(record.user);
       localStorage.setItem("champions_user", JSON.stringify(record.user));
       return { success: true };
     }
@@ -299,6 +306,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           memberId: localMember.id,
         };
         setUser(memberUser);
+        ensureLocalMember(memberUser);
         localStorage.setItem("champions_user", JSON.stringify(memberUser));
         return { success: true };
       }
@@ -317,6 +325,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const json = await res.json();
         if (json.success && json.user) {
           setUser(json.user);
+          ensureLocalMember(json.user);
           localStorage.setItem("champions_user", JSON.stringify(json.user));
           return { success: true };
         }
@@ -396,12 +405,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore
     }
     setUser(null);
+    // Clear the session identity token
     localStorage.removeItem("champions_user");
+    // Clear ALL per-session data stores so the next login starts clean.
+    // Without this, stale data from the previous user's session leaks into
+    // the next user's dashboard (the "Priya → Somya" bug).
+    const sessionKeys = [
+      "champions_bookings_v3",
+      "champions_social_v2",
+      "champions_orders_v2",
+      "champions_tabs_v1",
+      "champions_tables_v1",
+      "champions_products_v1",
+      "champions_ledger_v1",
+      "champions_payables_v1",
+      "champions_staff_v1",
+      "champions_leave_v1",
+      "champions_invoices_v1",
+      "champions_share_links_v1",
+      "champions_payroll_paid_v1",
+      "champions_members",
+    ];
+    sessionKeys.forEach((key) => {
+      try { localStorage.removeItem(key); } catch { /* ignore */ }
+    });
   };
 
   const switchDemoUser = (key: keyof typeof DEMO_USERS) => {
     const demoUser = DEMO_USERS[key];
     setUser(demoUser);
+    ensureLocalMember(demoUser);
     localStorage.setItem("champions_user", JSON.stringify(demoUser));
   };
 
