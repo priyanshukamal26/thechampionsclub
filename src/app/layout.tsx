@@ -60,8 +60,9 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} ${instrumentSerif.variable} antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-screen bg-paper text-ink">
+      <body className="min-h-screen bg-paper text-ink" suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
         <PWAProvider />
         <Grain />

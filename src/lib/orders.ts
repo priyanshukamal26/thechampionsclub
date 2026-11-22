@@ -13,6 +13,7 @@ import {
   hashString,
   makeId,
   mulberry32,
+  nowISO,
   readStore,
   round2,
   todayISO,
@@ -175,7 +176,7 @@ export function getTables(): ClubTable[] {
 
 export function setTableStatus(id: string, status: TableStatus): void {
   const tables = getTables().map((t) =>
-    t.id === id ? { ...t, status, seatedAt: status === "occupied" ? new Date().toISOString() : undefined } : t
+    t.id === id ? { ...t, status, seatedAt: status === "occupied" ? nowISO() : undefined } : t
   );
   writeStore(TABLES_KEY, tables);
 }
@@ -515,7 +516,7 @@ export function createOrder(input: CreateOrderInput): { ok: boolean; order?: Ord
     phone: input.phone,
     otp: input.fulfilment === "delivery" ? String(1000 + Math.floor(Math.random() * 9000)) : undefined,
     pickupCode: input.fulfilment === "pickup" ? String(1000 + Math.floor(Math.random() * 9000)) : undefined,
-    placedAt: new Date().toISOString(),
+    placedAt: nowISO(),
     etaMin: input.channel === "bar" ? 12 : input.fulfilment === "delivery" ? 60 : 20,
     staff: input.staff,
     paid: input.paymentMode !== "tab",
@@ -616,7 +617,7 @@ function addToTab(order: Order): void {
       tableId: order.tableId,
       orderCodes: [order.code],
       total: order.total,
-      openedAt: new Date().toISOString(),
+      openedAt: nowISO(),
       status: "open",
     });
   }

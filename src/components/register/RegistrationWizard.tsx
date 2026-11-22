@@ -107,7 +107,7 @@ export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gol
     return "";
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const error = validateStep();
     if (error) {
       setStepError(error);
@@ -132,7 +132,7 @@ export default function RegistrationWizard({ initialPlan }: { initialPlan?: "gol
       guardianVerifiedInPerson: false,
     });
 
-    signUp({
+    await signUp({
       fullName: formData.fullName,
       email: formData.email,
       password: formData.password,

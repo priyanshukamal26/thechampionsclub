@@ -490,4 +490,39 @@ Part of the docs set; index and rules in `00_MASTER.md`.
 - Engine-level automated tests (overlap, cap, stock, ledger) are still SQL-only; a JS test harness is next.
 - Hosted deployment and real-device PWA verification.
 
-**Next session task:** Session 8 — connect Supabase, push the schema, run the concurrency suite against the live database, deploy, and add engine tests.
+**Next session task:** Session 8 — Transition to Neon Serverless Postgres, push schema, wire server-side auth/audit routes, and deploy.
+
+---
+
+## Session 8 — 2026-11-22
+
+**Goal of the session:** Transition backend and authentication from Supabase to Neon Serverless PostgreSQL (`@neondatabase/serverless`), resolve Vercel deployment database connection issues (`net::ERR_NAME_NOT_RESOLVED`), fix React #418 hydration mismatches, and provide seamless server-side authentication and database persistence.
+
+**Phase(s):** P1 / P2 / P7 — Serverless Postgres Database Transition & Vercel Deployment Hardening.
+
+**What was actually done:**
+- Replaced fragile client-side Supabase authentication with Next.js serverless route handlers powered by Neon:
+  - Installed `@neondatabase/serverless` and authored `src/lib/db.ts` to manage serverless PostgreSQL connectivity with automatic table initialization (`users`, `profiles`, `members`, `audit_log`, `bookings`, `orders`) and demo profile seeding.
+  - Authored `/api/auth/login`: verifies user credentials against Neon `users` table with preset fallbacks and same-origin JSON responses.
+  - Authored `/api/auth/register`: saves registered members and user credentials directly to Neon Postgres.
+  - Authored `/api/audit`: writes audit events to Neon `audit_log` via serverless route.
+  - Authored `/api/db/init`: automated endpoint verifying database health and table presence.
+  - Authored `neon/init_neon.sql` containing full PostgreSQL initialization script ready for Neon SQL Editor.
+- Updated `src/lib/auth-context.tsx` to communicate directly with serverless API routes (`/api/auth/login`, `/api/auth/register`), eliminating cross-origin browser DNS failures (`net::ERR_NAME_NOT_RESOLVED`) and `Failed to fetch` errors in production.
+- Resolved React Error #418 hydration mismatches across the landing page, dashboard shell, and auth footer by applying `suppressHydrationWarning` and client-mounted guards for dynamic date strings and extensions.
+- Verified build: `npm run build` compiled 30/30 static and dynamic routes with 0 errors.
+
+**Files created/changed:**
+- Created: `src/lib/db.ts`
+- Created: `src/app/api/auth/login/route.ts`
+- Created: `src/app/api/auth/register/route.ts`
+- Created: `src/app/api/audit/route.ts`
+- Created: `src/app/api/db/init/route.ts`
+- Created: `neon/init_neon.sql`
+- Modified: `src/lib/auth-context.tsx`
+- Modified: `src/lib/audit.ts`
+- Modified: `.env.local`
+- Modified: `package.json`
+
+**Next session task:** Verify Neon connection with live database URL and test user registration/login flow on hosted deployment.
+

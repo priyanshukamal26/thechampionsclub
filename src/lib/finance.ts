@@ -15,6 +15,7 @@ import {
   makeId,
   monthKey,
   mulberry32,
+  nowISO,
   offsetDate,
   readStore,
   round2,
@@ -105,95 +106,112 @@ const SHOP_NOTES = ["Pro shop sale", "Racket + stringing", "Shoes & socks", "Bal
 const BAR_NOTES = ["Bar tab settled", "Café table order", "Post-match kitchen order", "Beverage service"];
 const MEMBER_NAMES = ["Rohan Mehra", "Priya Sharma", "Kabir Khan", "Sunita Roy", "Ananya Deshmukh", "Nikhil Bhatia", "Vikrant Rao", "Tara Menon", "Zoya Ali", "Arjun Sethi"];
 
+function seedDayTransactions(date: string): Transaction[] {
+  const dayTx: Transaction[] = [];
+  const rand = mulberry32(hashString(`ledger-${date}`));
+  const weekday = new Date(`${date}T00:00:00`).getDay();
+
+  const add = (source: LedgerSource, count: number, min: number, max: number, notes: string[]) => {
+    for (let i = 0; i < count; i++) {
+      const gross = round2(min + rand() * (max - min));
+      const { net, gst } = splitGross(gross);
+      const modeRoll = rand();
+      const paymentMode: LedgerPaymentMode =
+        source === "bar" && modeRoll > 0.94
+          ? "tab"
+          : modeRoll > 0.7
+          ? "card"
+          : modeRoll > 0.32
+          ? "upi"
+          : "cash";
+      const hour = 7 + Math.floor(rand() * 15);
+      const minute = Math.floor(rand() * 60);
+      dayTx.push({
+        id: `seed-tx-${date}-${source}-${i}`,
+        at: `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`,
+        date,
+        source,
+        description: notes[Math.floor(rand() * notes.length)],
+        net,
+        gst,
+        gross,
+        paymentMode,
+        taxCode: taxCodeFor(source),
+        memberName: MEMBER_NAMES[Math.floor(rand() * MEMBER_NAMES.length)],
+      });
+    }
+  };
+
+  const peak = weekday === 5 || weekday === 6 || weekday === 0;
+  add("court", 8 + Math.floor(rand() * (peak ? 10 : 5)), 600, 2200, COURT_NOTES);
+  add("shop", 3 + Math.floor(rand() * 5), 350, 9000, SHOP_NOTES);
+  add("bar", 6 + Math.floor(rand() * (peak ? 10 : 5)), 240, 4200, BAR_NOTES);
+
+  if (weekday === 5) {
+    const guests = 8 + Math.floor(rand() * 9);
+    const gross = round2(guests * 400);
+    const { net, gst } = splitGross(gross);
+    dayTx.push({
+      id: `seed-social-${date}`,
+      at: `${date}T22:15:00`,
+      date,
+      source: "social",
+      description: `Friday Night Social · ${guests} guest passes`,
+      net,
+      gst,
+      gross,
+      paymentMode: "upi",
+      taxCode: taxCodeFor("social"),
+    });
+  }
+
+  const dom = Number(date.slice(8, 10));
+  if (dom === 1 || dom === 15) {
+    const memberships = 2 + Math.floor(rand() * 3);
+    for (let i = 0; i < memberships; i++) {
+      const gross = [4999, 2499, 1699][Math.floor(rand() * 3)];
+      const { net, gst } = splitGross(gross);
+      dayTx.push({
+        id: `seed-mem-${date}-${i}`,
+        at: `${date}T11:${String(10 + i * 7).padStart(2, "0")}:00`,
+        date,
+        source: "membership",
+        description: `New membership subscription · ${MEMBER_NAMES[Math.floor(rand() * MEMBER_NAMES.length)]}`,
+        net,
+        gst,
+        gross,
+        paymentMode: rand() > 0.5 ? "upi" : "card",
+        taxCode: taxCodeFor("membership"),
+        memberName: MEMBER_NAMES[Math.floor(rand() * MEMBER_NAMES.length)],
+      });
+    }
+  }
+  return dayTx;
+}
+
 function seedLedger(): Transaction[] {
   const ledger: Transaction[] = [];
   for (let back = 45; back >= 0; back--) {
     const date = offsetDate(-back);
-    const rand = mulberry32(hashString(`ledger-${date}`));
-    const weekday = new Date(`${date}T00:00:00`).getDay();
-
-    const add = (source: LedgerSource, count: number, min: number, max: number, notes: string[]) => {
-      for (let i = 0; i < count; i++) {
-        const gross = round2(min + rand() * (max - min));
-        const { net, gst } = splitGross(gross);
-        const modeRoll = rand();
-        const paymentMode: LedgerPaymentMode =
-          source === "bar" && modeRoll > 0.94
-            ? "tab"
-            : modeRoll > 0.7
-            ? "card"
-            : modeRoll > 0.32
-            ? "upi"
-            : "cash";
-        const hour = 7 + Math.floor(rand() * 15);
-        const minute = Math.floor(rand() * 60);
-        ledger.push({
-          id: `seed-tx-${date}-${source}-${i}`,
-          at: `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`,
-          date,
-          source,
-          description: notes[Math.floor(rand() * notes.length)],
-          net,
-          gst,
-          gross,
-          paymentMode,
-          taxCode: taxCodeFor(source),
-          memberName: MEMBER_NAMES[Math.floor(rand() * MEMBER_NAMES.length)],
-        });
-      }
-    };
-
-    const peak = weekday === 5 || weekday === 6 || weekday === 0;
-    add("court", 8 + Math.floor(rand() * (peak ? 10 : 5)), 600, 2200, COURT_NOTES);
-    add("shop", 3 + Math.floor(rand() * 5), 350, 9000, SHOP_NOTES);
-    add("bar", 6 + Math.floor(rand() * (peak ? 10 : 5)), 240, 4200, BAR_NOTES);
-
-    if (weekday === 5) {
-      const guests = 8 + Math.floor(rand() * 9);
-      const gross = round2(guests * 400);
-      const { net, gst } = splitGross(gross);
-      ledger.push({
-        id: `seed-social-${date}`,
-        at: `${date}T22:15:00`,
-        date,
-        source: "social",
-        description: `Friday Night Social · ${guests} guest passes`,
-        net,
-        gst,
-        gross,
-        paymentMode: "upi",
-        taxCode: taxCodeFor("social"),
-      });
-    }
-
-    const dom = Number(date.slice(8, 10));
-    if (dom === 1 || dom === 15) {
-      const memberships = 2 + Math.floor(rand() * 3);
-      for (let i = 0; i < memberships; i++) {
-        const gross = [4999, 2499, 1699][Math.floor(rand() * 3)];
-        const { net, gst } = splitGross(gross);
-        ledger.push({
-          id: `seed-mem-${date}-${i}`,
-          at: `${date}T11:${String(10 + i * 7).padStart(2, "0")}:00`,
-          date,
-          source: "membership",
-          description: `New membership subscription · ${MEMBER_NAMES[Math.floor(rand() * MEMBER_NAMES.length)]}`,
-          net,
-          gst,
-          gross,
-          paymentMode: rand() > 0.5 ? "upi" : "card",
-          taxCode: taxCodeFor("membership"),
-          memberName: MEMBER_NAMES[Math.floor(rand() * MEMBER_NAMES.length)],
-        });
-      }
-    }
+    ledger.push(...seedDayTransactions(date));
   }
   return ledger.sort((a, b) => a.at.localeCompare(b.at));
 }
 
 export function getLedger(): Transaction[] {
   const stored = readStore<Transaction[] | null>(LEDGER_KEY, null);
-  if (stored && stored.length) return stored;
+  if (stored && stored.length) {
+    const today = todayISO();
+    const hasToday = stored.some((t) => t.date === today);
+    if (!hasToday) {
+      // Midnight or calendar rollover: populate today's transactions into stored ledger
+      const todayTx = seedDayTransactions(today);
+      const next = [...stored, ...todayTx].sort((a, b) => a.at.localeCompare(b.at));
+      writeStore(LEDGER_KEY, next);
+      return next;
+    }
+    return stored;
+  }
   const seeded = seedLedger();
   writeStore(LEDGER_KEY, seeded);
   return seeded;
@@ -210,11 +228,12 @@ export function recordTransaction(input: {
   at?: string;
 }): Transaction {
   const { net, gst, gross } = splitGross(input.gross);
-  const at = input.at ?? new Date().toISOString();
+  const at = input.at ?? nowISO();
+  const date = at.slice(0, 10);
   const tx: Transaction = {
     id: makeId("tx"),
     at,
-    date: at.slice(0, 10),
+    date,
     source: input.source,
     description: input.description,
     net,

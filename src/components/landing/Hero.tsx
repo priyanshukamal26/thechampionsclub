@@ -68,7 +68,9 @@ export default function Hero() {
       <div className="relative mx-auto max-w-[1320px] px-5 pb-10 sm:px-8">
         <div className="flex items-center justify-between border-b border-line pb-3">
           <span className="u-eyebrow text-clay">Est. 2019 · New Delhi</span>
-          <span className="u-eyebrow hidden text-muted sm:block">Members&apos; sports club · {todayLabel}</span>
+          <span suppressHydrationWarning className="u-eyebrow hidden text-muted sm:block">
+            Members&apos; sports club · {mounted ? todayLabel : "New Delhi"}
+          </span>
           <span className="u-eyebrow text-muted">06:00 — 23:00</span>
         </div>
 
@@ -192,7 +194,7 @@ export default function Hero() {
                 ))}
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5">
-                <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-muted">
+                <span suppressHydrationWarning className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-muted">
                   {socialDate ? "Friday social · " + socialDateLabel(socialDate) : "Friday social open"}
                 </span>
                 <Link href={current ? "/dashboard/courts" : "/login"} className="font-mono text-[9px] uppercase tracking-[0.14em] text-clay u-link">

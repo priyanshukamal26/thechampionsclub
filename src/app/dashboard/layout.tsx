@@ -335,7 +335,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="u-mono text-[11px] uppercase tracking-[0.1em] text-ink sm:hidden">{page.title}</div>
           </div>
           <div className="flex items-center gap-2.5">
-            <span className="hidden font-mono text-[9.5px] uppercase tracking-[0.14em] text-muted md:inline">{todayIST()} IST</span>
+            <span suppressHydrationWarning className="hidden font-mono text-[9.5px] uppercase tracking-[0.14em] text-muted md:inline">{todayIST()} IST</span>
             <span className="chip chip-ink hidden sm:inline-flex">{ROLE_LABEL[user.role]}</span>
             <Link
               href="/"

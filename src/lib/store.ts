@@ -56,6 +56,11 @@ export function todayISO(): string {
   return dateToISO(new Date());
 }
 
+export function nowISO(): string {
+  const d = new Date();
+  return `${dateToISO(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 export function offsetDate(offset: number, from = new Date()): string {
   const d = new Date(from);
   d.setDate(d.getDate() + offset);

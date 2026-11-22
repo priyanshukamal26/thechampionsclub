@@ -108,7 +108,7 @@ export default function AvailabilityStrip() {
               </button>
             );
           })}
-          <span className="ml-auto hidden items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:flex">
+          <span suppressHydrationWarning className="ml-auto hidden items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-muted sm:flex">
             <CalendarDays className="h-3 w-3" /> {formatDate(isoToday(), { weekday: "long", day: "numeric", month: "long" })}
           </span>
         </div>

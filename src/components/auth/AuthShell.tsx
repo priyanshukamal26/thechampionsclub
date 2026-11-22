@@ -51,7 +51,7 @@ export function AuthFooter({ note, className }: { note?: string; className?: str
   return (
     <footer className={cn("relative z-10 mt-auto border-t border-line/80", className)}>
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-1 px-5 py-4 font-mono text-[9px] uppercase tracking-[0.18em] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <span>© {new Date().getFullYear()} The Champions Club · New Delhi</span>
+        <span suppressHydrationWarning>© {new Date().getFullYear()} The Champions Club · New Delhi</span>
         <span>{note ?? "DPDP Act 2023 compliant · encrypted sign-in"}</span>
       </div>
     </footer>

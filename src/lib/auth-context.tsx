@@ -194,10 +194,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: newUser,
     });
 
-    // 2. If Supabase is configured, create Supabase Auth user
+    // 2. Persist to Neon Serverless Database via API
+    try {
+      await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: data.fullName,
+          email: cleanEmail,
+          password: data.password,
+          planId: data.planId,
+          isMinor: data.isMinor,
+          memberId: data.memberId,
+        }),
+      });
+    } catch (e) {
+      console.warn("Neon registration sync error:", e);
+    }
+
+    // 3. If Supabase is configured, also keep in sync
     if (isSupabaseConfigured) {
       try {
-        await supabase.auth.signUp({
+        const { error: suError } = await supabase.auth.signUp({
           email: cleanEmail,
           password: data.password,
           options: {
@@ -210,6 +228,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
           },
         });
+        if (suError) {
+          console.warn("Supabase signUp warning:", suError.message);
+        }
       } catch (e) {
         console.warn("Supabase signUp error:", e);
       }
@@ -285,7 +306,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore if getLocalMembers throws
     }
 
-    // 4. Try Supabase Auth when configured
+    // 4. Try Neon Server Auth API
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.user) {
+          setUser(json.user);
+          localStorage.setItem("champions_user", JSON.stringify(json.user));
+          return { success: true };
+        }
+      } else {
+        const json = await res.json().catch(() => ({}));
+        if (json.error && !json.error.includes("Invalid login credentials")) {
+          return { success: false, error: json.error };
+        }
+      }
+    } catch {
+      // Ignore network errors and continue to fallbacks
+    }
+
+    // 5. Try Supabase Auth when configured
     if (isSupabaseConfigured) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -301,15 +346,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: data.user.user_metadata?.role || "member",
             status: data.user.user_metadata?.status || "active_member",
             planId: data.user.user_metadata?.plan_id,
+            isMinor: data.user.user_metadata?.is_minor,
+            memberId: data.user.user_metadata?.member_id,
           };
           setUser(u);
           localStorage.setItem("champions_user", JSON.stringify(u));
           return { success: true };
         } else if (error) {
+          const msg = error.message.toLowerCase();
+          if (msg.includes("email not confirmed")) {
+            return {
+              success: false,
+              error: "Please check your email to confirm your account before logging in, or disable email confirmations in Supabase.",
+            };
+          }
+          if (msg.includes("invalid login credentials") || msg.includes("invalid grant")) {
+            return {
+              success: false,
+              error: "Invalid login credentials. Please check your email and password.",
+            };
+          }
+          if (msg.includes("failed to fetch") || msg.includes("network")) {
+            return {
+              success: false,
+              error: "Unable to reach the authentication service. Please check your internet connection or verify Vercel environment variables.",
+            };
+          }
           return { success: false, error: error.message };
         }
-      } catch (err) {
-        console.warn("Supabase auth error:", err);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn("Supabase auth error:", msg);
+        if (msg.toLowerCase().includes("failed to fetch") || msg.toLowerCase().includes("network")) {
+          return {
+            success: false,
+            error: "Unable to reach the authentication service. Please check your connection or Supabase settings.",
+          };
+        }
       }
     }
 
