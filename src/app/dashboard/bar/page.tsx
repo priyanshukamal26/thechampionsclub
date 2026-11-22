@@ -283,16 +283,40 @@ export default function BarPage() {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat
-            label="Live Kitchen Queue"
-            value={primaryQueueInfo ? (primaryQueueInfo.status === "ready" ? "Ready" : `#${primaryQueueInfo.position}`) : "Clear"}
-            unit={primaryQueueInfo ? (primaryQueueInfo.status === "ready" ? "to serve" : primaryQueueInfo.ordersAhead === 0 ? "next up" : `${primaryQueueInfo.ordersAhead} ahead`) : "in pass"}
-            note={primaryQueueInfo ? primaryQueueInfo.label : (myActiveOrders.length === 0 ? "No active orders" : "Cooking on pass")}
+            label={primaryQueueInfo ? "Your Queue Position" : "Live Kitchen Queue"}
+            value={
+              primaryQueueInfo
+                ? (primaryQueueInfo.status === "ready" ? "Ready" : `#${primaryQueueInfo.position}`)
+                : kitchen.length > 0
+                  ? String(kitchen.length)
+                  : "Clear"
+            }
+            unit={
+              primaryQueueInfo
+                ? (primaryQueueInfo.status === "ready"
+                    ? "to serve"
+                    : primaryQueueInfo.ordersAhead === 0
+                      ? "next up"
+                      : `${primaryQueueInfo.ordersAhead} ahead of you`)
+                : kitchen.length > 0
+                  ? "club tickets"
+                  : "in pass"
+            }
+            note={
+              primaryQueueInfo
+                ? `${primaryQueueInfo.label} · ${kitchen.length} total in kitchen`
+                : (myActiveOrders.length === 0 ? "No personal active orders" : "Cooking on pass")
+            }
           />
           <Stat
             label="Active Orders Total"
             value={myActiveOrders.length > 0 ? inr(activeTotal) : (myTab ? inr(myTab.total) : "₹0")}
             unit={myActiveOrders.length > 0 ? `${myActiveOrders.length} ticket${myActiveOrders.length === 1 ? "" : "s"}` : (myTab ? "open tab" : "settled")}
-            note={myActiveOrders.length > 0 ? `${myActiveOrders.filter(o => o.status === "ready").length} ready · ${myActiveOrders.filter(o => o.status === "preparing").length} preparing` : (myTab ? `${myTab.orderCodes.length} orders on tab` : "All settled")}
+            note={
+              myActiveOrders.length > 0
+                ? `${myActiveOrders.filter(o => o.status === "placed").length} placed · ${myActiveOrders.filter(o => o.status === "preparing").length} cooking · ${myActiveOrders.filter(o => o.status === "ready").length} ready`
+                : (myTab ? `${myTab.orderCodes.length} orders on tab` : "All settled")
+            }
           />
           <Stat
             label="Available Tables"

@@ -76,6 +76,17 @@ export default function ShopPage() {
 
   useEffect(() => {
     load();
+    const handleUpdate = () => load();
+    window.addEventListener("tcc_products_updated", handleUpdate);
+    window.addEventListener("tcc_orders_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    const interval = window.setInterval(handleUpdate, 8000);
+    return () => {
+      window.removeEventListener("tcc_products_updated", handleUpdate);
+      window.removeEventListener("tcc_orders_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+      window.clearInterval(interval);
+    };
   }, [load]);
 
   const plan = MEMBERSHIP_PLANS[user?.planId || "silver"] ?? MEMBERSHIP_PLANS.silver;

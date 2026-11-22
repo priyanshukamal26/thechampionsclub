@@ -43,8 +43,15 @@ export default function KitchenDisplayPage() {
 
   useEffect(() => {
     setMounted(true);
-    const id = window.setInterval(() => setTick((t) => t + 1), 30000);
-    return () => window.clearInterval(id);
+    const handleUpdate = () => setTick((t) => t + 1);
+    window.addEventListener("tcc_orders_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    const id = window.setInterval(handleUpdate, 8000);
+    return () => {
+      window.removeEventListener("tcc_orders_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+      window.clearInterval(id);
+    };
   }, []);
 
   const queue = useMemo(() => (mounted ? kitchenQueue() : []), [mounted, tick]);

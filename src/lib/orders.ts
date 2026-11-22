@@ -61,7 +61,28 @@ export const PRODUCT_CATEGORIES = ["All", "Rackets", "Balls", "Shuttlecocks", "A
 
 const PRODUCTS_KEY = "champions_products_v1";
 
+let hasSyncedProductsWithServer = false;
+
+export function syncProductsWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedProductsWithServer) return;
+  hasSyncedProductsWithServer = true;
+  fetch("/api/shop")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.products) && data.products.length > 0) {
+        writeStore(PRODUCTS_KEY, data.products);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("tcc_products_updated"));
+        }
+      }
+    })
+    .catch(() => {});
+}
+
 export function getProducts(): Product[] {
+  if (typeof window !== "undefined" && !hasSyncedProductsWithServer) {
+    setTimeout(syncProductsWithServer, 100);
+  }
   const stored = readStore<Product[] | null>(PRODUCTS_KEY, null);
   if (stored && stored.length) return stored;
   writeStore(PRODUCTS_KEY, SEED_PRODUCTS);
@@ -100,6 +121,13 @@ function deductStock(lines: { productId: string; qty: number }[]): string | null
     return line ? { ...p, stock: p.stock - line.qty } : p;
   });
   writeStore(PRODUCTS_KEY, next);
+  if (typeof window !== "undefined") {
+    fetch("/api/shop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "deduct", items: lines }),
+    }).catch(() => {});
+  }
   return null;
 }
 
@@ -173,7 +201,28 @@ function seedTables(): ClubTable[] {
   });
 }
 
+let hasSyncedTablesWithServer = false;
+
+export function syncTablesWithServer(): void {
+  if (typeof window === "undefined" || hasSyncedTablesWithServer) return;
+  hasSyncedTablesWithServer = true;
+  fetch("/api/bar?view=tables")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success && Array.isArray(data.tables) && data.tables.length > 0) {
+        writeStore(TABLES_KEY, data.tables);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("tcc_orders_updated"));
+        }
+      }
+    })
+    .catch(() => {});
+}
+
 export function getTables(): ClubTable[] {
+  if (typeof window !== "undefined" && !hasSyncedTablesWithServer) {
+    setTimeout(syncTablesWithServer, 100);
+  }
   const stored = readStore<ClubTable[] | null>(TABLES_KEY, null);
   if (stored && stored.length) return stored;
   const seeded = seedTables();
